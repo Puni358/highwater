@@ -30,21 +30,21 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
 
 ## Phase 3: Interactive map
 
-- [ ] **T3.1 (P0)** `FloodMap` base map with zoom and pan (FR-10, FR-19)
+- [x] **T3.1 (P0)** `FloodMap` base map with zoom and pan (FR-10, FR-19)
   AC: map renders and resizes with its container.
-- [ ] **T3.2 (P0)** `toLatLng()` helper and coordinate validator
+- [x] **T3.2 (P0)** `toLatLng()` helper and coordinate validator
   AC: unit tests cover swapped coords, out-of-range values, unclosed rings.
-- [ ] **T3.3 (P0)** `FloodLayer` (FR-11)
+- [x] **T3.3 (P0)** `FloodLayer` (FR-11)
   AC: flood polygons render in the flood style.
-- [ ] **T3.4 (P0)** `RiskLayer` with risk colours, popup and click-to-select (FR-12, FR-13)
+- [x] **T3.4 (P0)** `RiskLayer` with risk colours, popup and click-to-select (FR-12, FR-13)
   AC: click selects; selected zone shows thick outline; UNKNOWN is visibly distinct.
-- [ ] **T3.5 (P0)** `RoadLayer`, `FacilityLayer`, `RouteLayer` (FR-11, FR-40, FR-41)
+- [x] **T3.5 (P0)** `RoadLayer`, `FacilityLayer`, `RouteLayer` (FR-11, FR-40, FR-41)
   AC: blocked roads dashed; route solid; route with no geometry draws nothing.
-- [ ] **T3.6 (P0)** `MapControls` layer toggles and reset-extent (FR-14, FR-15)
+- [x] **T3.6 (P0)** `MapControls` layer toggles and reset-extent (FR-14, FR-15)
   AC: each layer toggles independently; map position unchanged by toggling; reset returns to default extent.
-- [ ] **T3.7 (P0)** `MapLegend` (FR-16)
+- [x] **T3.7 (P0)** `MapLegend` (FR-16)
   AC: lists only enabled overlays, each with swatch and text.
-- [ ] **T3.8 (P0)** Per-layer error boundaries (FR-52)
+- [x] **T3.8 (P0)** Per-layer error boundaries (FR-52)
   AC: a deliberately broken layer shows an inline warning and the rest of the map still works.
 
 ## Phase 4: Wiring
