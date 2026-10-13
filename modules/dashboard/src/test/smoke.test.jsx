@@ -39,7 +39,7 @@ describe('Smoke test', () => {
     expect(screen.getByText('HIGHWATER')).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByText('DEMO MODE')).toBeInTheDocument();
-      expect(screen.getByText('Inundated Area')).toBeInTheDocument();
+      expect(screen.getByText('Flooded area')).toBeInTheDocument();
     });
   });
 });

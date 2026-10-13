@@ -56,16 +56,20 @@ export default function DashboardLayout({
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
         >
           <StatCard
-            title="Inundated Area"
+            title="Flooded area"
             value={stats.floodedAreaKm2}
             unit="km²"
             isDemo={stats.isDemo}
             icon={Droplets}
             variant="flood"
-            caption="Measured flood extent"
+            caption={
+              stats.floodedAreaIsPartial
+                ? `Partial (${stats.floodedMissingCount} zone unassessed)`
+                : 'Measured flood extent'
+            }
           />
           <StatCard
-            title="High Priority Zones"
+            title="High-priority zones"
             value={stats.highPriorityCount}
             isDemo={stats.isDemo}
             icon={AlertOctagon}
@@ -73,15 +77,19 @@ export default function DashboardLayout({
             caption="Requiring immediate action"
           />
           <StatCard
-            title="Exposed Buildings"
+            title="Exposed buildings"
             value={stats.exposedBuildingsCount}
             isDemo={stats.isDemo}
             icon={Home}
             variant="warning"
-            caption="Structures within flood zone"
+            caption={
+              stats.exposedBuildingsIsPartial
+                ? `Partial (${stats.bldgsMissingCount} zone unassessed)`
+                : 'Structures within flood zone'
+            }
           />
           <StatCard
-            title="Blocked Roadways"
+            title="Blocked roadways"
             value={stats.blockedRoadsCount}
             isDemo={stats.isDemo}
             icon={Ban}
