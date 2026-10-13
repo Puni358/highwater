@@ -35,7 +35,7 @@ export default function MapLegend({
             className="w-4 h-4 rounded border"
             style={{
               backgroundColor: THEME.colors.flood,
-              borderColor: '#1a6896',
+              borderColor: THEME.colors.floodBorder,
               opacity: 0.6,
             }}
           />

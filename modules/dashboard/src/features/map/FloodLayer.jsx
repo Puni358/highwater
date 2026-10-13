@@ -19,7 +19,7 @@ export default function FloodLayer({ data }) {
   const floodStyle = {
     fillColor: THEME.colors.flood,
     fillOpacity: 0.35,
-    color: '#1a6896',
+    color: THEME.colors.floodBorder,
     weight: 1.5,
   };
 

@@ -14,6 +14,8 @@ export const THEME = {
     text: '#1B2733',
     'text-muted': '#5B6B7B',
     flood: '#2B8CC4',
+    floodBorder: '#1A6896',
+    shelter: '#0284C7',
     'risk-high': '#C62828',
     'risk-medium': '#E69F00',
     'risk-low': '#2E7D32',

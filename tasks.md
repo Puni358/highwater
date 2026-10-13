@@ -49,23 +49,23 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
 
 ## Phase 4: Wiring
 
-- [ ] **T4.1 (P0)** `dataAdapter.js` with all rules from `architecture.md` section 5.7
+- [x] **T4.1 (P0)** `dataAdapter.js` with all rules from `architecture.md` section 5.7
   AC: unit tests for unknown risk to UNKNOWN, non-finite to null, scale conversion, bad coordinates dropped and counted, bad payload throws.
-- [ ] **T4.2 (P0)** `useDashboardData` hook and `dashboardApi.js` (FR-03)
+- [x] **T4.2 (P0)** `useDashboardData` hook and `dashboardApi.js` (FR-03)
   AC: loads fixtures; refresh does not fire duplicate in-flight requests.
-- [ ] **T4.3 (P0)** Shared `selectedZoneId` state (FR-24)
+- [x] **T4.3 (P0)** Shared `selectedZoneId` state (FR-24)
   AC: map click highlights the row; row click highlights the polygon.
-- [ ] **T4.4 (P0)** `ZoneList` with sort, risk filter, search (FR-22, FR-23)
+- [x] **T4.4 (P0)** `ZoneList` with sort, risk filter, search (FR-22, FR-23)
   AC: each control changes the list correctly; combined filters work together.
-- [ ] **T4.5 (P0)** `ZoneDetails` (FR-20, FR-21)
+- [x] **T4.5 (P0)** `ZoneDetails` (FR-20, FR-21)
   AC: shows actual selected-zone data; missing fields show "Not available"; reasons render.
-- [ ] **T4.6 (P0)** Zones without geometry stay in the list (FR-26)
+- [x] **T4.6 (P0)** Zones without geometry stay in the list (FR-26)
   AC: row shows "No map shape"; selecting it does not crash the map.
-- [ ] **T4.7 (P0)** List selection flies the map to the zone (FR-17)
+- [x] **T4.7 (P0)** List selection flies the map to the zone (FR-17)
   AC: map pans or zooms to the zone bounds.
-- [ ] **T4.8 (P0)** `dashboardSelectors.js` for stats and chart data (FR-05, FR-30, FR-31)
+- [x] **T4.8 (P0)** `dashboardSelectors.js` for stats and chart data (FR-05, FR-30, FR-31)
   AC: stats recompute from data; documented rule on whether filters affect stats.
-- [ ] **T4.9 (P0)** `RiskDistributionChart` and `ImpactChart` (FR-30 to FR-32)
+- [x] **T4.9 (P0)** `RiskDistributionChart` and `ImpactChart` (FR-30 to FR-32)
   AC: titles, labelled axes, tooltips, no-data state.
 
 ## Phase 5: Test and polish
@@ -117,24 +117,24 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
 
 | # | Scenario | Expected behaviour | Type | Status |
 |---|---|---|---|---|
-| 1 | Normal dataset | Map, cards, charts, list render | Manual | [ ] |
-| 2 | Click polygon | Correct zone details appear; row highlighted | Component + manual | [ ] |
-| 3 | Click list row | Matching polygon selected; map pans | Component + manual | [ ] |
-| 4 | Filter by HIGH | Only HIGH zones in list; charts follow documented rule | Unit | [ ] |
-| 5 | Search by ID or name | List narrows correctly | Unit | [ ] |
-| 6 | Sort by score | Order correct; null scores sort last | Unit | [ ] |
+| 1 | Normal dataset | Map, cards, charts, list render | Manual | [x] |
+| 2 | Click polygon | Correct zone details appear; row highlighted | Component + manual | [x] |
+| 3 | Click list row | Matching polygon selected; map pans | Component + manual | [x] |
+| 4 | Filter by HIGH | Only HIGH zones in list; charts follow documented rule | Unit | [x] |
+| 5 | Search by ID or name | List narrows correctly | Unit | [x] |
+| 6 | Sort by score | Order correct; null scores sort last | Unit | [x] |
 | 7 | No zones returned | Empty state; no fabricated risk | Component | [ ] |
-| 8 | Missing risk score | "Not available" | Component | [ ] |
-| 9 | Unknown risk category | Displayed as UNKNOWN, not LOW | Unit | [ ] |
-| 10 | Zone without geometry | In list; not on map; no crash | Component | [ ] |
+| 8 | Missing risk score | "Not available" | Component | [x] |
+| 9 | Unknown risk category | Displayed as UNKNOWN, not LOW | Unit | [x] |
+| 10 | Zone without geometry | In list; not on map; no crash | Component | [x] |
 | 11 | Invalid flood GeoJSON | Readable error; app does not crash | Manual | [ ] |
-| 12 | Swapped lat/lon | Warning; feature dropped or flagged | Unit | [ ] |
-| 13 | Unclosed polygon ring | Feature skipped and counted | Unit | [ ] |
-| 14 | Route unavailable | No line; clear message | Component | [ ] |
-| 15 | All overlays off | Base map still usable | Manual | [ ] |
-| 16 | Narrow mobile viewport | No horizontal overflow | Manual | [ ] |
+| 12 | Swapped lat/lon | Warning; feature dropped or flagged | Unit | [x] |
+| 13 | Unclosed polygon ring | Feature skipped and counted | Unit | [x] |
+| 14 | Route unavailable | No line; clear message | Component | [x] |
+| 15 | All overlays off | Base map still usable | Manual | [x] |
+| 16 | Narrow mobile viewport | No horizontal overflow | Manual | [x] |
 | 17 | API request fails | Error visible; retry works | Component | [ ] |
-| 18 | Refresh clicked repeatedly | One in-flight request only | Unit | [ ] |
+| 18 | Refresh clicked repeatedly | One in-flight request only | Unit | [x] |
 | 19 | Tiles unreachable | Fallback notice; overlays still render | Manual | [ ] |
 | 20 | Stale `generated_at` | Stale banner shown | Unit | [ ] |
 

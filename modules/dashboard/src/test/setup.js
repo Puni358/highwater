@@ -8,3 +8,9 @@ if (typeof global.ResizeObserver === 'undefined') {
     disconnect() {}
   };
 }
+
+// Polyfill scrollIntoView for jsdom test environment
+if (typeof window !== 'undefined' && window.HTMLElement) {
+  window.HTMLElement.prototype.scrollIntoView = function () {};
+}
+
