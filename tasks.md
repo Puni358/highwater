@@ -19,13 +19,13 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
 
 ## Phase 2: Layout and fixtures
 
-- [ ] **T2.1 (P0)** Create five mock fixtures with deterministic geometry (FR-02)
+- [x] **T2.1 (P0)** Create five mock fixtures with deterministic geometry (FR-02)
   AC: closed polygon rings; `[lng, lat]` order; `data_mode: "demo"`; at least one HIGH, MEDIUM, LOW and UNKNOWN zone; at least one zone with no geometry; at least one zone with a missing numeric field.
-- [ ] **T2.2 (P0)** Build `Header` with DEMO MODE badge, timestamp, refresh (FR-01, FR-02)
+- [x] **T2.2 (P0)** Build `Header` with DEMO MODE badge, timestamp, refresh (FR-01, FR-02)
   AC: badge visible when `data_mode = "demo"`.
-- [ ] **T2.3 (P0)** Build `StatCard` x4 (FR-04, FR-05)
+- [x] **T2.3 (P0)** Build `StatCard` x4 (FR-04, FR-05)
   AC: values derived from fixtures; demo values captioned "Illustrative".
-- [ ] **T2.4 (P0)** Build `DashboardLayout` with map area, side panel, list area, chart area
+- [x] **T2.4 (P0)** Build `DashboardLayout` with map area, side panel, list area, chart area
   AC: no layout break at 360, 768, 1280 px.
 
 ## Phase 3: Interactive map
