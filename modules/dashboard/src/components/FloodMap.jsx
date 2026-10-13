@@ -16,10 +16,10 @@ import { AlertTriangle } from 'lucide-react';
  * Inner hook manager for Leaflet map instance.
  * Handles resize invalidation, selection fly-to, and reset-extent without resetting on layer toggle.
  */
-function MapController({
+export function MapController({
   selectedZoneId,
-  zones,
-  resetTrigger,
+  zones = [],
+  resetTrigger = 0,
 }) {
   const map = useMap();
   const prevSelectedIdRef = useRef(null);
@@ -38,7 +38,7 @@ function MapController({
     };
   }, [map]);
 
-  // Reset extent handler (FR-15)
+  // Reset extent handler (FR-15, T3.6)
   useEffect(() => {
     if (resetTrigger > 0) {
       map.flyToBounds(DEFAULT_AOI_BOUNDS, { duration: 1 });
@@ -78,17 +78,17 @@ export default function FloodMap({
   visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false },
   onZoneSelect,
   droppedCount = 0,
+  resetTrigger = 0,
+  children, // For custom/injected test layers
 }) {
-  const [resetTrigger, setResetTrigger] = useState(0);
+  const [internalReset, setInternalReset] = useState(0);
   const [layerErrors, setLayerErrors] = useState({});
   const [tilesOffline, setTilesOffline] = useState(false);
 
+  const activeReset = resetTrigger || internalReset;
+
   const tileUrl = import.meta.env.VITE_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   const tileAttribution = import.meta.env.VITE_TILE_ATTRIBUTION || '© OpenStreetMap contributors';
-
-  const handleResetExtent = useCallback(() => {
-    setResetTrigger((prev) => prev + 1);
-  }, []);
 
   const handleLayerError = useCallback((layerKey, err) => {
     setLayerErrors((prev) => ({ ...prev, [layerKey]: err.message || 'Rendering failed' }));
@@ -118,6 +118,20 @@ export default function FloodMap({
         </div>
       )}
 
+      {/* Layer Error Notice banner if a layer failed (FR-52, T3.8) */}
+      {Object.keys(layerErrors).length > 0 && (
+        <div
+          role="alert"
+          aria-label="Layer Error Notice"
+          className="absolute top-2 right-12 z-[1000] bg-red-100 border border-red-300 text-risk-high px-2.5 py-1 rounded-card text-[11px] shadow-sm flex items-center space-x-1.5"
+        >
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          <span>
+            Overlay error: {Object.entries(layerErrors).map(([k, msg]) => `${k} layer (${msg})`).join(', ')}. Base map and other layers operational.
+          </span>
+        </div>
+      )}
+
       {/* Interactive Leaflet Surface */}
       <MapContainer
         center={DEFAULT_MAP_CENTER}
@@ -136,7 +150,7 @@ export default function FloodMap({
         <MapController
           selectedZoneId={selectedZoneId}
           zones={riskZones}
-          resetTrigger={resetTrigger}
+          resetTrigger={activeReset}
         />
 
         {/* 1. Flood Extent Layer (Isolated in Error Boundary) */}
@@ -192,6 +206,9 @@ export default function FloodMap({
             <RouteLayer routes={routes} />
           </LayerErrorBoundary>
         )}
+
+        {/* Custom/Injected Children Layers */}
+        {children}
       </MapContainer>
 
       {/* Floating Dynamic Legend (bottom-right on map) */}
