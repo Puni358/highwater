@@ -195,39 +195,84 @@ export function adaptDashboardData(raw) {
   }
 
   const { metadata, zones } = adaptZones(raw.rawZones);
-  const routes = adaptRoutes(raw.rawRoutes);
-
   let droppedFeatureCount = 0;
   const warnings = [];
+  const layerErrors = {};
 
-  // Filter invalid flood extent polygons
-  const floodFeatures = (raw.rawFloodExtent?.features || []).filter((f) => {
-    if (!f.geometry || f.geometry.type !== 'Polygon') return false;
-    const ring = f.geometry.coordinates?.[0];
-    if (!ring || !isClosedRing(ring)) {
-      droppedFeatureCount += 1;
-      warnings.push(`Dropped flood feature ${f.properties?.feature_id || 'unknown'}: unclosed polygon.`);
-      return false;
-    }
-    const allValid = ring.every(isValidLngLat);
-    if (!allValid) {
-      droppedFeatureCount += 1;
-      warnings.push(`Dropped flood feature ${f.properties?.feature_id || 'unknown'}: invalid coordinates.`);
-      return false;
-    }
-    return true;
-  });
+  // Flood extent
+  let floodExtent = null;
+  if (raw.rawFloodExtent?.error) {
+    layerErrors.flood = raw.rawFloodExtent.error;
+    floodExtent = { error: raw.rawFloodExtent.error, type: 'FeatureCollection', features: null };
+  } else if (raw.rawFloodExtent && Array.isArray(raw.rawFloodExtent.features)) {
+    const floodFeatures = raw.rawFloodExtent.features.filter((f) => {
+      if (!f.geometry || f.geometry.type !== 'Polygon') return false;
+      const ring = f.geometry.coordinates?.[0];
+      if (!ring || !isClosedRing(ring)) {
+        droppedFeatureCount += 1;
+        warnings.push(`Dropped flood feature ${f.properties?.feature_id || 'unknown'}: unclosed polygon.`);
+        return false;
+      }
+      const allValid = ring.every(isValidLngLat);
+      if (!allValid) {
+        droppedFeatureCount += 1;
+        warnings.push(`Dropped flood feature ${f.properties?.feature_id || 'unknown'}: invalid coordinates.`);
+        return false;
+      }
+      return true;
+    });
+    floodExtent = {
+      type: 'FeatureCollection',
+      features: floodFeatures,
+    };
+  } else if (raw.rawFloodExtent === null || raw.rawFloodExtent === undefined) {
+    floodExtent = { type: 'FeatureCollection', features: [] };
+  } else {
+    floodExtent = raw.rawFloodExtent;
+  }
+
+  // Blocked roads
+  let blockedRoads = null;
+  if (raw.rawBlockedRoads?.error) {
+    layerErrors.roads = raw.rawBlockedRoads.error;
+    blockedRoads = { error: raw.rawBlockedRoads.error, type: 'FeatureCollection', features: null };
+  } else if (raw.rawBlockedRoads && Array.isArray(raw.rawBlockedRoads.features)) {
+    blockedRoads = raw.rawBlockedRoads;
+  } else if (raw.rawBlockedRoads === null || raw.rawBlockedRoads === undefined) {
+    blockedRoads = { type: 'FeatureCollection', features: [] };
+  } else {
+    blockedRoads = raw.rawBlockedRoads;
+  }
+
+  // Facilities
+  let facilities = null;
+  if (raw.rawFacilities?.error) {
+    layerErrors.facilities = raw.rawFacilities.error;
+    facilities = { error: raw.rawFacilities.error, type: 'FeatureCollection', features: null };
+  } else if (raw.rawFacilities && Array.isArray(raw.rawFacilities.features)) {
+    facilities = raw.rawFacilities;
+  } else if (raw.rawFacilities === null || raw.rawFacilities === undefined) {
+    facilities = { type: 'FeatureCollection', features: [] };
+  } else {
+    facilities = raw.rawFacilities;
+  }
+
+  // Routes
+  let routes = [];
+  if (raw.rawRoutes?.error) {
+    layerErrors.routes = raw.rawRoutes.error;
+  } else if (raw.rawRoutes) {
+    routes = adaptRoutes(raw.rawRoutes);
+  }
 
   return {
     metadata,
     zones,
-    floodExtent: {
-      type: 'FeatureCollection',
-      features: floodFeatures,
-    },
-    blockedRoads: raw.rawBlockedRoads || { type: 'FeatureCollection', features: [] },
-    facilities: raw.rawFacilities || { type: 'FeatureCollection', features: [] },
+    floodExtent,
+    blockedRoads,
+    facilities,
     routes,
+    layerErrors,
     droppedFeatureCount,
     warnings,
   };

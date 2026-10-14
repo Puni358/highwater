@@ -40,12 +40,12 @@ export default function Header({
       </div>
 
       {/* Center: Context & Study Area */}
-      <div className="hidden md:flex items-center space-x-4 text-xs">
-        <div className="flex items-center space-x-1.5 text-slate-300">
+      <div className="flex items-center space-x-2 sm:space-x-4 text-xs">
+        <div className="hidden md:flex items-center space-x-1.5 text-slate-300">
           <span className="font-semibold text-white">Area:</span>
           <span>{studyArea}</span>
         </div>
-        <span className="text-slate-600">•</span>
+        <span className="hidden md:inline text-slate-600">•</span>
         <div className="flex items-center space-x-1.5 text-slate-300">
           <span className="font-semibold text-white">Updated:</span>
           <span>{formatTimestamp(timestamp)}</span>

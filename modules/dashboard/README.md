@@ -150,41 +150,43 @@ All operational states captured from headless Chrome test runs:
 
 ---
 
-## 7. Known Limitations & Module Boundaries
+## 7. Known Limitations & Known Deviations
 
-- **Single-module scope**: Member 1 module operates in standalone demonstration mode using validated GeoJSON fixtures. API endpoints in `dashboardApi.js` fall back to mock data when backend services are offline.
+### Known Limitations
+- **Single-module scope**: Member 1 module operates in standalone demonstration mode using validated GeoJSON fixtures. API endpoints in `dashboardApi.js` fall back to mock data when `VITE_DATA_SOURCE=mock`.
 - **WebGL / 3D**: Redux, 3D globes, and heavy canvas animation frameworks are deliberately excluded in compliance with hackathon architecture rules to ensure battery-friendly performance on tactical field laptops.
 - **Leaflet Marker Icons**: Standard Leaflet PNG markers are replaced with inline Lucide SVG `L.divIcon` to prevent path-resolution issues under Vite asset bundling.
+
+### Known Deviations
+- **DEMO Badge Text Contrast**: Adjusted from `#B26A00` to `#965300` on `#FFF3D6` to satisfy WCAG 2.1 AA text contrast requirement (5.39:1 vs the original 3.84:1). The original token remains preserved in `theme.js` as `specText`.
+- **Tailwind Default Palette**: Selective semantic use of Tailwind utility classes (`slate-50/100/200` for table headers, panel dividers, and offline tile fallback; `amber-50/600/900`, `red-50/100`, `emerald-50/600`, and `gray-100/700` for accessible status pills and alert banners) extending base theme tokens.
+- **Marker Drop Shadow**: `rgba(0,0,0,0.3)` in `FacilityLayer.jsx` for DOM marker elevation box shadow.
 
 ---
 
 ## 8. Integration Questions for Module Owners
 
-Before switching to live backend endpoints in production, the following agreements are required:
+Per PRD.md section 6, agreements with module owners are required before live API switch:
 
-### Member 2 — Flood Forecasting & Inundation Extent
-- **Endpoint**: What is the canonical path for latest flood polygons? (Default configured: `GET ${VITE_API_BASE_URL}/flood-extent`)
-- **Schema & CRS**: Can you guarantee RFC 7946 GeoJSON format in EPSG:4326 with `[longitude, latitude]` coordinate order and closed polygon exterior rings?
-- **Depth Units & Contours**: Are water depths provided in meters (`water_depth_m`) or centimeters? Are inundation areas pre-classified into depth bins?
-- **Cadence & Timestamps**: What is the forecast regeneration frequency, and is `forecast_timestamp` guaranteed on every payload?
+### Member 2 — Flood Analysis & Forecasting Engine
+- **Endpoint Path**: What is your canonical endpoint path? (Configured via `VITE_API_FLOOD_PATH`; no default guessed).
+- **Schema & CRS**: Can you guarantee RFC 7946 GeoJSON format in EPSG:4326 with `[longitude, latitude]` coordinate order and closed exterior polygon rings?
+- **Depth Units & Contours**: Are water depths provided in meters (`water_depth_m`) or centimeters? Are inundation areas pre-classified into depth contours?
+- **Cadence & Timestamps**: What is your forecast regeneration interval, and is `forecast_timestamp` guaranteed on every payload?
 - **Provenance**: Will features include explicit provenance flags (`observed`, `derived`, `simulated`)?
 
 ### Member 3 — Risk Assessment & Tactical Prioritization
-- **Endpoint**: What is the canonical endpoint for zone prioritizations? (Default configured: `GET ${VITE_API_BASE_URL}/zones`)
+- **Endpoint Path**: What is your canonical endpoint path? (Configured via `VITE_API_ZONES_PATH`; no default guessed).
 - **Risk Scale**: Is the risk score normalized from 0 to 100? Can scores be null for newly formed or unassessed sectors?
-- **Categorization**: Are risk levels strictly `HIGH`, `MEDIUM`, `LOW`, and `UNKNOWN`, or are intermediate tiers (`CRITICAL`) expected?
+- **Categorization**: Are risk levels strictly `HIGH`, `MEDIUM`, `LOW`, and `UNKNOWN`?
 - **Survey Flags**: How are zones needing physical reconnaissance identified (e.g., `needs_survey: true`)?
 - **Geometry Linkage**: For non-spatial staging zones (e.g., `zone-009`), is `geometry: null` with `has_geometry: false` guaranteed?
 
 ### Member 4 — Evacuation Routing & Infrastructure Blockages
-- **Endpoints**: What are the endpoints for blocked roads and evacuation corridors? (Defaults configured: `GET ${VITE_API_BASE_URL}/blocked-roads` and `GET ${VITE_API_BASE_URL}/routes`)
+- **Endpoint Paths**: What are your canonical endpoint paths for blocked roads and evacuation corridors? (Configured via `VITE_API_ROADS_PATH` and `VITE_API_ROUTES_PATH`; no defaults guessed).
 - **Road Segment Geometry**: Are blocked roads supplied as GeoJSON `MultiLineString` or `LineString`? What attribute names convey obstruction reason and severity?
 - **Route Clearance**: What field flags route viability (e.g., `status: "CLEAR" | "DEGRADED" | "IMPASSABLE"`)?
 - **Coordinate Conventions**: Do all route vertices strictly adhere to EPSG:4326 `[lng, lat]`?
-
-### Member 5 — System Architecture & Gateway
-- **Base URL & Auth**: What is `VITE_API_BASE_URL`? Is bearer token or API key authentication required, and if so, how is it passed?
-- **Health & Freshness**: Is there a `/health` or `/status` endpoint returning global `generated_at` timestamps for data freshness verification?
 
 ---
 

@@ -123,9 +123,10 @@ export default function DashboardLayout({
 
       {/* Main Content Area */}
       <main className="flex-1 p-3 sm:p-4 lg:p-6 max-w-7xl w-full mx-auto space-y-4 lg:space-y-6">
-        {/* Stale data banner (T5.2, FR-51) */}
+        {/* Stale data banner (T5.2, FR-51) - suppressed when dataMode is "demo" */}
         <StaleBanner
           generatedAt={metadata.generatedAt}
+          dataMode={metadata.dataMode || 'demo'}
           onRefresh={onRefresh}
         />
 
@@ -231,6 +232,7 @@ export default function DashboardLayout({
                     onZoneSelect={handleZoneSelect}
                     droppedCount={data?.droppedFeatureCount || 0}
                     resetTrigger={resetTrigger}
+                    layerErrors={data?.layerErrors}
                   />
                 </div>
               </section>

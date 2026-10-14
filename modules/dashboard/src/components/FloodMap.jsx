@@ -80,6 +80,7 @@ export default function FloodMap({
   droppedCount = 0,
   resetTrigger = 0,
   tilesOffline: tilesOfflineProp = null,
+  layerErrors: externalLayerErrors = {},
   children, // For custom/injected test layers
 }) {
   const [internalReset, setInternalReset] = useState(0);
@@ -95,6 +96,14 @@ export default function FloodMap({
   const handleLayerError = useCallback((layerKey, err) => {
     setLayerErrors((prev) => ({ ...prev, [layerKey]: err.message || 'Rendering failed' }));
   }, []);
+
+  const combinedLayerErrors = {
+    ...externalLayerErrors,
+    ...layerErrors,
+  };
+  if (floodGeoJSON?.error) combinedLayerErrors.flood = floodGeoJSON.error;
+  if (blockedRoads?.error) combinedLayerErrors.roads = blockedRoads.error;
+  if (facilities?.error) combinedLayerErrors.facilities = facilities.error;
 
   return (
     <div className="relative w-full h-full min-h-[380px] flex-1 overflow-hidden font-sans">
@@ -120,8 +129,8 @@ export default function FloodMap({
         </div>
       )}
 
-      {/* Layer Error Notice banner if a layer failed (FR-52, T3.8) */}
-      {Object.keys(layerErrors).length > 0 && (
+      {/* Layer Error Notice banner if a layer failed (FR-52, T3.8, Phase 6) */}
+      {Object.keys(combinedLayerErrors).length > 0 && (
         <div
           role="alert"
           aria-label="Layer Error Notice"
@@ -129,7 +138,7 @@ export default function FloodMap({
         >
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
           <span>
-            Overlay error: {Object.entries(layerErrors).map(([k, msg]) => `${k} layer (${msg})`).join(', ')}. Base map and other layers operational.
+            Overlay error: {Object.entries(combinedLayerErrors).map(([k, msg]) => `${k} layer (${msg})`).join(', ')}. Base map and other layers operational.
           </span>
         </div>
       )}

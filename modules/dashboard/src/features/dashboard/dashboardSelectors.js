@@ -83,8 +83,11 @@ export function selectSummaryStats(data, activeZones = null) {
   const exposedBuildingsIsPartial = zonesWithBldgs.length > 0 && bldgsMissingCount > 0;
 
   // 4. Blocked roads count (from blockedRoads layer)
-  const blockedRoadFeatures = data.blockedRoads?.features || [];
-  const blockedRoadsCount = blockedRoadFeatures.length;
+  // Per rules.md & Phase 6: Missing/failed layer data is never zero; returns null ("Not available").
+  const blockedRoadFeatures = Array.isArray(data.blockedRoads?.features)
+    ? data.blockedRoads.features
+    : null;
+  const blockedRoadsCount = blockedRoadFeatures !== null ? blockedRoadFeatures.length : null;
 
   return {
     floodedAreaKm2,

@@ -29,7 +29,13 @@ export default function StaleBanner({
   generatedAt,
   staleMinutes = null,
   onRefresh = null,
+  dataMode = 'live',
 }) {
+  // Suppress stale warning while data_mode is "demo" (the DEMO badge already warns the operator)
+  if (dataMode === 'demo') {
+    return null;
+  }
+
   const stale = isDataStale(generatedAt, staleMinutes);
 
   if (!stale) return null;
