@@ -164,9 +164,11 @@ export function adaptZones(rawZonesPayload) {
       reasons,
       geometry,
       hasGeometry,
-      provenance: z.provenance || null,
-      confidence: normalizeNumber(z.confidence),
-      needsSurvey: Boolean(z.needs_survey),
+      provenance: z.provenance !== undefined ? z.provenance : null,
+      confidence: z.confidence !== undefined ? z.confidence : null,
+      rank_p10: z.rank_p10 !== undefined ? z.rank_p10 : null,
+      rank_p90: z.rank_p90 !== undefined ? z.rank_p90 : null,
+      needsSurvey: z.needs_survey === true,
       partialData,
     };
   });

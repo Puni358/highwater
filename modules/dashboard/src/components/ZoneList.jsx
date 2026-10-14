@@ -77,6 +77,14 @@ function ZoneListRow({
                 Partial data
               </span>
             )}
+            {zone.needsSurvey === true && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-medium text-purple-800 bg-purple-50 border border-purple-300 rounded shrink-0"
+                title="Ground reconnaissance survey needed"
+              >
+                Needs survey
+              </span>
+            )}
           </div>
           <div className="text-[11px] text-text-muted">
             ID: {zone.zoneId}

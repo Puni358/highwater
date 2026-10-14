@@ -113,6 +113,14 @@ export default function ZoneDetails({
                 Partial data
               </span>
             )}
+            {zone.needsSurvey === true && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-purple-800 bg-purple-50 border border-purple-300 rounded shrink-0"
+                title="Ground reconnaissance survey needed"
+              >
+                Needs survey
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-text-muted">
             Zone ID: <span className="font-mono">{zone.zoneId}</span>
@@ -187,6 +195,26 @@ export default function ZoneDetails({
             {exposedBldgsDisplay}
           </span>
         </div>
+
+        {/* Confidence (as supplied, no rescaling guesses) */}
+        {zone.confidence !== null && zone.confidence !== undefined && (
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Confidence</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {String(zone.confidence)}
+            </span>
+          </div>
+        )}
+
+        {/* Uncertainty Rank Range (P10 - P90) */}
+        {(zone.rank_p10 !== null && zone.rank_p10 !== undefined || zone.rank_p90 !== null && zone.rank_p90 !== undefined) && (
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Rank Range (P10 - P90)</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              P10: {zone.rank_p10 ?? 'N/A'} • P90: {zone.rank_p90 ?? 'N/A'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Operational Reasons (FR-21) */}

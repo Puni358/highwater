@@ -195,5 +195,66 @@ describe('dataAdapter', () => {
       expect(zones[3].riskScore).toBe(25);
       expect(zones[3].partialData).toBe(false);
     });
+
+    it('treats only boolean true as needsSurvey and passes confidence, provenance, rank_p10, rank_p90 through explicitly', () => {
+      const payload = {
+        schema_version: '1.0',
+        data_mode: 'demo',
+        zones: [
+          {
+            zone_id: 'z-strict-true',
+            risk_level: 'HIGH',
+            risk_score: 80,
+            needs_survey: true,
+            confidence: 0.942, // as supplied, no rescaling
+            provenance: 'observed',
+            rank_p10: 2,
+            rank_p90: 8,
+          },
+          {
+            zone_id: 'z-string-coercion',
+            risk_level: 'HIGH',
+            risk_score: 80,
+            needs_survey: 'true', // string must NOT coerce to true
+            confidence: 0.1, // low confidence must NOT derive needsSurvey
+          },
+          {
+            zone_id: 'z-number-coercion',
+            risk_level: 'HIGH',
+            risk_score: 80,
+            needs_survey: 1, // number 1 must NOT coerce to true
+          },
+          {
+            zone_id: 'z-missing-fields',
+            risk_level: 'LOW',
+            risk_score: 20,
+            // confidence, provenance, rank_p10, rank_p90, needs_survey omitted
+          },
+        ],
+      };
+
+      const { zones } = adaptZones(payload);
+
+      // z-strict-true
+      expect(zones[0].needsSurvey).toBe(true);
+      expect(zones[0].confidence).toBe(0.942); // exact pass-through, no rescaling
+      expect(zones[0].provenance).toBe('observed');
+      expect(zones[0].rank_p10).toBe(2);
+      expect(zones[0].rank_p90).toBe(8);
+
+      // z-string-coercion
+      expect(zones[1].needsSurvey).toBe(false);
+      expect(zones[1].confidence).toBe(0.1);
+
+      // z-number-coercion
+      expect(zones[2].needsSurvey).toBe(false);
+
+      // z-missing-fields: missing values are null, not defaulted or inferred
+      expect(zones[3].needsSurvey).toBe(false);
+      expect(zones[3].confidence).toBeNull();
+      expect(zones[3].provenance).toBeNull();
+      expect(zones[3].rank_p10).toBeNull();
+      expect(zones[3].rank_p90).toBeNull();
+    });
   });
 });
