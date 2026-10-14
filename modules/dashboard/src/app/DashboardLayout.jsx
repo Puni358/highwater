@@ -249,7 +249,7 @@ export default function DashboardLayout({
                 </div>
 
                 {/* Live Leaflet Map Container */}
-                <div className="flex-1 relative w-full h-full min-h-0">
+                <div className="flex-1 relative w-full h-full min-h-0 flex flex-col">
                   <FloodMap
                     floodGeoJSON={data?.floodExtent}
                     riskZones={allZones}

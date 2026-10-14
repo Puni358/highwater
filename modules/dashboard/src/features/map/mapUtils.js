@@ -102,6 +102,14 @@ export function validateFeatureCollection(featureCollection) {
         warnings.push(`Feature ${id} skipped: unclosed or invalid polygon ring`);
         continue;
       }
+    } else if (geom.type === 'MultiPolygon') {
+      const poly = geom.coordinates[0];
+      const ring = Array.isArray(poly) ? poly[0] : null;
+      if (!isValidPolygonRing(ring)) {
+        droppedCount += 1;
+        warnings.push(`Feature ${id} skipped: unclosed or invalid polygon ring`);
+        continue;
+      }
     } else if (geom.type === 'LineString') {
       const coords = geom.coordinates;
       if (!Array.isArray(coords) || coords.length < 2 || !coords.every(([lng, lat]) => isValidCoordinate(lng, lat))) {
