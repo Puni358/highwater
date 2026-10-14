@@ -52,6 +52,7 @@ export function useDashboardData(options) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
   const inFlightRef = useRef(false);
 
   const dataSource = options?.dataSource;
@@ -81,10 +82,13 @@ export function useDashboardData(options) {
         // Ignore localStorage quota or access errors
       }
 
+      const now = new Date();
+      setLastRefreshedAt(now.toISOString());
       const normalized = adaptDashboardData(raw);
       // Fresh fetch: ensure cached banner is cleared and not shown alongside live data
       normalized.metadata.isFromCache = false;
       normalized.metadata.cachedAt = null;
+      normalized.metadata.lastRefreshedAt = now.toISOString();
 
       setData(normalized);
       setError(null);
@@ -129,5 +133,6 @@ export function useDashboardData(options) {
     loading,
     error,
     refresh: loadData,
+    lastRefreshedAt,
   };
 }

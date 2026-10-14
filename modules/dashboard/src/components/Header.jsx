@@ -13,6 +13,7 @@ export default function Header({
   source = null,
   onRefresh,
   loading = false,
+  lastRefreshedAt = null,
 }) {
   const isDernau =
     dataMode === 'demo' &&
@@ -32,6 +33,21 @@ export default function Header({
       return ts;
     }
   };
+
+  const formatHHMM = (ts) => {
+    if (!ts) return null;
+    try {
+      const date = new Date(ts);
+      if (isNaN(date.getTime())) return null;
+      const h = String(date.getHours()).padStart(2, '0');
+      const m = String(date.getMinutes()).padStart(2, '0');
+      return `${h}:${m}`;
+    } catch {
+      return null;
+    }
+  };
+
+  const lastRefreshedTime = formatHHMM(lastRefreshedAt);
 
   return (
     <header className="h-14 bg-navy-900 text-white px-4 md:px-6 flex items-center justify-between border-b border-navy-700 shadow-sm shrink-0">
@@ -56,9 +72,18 @@ export default function Header({
         </div>
         <span className="hidden md:inline text-slate-600">•</span>
         <div className="flex items-center space-x-1.5 text-slate-300">
-          <span className="font-semibold text-white">Updated:</span>
+          <span className="font-semibold text-white">Data generated:</span>
           <span>{formatTimestamp(timestamp)}</span>
         </div>
+        {lastRefreshedTime && (
+          <>
+            <span className="hidden lg:inline text-slate-600">•</span>
+            <div className="flex items-center space-x-1.5 text-slate-300">
+              <span className="font-semibold text-white">Last refreshed:</span>
+              <span>{lastRefreshedTime}</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Right: Mode Badge & Refresh Action */}

@@ -39,6 +39,7 @@ export default function DashboardLayout({
   loading = false,
   error = null,
   onRefresh,
+  lastRefreshedAt = null,
 }) {
   // 1. Single source of truth for selection and layer visibility (architecture.md section 4)
   const [selectedZoneId, setSelectedZoneId] = useState(null);
@@ -125,6 +126,7 @@ export default function DashboardLayout({
         source={metadata.source}
         onRefresh={onRefresh}
         loading={loading}
+        lastRefreshedAt={lastRefreshedAt || metadata.lastRefreshedAt}
       />
 
       {/* Main Content Area */}

@@ -8,7 +8,7 @@ import { useDashboardData } from '../hooks/useDashboardData.js';
  * Wires useDashboardData hook to DashboardLayout and renders LoadingState on initial fetch.
  */
 export default function App() {
-  const { data, loading, error, refresh } = useDashboardData();
+  const { data, loading, error, refresh, lastRefreshedAt } = useDashboardData();
 
   if (loading && !data) {
     return <LoadingState message="Loading flood response data…" />;
@@ -20,6 +20,7 @@ export default function App() {
       loading={loading}
       error={error}
       onRefresh={refresh}
+      lastRefreshedAt={lastRefreshedAt}
     />
   );
 }

@@ -23,12 +23,37 @@ describe('Header component', () => {
     expect(handleRefresh).toHaveBeenCalledTimes(1);
   });
 
-  it('disables refresh button when loading is true', () => {
+  it('disables refresh button and displays spinning icon when loading is true', () => {
     const handleRefresh = vi.fn();
-    render(<Header onRefresh={handleRefresh} loading={true} />);
+    const { rerender } = render(<Header onRefresh={handleRefresh} loading={true} />);
     const refreshBtn = screen.getByRole('button', { name: /refresh/i });
     expect(refreshBtn).toBeDisabled();
+    const icon = refreshBtn.querySelector('svg');
+    expect(icon).toHaveClass('animate-spin');
+
     fireEvent.click(refreshBtn);
     expect(handleRefresh).not.toHaveBeenCalled();
+
+    // Re-enables afterwards when loading is false
+    rerender(<Header onRefresh={handleRefresh} loading={false} />);
+    expect(refreshBtn).not.toBeDisabled();
+    expect(icon).not.toHaveClass('animate-spin');
+  });
+
+  it('renders distinct "Data generated" and "Last refreshed" timestamps', () => {
+    render(
+      <Header
+        timestamp="2026-10-14T10:00:00Z"
+        lastRefreshedAt="2026-10-14T15:45:00Z"
+      />
+    );
+
+    expect(screen.getByText('Data generated:')).toBeInTheDocument();
+    expect(screen.getByText('Last refreshed:')).toBeInTheDocument();
+
+    const d = new Date('2026-10-14T15:45:00Z');
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    expect(screen.getByText(`${h}:${m}`)).toBeInTheDocument();
   });
 });

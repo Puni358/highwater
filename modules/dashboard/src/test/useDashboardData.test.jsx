@@ -79,6 +79,8 @@ describe('useDashboardData hook (T4.2, test matrix #18)', () => {
     expect(result.current.data.zones[0].zoneId).toBe('zone-001');
     expect(result.current.data.metadata.isFromCache).toBe(false);
     expect(result.current.data.metadata.cachedAt).toBeNull();
+    expect(result.current.lastRefreshedAt).not.toBeNull();
+    expect(result.current.data.metadata.lastRefreshedAt).not.toBeNull();
     expect(result.current.error).toBeNull();
   });
 
