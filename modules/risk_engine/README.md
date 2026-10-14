@@ -15,10 +15,17 @@ reconnaissance and resource dispatch decisions.
 ## Quick start
 
 ```bash
-# From the modules/risk_engine/ directory:
+# From modules/risk_engine/:
 PYTHONPATH=src python -m risk_engine.cli \
     --zones ../flood_analysis/output/zones.json \
     --out output/
+
+# Export in dashboard format (writes output/zones.json):
+PYTHONPATH=src python -m risk_engine.cli \
+    --zones ../flood_analysis/output/zones.json \
+    --out output/ \
+    --format dashboard \
+    --data-mode historical
 
 # With a custom weights file:
 PYTHONPATH=src python -m risk_engine.cli \
@@ -27,68 +34,69 @@ PYTHONPATH=src python -m risk_engine.cli \
     --config config/weights.json
 ```
 
-Output is written to `output/risk_scores.json`.
+Output is written to:
+- `output/risk_scores.json` when `--format standard` (default)
+- `output/zones.json` when `--format dashboard`
 
-### Install / run tests
+### CLI Exit Codes
+- `0`: Success.
+- `1`: Input validation failure (`InputValidationError`).
+- `2`: Configuration or file not found error (`ConfigError` / `FileNotFoundError`).
+- `3`: Unexpected internal runtime failure.
+- `--debug`: Pass to output full stack traces on error.
 
-Module 3 has **no geospatial dependencies** — it uses only the Python standard
-library. The only testing dependency is `pytest`.
-
+### Install / Run Tests
 ```bash
-# Using your system Python (Python 3.11+ recommended, 3.13 tested):
-pip install pytest
-PYTHONPATH=src python -m pytest tests/ -v
+pip install -e .
+python -m pytest tests/ -v
 ```
-
-No virtual environment setup is strictly required.
 
 ---
 
-## Scoring formula
+## Scoring Formula & Weights
 
 ```
 raw_score = w_flood_pct     * min(flooded_percent  / FLOOD_PCT_MAX,  1.0)
           + w_exposure      * min(exposed_buildings / EXPOSED_MAX,    1.0)
           + w_isolation     * isolation_score[accessibility]
           + w_flood_area    * min(flooded_area_m2   / FLOOD_AREA_MAX, 1.0)
+          + w_exp_frac      * min(exposed_buildings / total_buildings, 1.0)
 
 score_0_100 = round(raw_score * 100, 1)
 ```
 
-### Default weights (`config/weights.json`)
+### Default Weights (`config/weights.json`)
 
-| Component           | Weight | Rationale |
-|---------------------|--------|-----------|
-| `flood_percent`     | 0.35   | Fraction of the zone's area under derived flood extent |
-| `exposure`          | 0.40   | Human-labelled buildings with `flooded == "yes"` — the strongest proxy for direct impact |
-| `isolation`         | 0.15   | Difficulty of reaching the zone (road flood share), does NOT imply routes are safe |
-| `flood_area_density`| 0.10   | Absolute flooded area; distinguishes large vs. small zones at similar percentages |
+| Component           | Weight | Description |
+|---------------------|--------|-------------|
+| `flood_percent`     | 0.35   | Estimated percentage of zone area flooded |
+| `exposure`          | 0.40   | Number of buildings tagged as flooded |
+| `isolation`         | 0.15   | Road accessibility status proxy |
+| `flood_area_density`| 0.10   | Absolute flooded area in m² |
+| `exposure_fraction` | 0.00   | Optional ratio of exposed to total buildings (defaults to 0.0) |
 
-Weights sum to 1.0. **Edit `config/weights.json`** to change them without
-touching source code.
+*Caveat*: `flood_percent` and `flood_area_density` both measure flood extent (relative saturation vs. absolute inundation scale). Both components derive from the same flood extent labels.
 
-### Normalisation ceilings (default)
+### Normalisation Ceilings (Default)
 
-| Field              | Ceiling |
-|--------------------|---------|
-| `flooded_percent`  | 30.0 %  |
-| `exposed_buildings`| 75      |
-| `flooded_area_m2`  | 15 000 m² |
+| Field               | Ceiling    |
+|---------------------|------------|
+| `flooded_percent`   | 30.0 %     |
+| `exposed_buildings` | 75         |
+| `flooded_area_m2`   | 15 000 m²  |
 
-Values exceeding the ceiling are clamped to 1.0 (score contribution stays at maximum).
+### Isolation Scores
 
-### Isolation scores
+| `accessibility` | Component Value |
+|-----------------|-----------------|
+| `ACCESSIBLE`    | 0.0             |
+| `PARTIAL`       | 0.5             |
+| `BLOCKED`       | 1.0             |
+| `UNKNOWN`       | 0.5             |
 
-| `accessibility` | Isolation component |
-|-----------------|---------------------|
-| `ACCESSIBLE`    | 0.0 |
-| `PARTIAL`       | 0.5 |
-| `BLOCKED`       | 1.0 |
-| `UNKNOWN`       | 0.3 (intermediate penalty; flagged with a warning) |
+### Priority Thresholds
 
-### Priority thresholds (default)
-
-| Priority   | Score range |
+| Priority   | Score Range |
 |------------|-------------|
 | `CRITICAL` | ≥ 70        |
 | `HIGH`     | ≥ 45        |
@@ -97,108 +105,84 @@ Values exceeding the ceiling are clamped to 1.0 (score contribution stays at max
 
 ---
 
-## Input contract (Module 2)
+## Configuration Validation Rules
 
-Reads `zones.json` produced by `modules/flood_analysis/`. Required contract
-fields (from the Module 2 team contract):
-
-| Field               | Type   | Notes |
-|---------------------|--------|-------|
-| `zone_id`           | string | Unique zone identifier |
-| `flooded_percent`   | float  | 0–100; clamped if outside range |
-| `exposed_buildings` | int    | Non-negative; defaults to 0 if missing |
-| `accessibility`     | string | `ACCESSIBLE` / `PARTIAL` / `BLOCKED` / `UNKNOWN` |
-
-Additive fields consumed but not required:
-
-| Field                  | Type         | Handling if absent |
-|------------------------|--------------|-------------------|
-| `flooded_area_m2`      | float / null | `null` → 0.0 + warning |
-| `total_buildings`      | int          | Defaults to 0 |
-| `road_length_m`        | float        | Defaults to 0 |
-| `flooded_road_length_m`| float        | Defaults to 0 |
-| `centroid`             | [lon, lat]   | Passed through |
-| `bbox`                 | [W, S, E, N] | Passed through |
+Configuration is strictly validated before input data is loaded:
+1. Weights must contain the 4 base keys (`flood_percent`, `exposure`, `isolation`, `flood_area_density`) with optional `exposure_fraction`. No unexpected keys permitted.
+2. All weights must be non-negative finite numbers and sum to 1.0.
+3. Normalization ceilings must be positive finite numbers.
+4. Isolation scores must satisfy monotonic ordering: `ACCESSIBLE <= PARTIAL <= BLOCKED` and `UNKNOWN >= PARTIAL`.
+5. Thresholds must satisfy strict descending order: `CRITICAL > HIGH > MEDIUM > LOW >= 0`.
+6. Underscore-prefixed keys (`_comment`) are stripped from numeric scoring blocks and output.
 
 ---
 
-## Output schema (`output/risk_scores.json`)
+## Deterministic Ranking & Tie-Breaking
 
-```json
-{
-  "schema_version": "1.0",
-  "module": "risk_engine",
-  "disclaimer": "...",
-  "source_metadata": { ... },
-  "scoring_config": { "weights": {...}, "normalization_ceilings": {...}, "priority_thresholds": {...} },
-  "summary": {
-    "total_zones": 38,
-    "priority_counts": { "CRITICAL": 2, "HIGH": 8, "MEDIUM": 15, "LOW": 13 }
-  },
-  "data_quality_warnings": [
-    { "zone_id": "zone-018", "field": "accessibility", "issue": "..." }
-  ],
-  "ranked_zones": [
-    {
-      "rank": 1,
-      "zone_id": "zone-002",
-      "score": 72.4,
-      "priority": "CRITICAL",
-      "reasons": ["10.3% of zone area estimated as flooded", "52 of 104 buildings have a 'flooded' tag", "..."],
-      "warnings": [],
-      "score_components": { "flood_percent": 0.344, "exposure": 0.693, "isolation": 0.5, "flood_area_density": 0.618 },
-      "inputs": { "flooded_percent": 10.31, "exposed_buildings": 52, ... },
-      "geometry": { "centroid": [7.038, 50.513], "bbox": [...], "crs": "EPSG:4326" }
-    }
-  ]
-}
-```
+Zones are ordered deterministically using a 4-level hierarchy:
+1. Unrounded raw score descending
+2. Exposed buildings descending
+3. Flooded percentage descending
+4. Natural-sort `zone_id` ascending (`zone-2` precedes `zone-10`)
+
+Tied zones receive distinct sequential integer ranks (`1..N`).
 
 ---
 
-## Data-quality warnings
+## Output Contract & Dashboard Exporter
 
-The engine never silently converts missing or ambiguous data into zero risk.
-Warnings are emitted (but execution continues) for:
+### Standard Output Schema 1.1 (`risk_scores.json`)
+- `schema_version`: `"1.1"`
+- `generated_at`: ISO UTC timestamp
+- `source_metadata`: input schema version, input source, input CRS, `input_file_sha256`, `config_hash_sha256`
+- `scoring_config`: echoed `config_version: "1.0"`, weights, normalization ceilings, priority thresholds
+- `ranked_zones`: includes `rank`, `zone_id`, `score`, `priority`, `score_basis` (`full` or `partial`), `omitted_components`, `reasons`, `warnings`, `score_components`, `inputs`, `geometry`
 
-- `flooded_area_m2 == null` — treated as 0 m²
-- `accessibility == "UNKNOWN"` — intermediate isolation penalty applied
-- `flooded_percent` outside [0, 100] — clamped
-- `exposed_buildings < 0` — treated as 0
-- Unknown `accessibility` values — treated as `UNKNOWN`
-- High flood coverage with zero exposure — flagged in reasons
+### Dashboard Export (`zones.json`)
+When `--format dashboard` is specified, the CLI writes `zones.json` formatted per dashboard specifications:
+- `schema_version`: `"1.1"`
+- `data_mode`: from `--data-mode` (default `"historical"`)
+- `study_area`: dynamically resolved from input metadata (never a hardcoded fallback)
+- `score_scale`: `"0-100"`
+- `zones`: includes `zone_id`, `name`, `risk_level`, `risk_score` (1 dp, preserving 0.5 and 0.1), `flooded_percent`, `flooded_area_km2`, `exposed_buildings`, `total_buildings`, `accessibility` (mapped to `OPEN`, `LIMITED`, `BLOCKED`, `UNKNOWN`), `reasons`, and `geometry` as a closed 5-point GeoJSON Polygon ring built from bbox in `[lng, lat]` order.
 
----
-
-## Limitations
-
-- Scores are derived from a single flood event (Dernau, June 2021). They
-  are not generalisable to other events without re-running Module 2.
-- `flood_extent.geojson` (and thus `flooded_percent`) is **derived** from
-  labelled building/road footprints, not a measured water boundary.
-- Road isolation score does **not** imply any route is safe to travel.
-- Weights are provisional heuristics set by the Module 3 author. They have
-  not been calibrated against operational disaster-response data.
-- Only 38 zones from a 6×4 tile subset are processed; the AOI does not
-  cover the full Dernau flood extent.
+> **Note**: The dashboard adapter must accept `CRITICAL` risk level and `score_scale` before this file displays correctly on the dashboard (that update is Member 1's responsibility).
 
 ---
 
-## Files created
+## Missing Data & Partial Scoring
 
-```
-modules/risk_engine/
-├── README.md                          ← this file
-├── requirements.txt                   ← pytest only
-├── config/
-│   └── weights.json                   ← configurable weights & thresholds
-├── output/
-│   └── risk_scores.json               ← written by CLI (not committed)
-├── src/
-│   └── risk_engine/
-│       ├── __init__.py
-│       ├── scorer.py                  ← core scoring logic
-│       └── cli.py                     ← command-line entry point
-└── tests/
-    └── test_risk_engine.py            ← 35 pytest tests
-```
+The engine never silently converts missing or ambiguous data into zero risk:
+- **`flooded_area_m2` Null**:
+  - Scored as 0.0 with full scoring ONLY when `flooded_percent == 0` (matching Module 2 behavior when no flood extent exists in the tile).
+  - When `flooded_area_m2` is null/invalid while `flooded_percent > 0`, the engine omits `flood_area_density`, renormalizes remaining weights for that zone, flags `score_basis: "partial"`, and logs the omitted component.
+- **Negative Exposure**:
+  - Fails strictly with `InputValidationError` by default (`data_quality.on_negative_exposure = "error"`).
+  - Can be configured to warn and clamp to 0 with `on_negative_exposure = "warn_zero"`.
+- **`accessibility == "UNKNOWN"`**:
+  - Emits exactly one warning per zone and applies intermediate penalty `0.5`.
+
+---
+
+## Diagnostic Tools
+
+1. **Calibration Diagnostic** (`tools/calibrate.py`):
+   - Computes distribution (min, median, p90, p95, max) for raw inputs and scores.
+   - Evaluates ceiling utilization and warns if a ceiling is >25% above observed maximum or below p95.
+   - Warns on empty priority classes (`CRITICAL=0` in real dataset).
+   - Suggests empirical ceilings without modifying configuration files.
+
+2. **Sensitivity Analysis** (`tools/sensitivity.py`):
+   - Perturbs scoring weights by -20%, -10%, +10%, +20% (with weight renormalization).
+   - Perturbs isolation scores and priority thresholds by ±10%.
+   - Computes Kendall's tau rank correlation against baseline, top-5 overlap, and priority change counts.
+   - Outputs table sorted by most destabilizing parameter.
+
+---
+
+## Known Limitations
+
+- **Single Flood Event**: Derived and calibrated on SpaceNet 8 ground truth labels from Dernau (Ahr valley, June 2021). Not validated against other events.
+- **Uncalibrated Thresholds**: Heuristic boundaries (70/45/20) have not been calibrated against operational disaster-response casualty or dispatch data.
+- **Correlated Inputs**: `flooded_percent` and `flooded_area_density` both reflect flood extent and share common error modes from the underlying segmentation.
+- **Absolute Exposure Counts**: Building counts do not account for building type, floor area, or population density.
