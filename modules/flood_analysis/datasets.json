@@ -15,6 +15,13 @@
       "status": "ready"
     },
     {
+      "key": "earthquake",
+      "label": "Kahramanmaraş, Turkey (Earthquake M7.8)",
+      "base": "../output_eq/",
+      "raw_source": "raw_eq",
+      "status": "ready"
+    },
+    {
       "key": "custom_1791982321324",
       "label": "Custom area (10/14/2026, 6:22:01 PM)",
       "base": "../output_custom_1791982321324/",
