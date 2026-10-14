@@ -99,10 +99,14 @@
 </div>
 <div id="statcard">Loading zone stats…</div>
 <div id="custom-area-panel">
-  <h4>Custom area</h4>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+    <h4 style="margin:0;">Custom area</h4>
+    <span id="custom-mode-badge" style="font-size:11px; padding:2px 7px; border-radius:10px; background:#f1f5f9; color:#64748b; font-weight:600; display:inline-block;">📋 Copy command</span>
+  </div>
   <div id="custom-area-summary">Drag a box on the map to select tiles.</div>
   <label><input type="checkbox" id="custom-area-ai-toggle" checked> Include AI detection</label>
   <div>
+    <button id="custom-area-run-now" style="display:none; background:#16a34a; border-color:#16a34a;" disabled>Run Now</button>
     <button id="custom-area-generate" disabled>Generate Command</button>
     <button class="secondary" id="custom-area-cancel">Cancel</button>
   </div>
@@ -359,9 +363,8 @@ function loadDataset(datasetKey) {
   // --- AI Predicted layer (experimental) — built from ai_validation_summary.json per_tile bboxes ---
   // Tile bbox is the bounding box of that tile's own labelled building/road features
   // (same source geometry as ground truth), not invented coordinates.
-  // Not guaranteed to exist for every dataset — aiValidation is null if the fetch above
-  // 404'd or failed, so the whole layer/checkbox is skipped rather than showing another
-  // dataset's stale AI data or erroring on a missing file.
+  // When AI validation summary is missing, empty, or all-failed (zero successfully scored tiles / accuracy null),
+  // ground truth continues to display normally and the AI Predicted control shows as unavailable.
   let aiPredictedLayer = null;
   const overlays = {
     'Flood extent (derived)': floodExtentLayer,
@@ -370,7 +373,17 @@ function loadDataset(datasetKey) {
     'Buildings': buildingsLayer,
     'Safe Route Mode': safeRouteToggleLayer
   };
-  if (aiValidation) {
+
+  const hasValidAi = Boolean(
+    aiValidation &&
+    aiValidation.accuracy !== null &&
+    aiValidation.accuracy !== undefined &&
+    ((aiValidation.confident_tiles_scored > 0) || (aiValidation.tiles_compared > 0)) &&
+    aiValidation.per_tile &&
+    Object.keys(aiValidation.per_tile).length > 0
+  );
+
+  if (hasValidAi) {
     document.getElementById('ai-legend-section').style.display = '';
     const aiFeatures = [];
     for (const [tileId, t] of Object.entries(aiValidation.per_tile || {})) {
@@ -409,15 +422,40 @@ function loadDataset(datasetKey) {
         layer.bindPopup(html);
       }
     }); // AI layer OFF by default
-    const aiAccPct = Math.round(aiValidation.confident_accuracy * 1000) / 10;
-    const aiStatHtml = `AI Predicted (experimental)<span id="ai-stat-line">${aiAccPct}% accurate on ${aiValidation.confident_tiles_scored} confidently-assessed tiles (${aiValidation.uncertain_tile_count} uncertain)</span>`;
+    const acc = typeof aiValidation.confident_accuracy === 'number' ? aiValidation.confident_accuracy : aiValidation.accuracy;
+    const aiAccPct = Math.round(acc * 1000) / 10;
+    const aiStatHtml = `AI Predicted (experimental)<span id="ai-stat-line">${aiAccPct}% accurate on ${aiValidation.confident_tiles_scored || 0} confidently-assessed tiles (${aiValidation.uncertain_tile_count || 0} uncertain)</span>`;
     overlays[aiStatHtml] = aiPredictedLayer;
+  } else {
+    document.getElementById('ai-legend-section').style.display = 'none';
+    const aiUnavailableLayer = L.layerGroup();
+    overlays['AI Predicted <span id="ai-stat-line" style="color:#64748b;">(analysis unavailable for this area)</span>'] = aiUnavailableLayer;
   }
 
   // --- Layer control (base layers + overlays together) ---
   const layerControl = L.control.layers(baseLayers, overlays, { collapsed: false, position: 'topright' }).addTo(map);
   currentLayerControl = layerControl;
   currentOverlayLayers = [floodExtentLayer, zonesLayer, roadsLayer, buildingsLayer, safeRouteToggleLayer, aiPredictedLayer].filter(Boolean);
+
+  function syncUnavailableAiCheckbox() {
+    document.querySelectorAll('.leaflet-control-layers-overlays label').forEach(label => {
+      if (label.innerHTML.includes('analysis unavailable for this area')) {
+        const input = label.querySelector('input');
+        if (input) {
+          input.disabled = true;
+          input.style.cursor = 'not-allowed';
+        }
+        label.style.cursor = 'not-allowed';
+        label.style.opacity = '0.7';
+      }
+    });
+  }
+  const origLayerControlUpdate = layerControl._update.bind(layerControl);
+  layerControl._update = function() {
+    origLayerControlUpdate();
+    syncUnavailableAiCheckbox();
+  };
+  syncUnavailableAiCheckbox();
 
   // Auto-dim ground-truth Zones while AI Predicted is active, so AI tiles visually pop.
   // Only touches opacity — never toggles Zones on/off itself.
@@ -512,7 +550,7 @@ function clearActivePolls() {
 
 async function refreshDatasetDropdown() {
   try {
-    const manifest = await fetch('../datasets.json').then(r => r.json());
+    const manifest = await fetch('../datasets.json?t=' + Date.now()).then(r => r.json());
     const select = document.getElementById('dataset-select');
     const existingKeys = new Set(Array.from(select.options).map(o => o.value));
     manifest.datasets.forEach(entry => {
@@ -582,17 +620,59 @@ const drawBtn = document.getElementById('draw-btn');
 const panel = document.getElementById('custom-area-panel');
 const summaryEl = document.getElementById('custom-area-summary');
 const generateBtn = document.getElementById('custom-area-generate');
+const runNowBtn = document.getElementById('custom-area-run-now');
 const cancelBtn = document.getElementById('custom-area-cancel');
 const aiToggle = document.getElementById('custom-area-ai-toggle');
 const cmdBox = document.getElementById('custom-cmd-box');
 const copyBtn = document.getElementById('custom-area-copy');
 const pollStatusEl = document.getElementById('custom-poll-status');
+const modeBadge = document.getElementById('custom-mode-badge');
+
+const BACKEND_URL = 'http://localhost:8001';
+let backendAvailable = false;
+
+async function checkBackendHealth() {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1500);
+    const res = await fetch(`${BACKEND_URL}/api/health`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      backendAvailable = true;
+      setBackendModeUI(true);
+      return true;
+    }
+  } catch (e) {
+    // Backend offline / timed out
+  }
+  backendAvailable = false;
+  setBackendModeUI(false);
+  return false;
+}
+
+function setBackendModeUI(isLive) {
+  if (!modeBadge || !runNowBtn || !generateBtn) return;
+  if (isLive) {
+    modeBadge.textContent = '⚡ Live mode';
+    modeBadge.style.background = '#dcfce7';
+    modeBadge.style.color = '#15803d';
+    runNowBtn.style.display = (selectedTiles.length >= MIN_TILES_FOR_COMMAND) ? 'inline-block' : 'none';
+    generateBtn.style.display = 'none';
+  } else {
+    modeBadge.textContent = '📋 Copy command';
+    modeBadge.style.background = '#f1f5f9';
+    modeBadge.style.color = '#64748b';
+    runNowBtn.style.display = 'none';
+    generateBtn.style.display = 'inline-block';
+  }
+}
 
 function resetCustomAreaUI() {
   if (drawRect) { map.removeLayer(drawRect); drawRect = null; }
   selectedTiles = [];
   summaryEl.textContent = 'Drag a box on the map to select tiles.';
   generateBtn.disabled = true;
+  if (runNowBtn) runNowBtn.disabled = true;
   cmdBox.style.display = 'none';
   copyBtn.style.display = 'none';
   pollStatusEl.textContent = '';
@@ -607,6 +687,7 @@ drawBtn.addEventListener('click', () => {
   if (drawModeActive) {
     resetCustomAreaUI();
     panel.style.display = 'block';
+    checkBackendHealth();
   } else {
     resetCustomAreaUI();
   }
@@ -663,7 +744,12 @@ map.on('mousemove', async (e) => {
   const inside = tilesInBox(tileIndex, bounds);
   const s = summarizeTiles(inside);
   summaryEl.innerHTML = summaryLine(s, '');
-  generateBtn.disabled = s.count < MIN_TILES_FOR_COMMAND; // updates live while dragging, not just on mouse-up
+  const disabled = s.count < MIN_TILES_FOR_COMMAND;
+  generateBtn.disabled = disabled;
+  if (runNowBtn) {
+    runNowBtn.disabled = disabled;
+    if (backendAvailable) runNowBtn.style.display = disabled ? 'none' : 'inline-block';
+  }
 });
 
 map.on('mouseup', async (e) => {
@@ -675,8 +761,126 @@ map.on('mouseup', async (e) => {
   selectedTiles = tilesInBox(tileIndex, bounds);
   const s = summarizeTiles(selectedTiles);
   summaryEl.innerHTML = summaryLine(s, 'Selected: ');
-  generateBtn.disabled = s.count < MIN_TILES_FOR_COMMAND;
+  const disabled = s.count < MIN_TILES_FOR_COMMAND;
+  generateBtn.disabled = disabled;
+  if (runNowBtn) {
+    runNowBtn.disabled = disabled;
+    if (backendAvailable) runNowBtn.style.display = disabled ? 'none' : 'inline-block';
+  }
 });
+
+runNowBtn.addEventListener('click', async () => {
+  if (selectedTiles.length < MIN_TILES_FOR_COMMAND) return;
+  const includeAi = aiToggle.checked;
+  const rawSource = (datasetManifest[currentDatasetKey] && datasetManifest[currentDatasetKey].raw_source) || currentDatasetKey;
+  const datasetKey = `custom_${Date.now()}`;
+  const tileIds = selectedTiles.map(([id]) => id);
+  const label = `Custom area (${new Date().toLocaleString()})`;
+
+  runNowBtn.style.display = 'none'; // Run option disappears for this selection
+  pollStatusEl.textContent = 'Submitting job to backend server...';
+  clearActivePolls();
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/api/run-custom-area`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: rawSource,
+        tiles: tileIds,
+        dataset_key: datasetKey,
+        label: label,
+        include_ai: includeAi
+      })
+    });
+    if (!resp.ok) {
+      const err = await resp.text();
+      pollStatusEl.innerHTML = `<span style="color:#dc2626;">Server error (${resp.status}): ${err}</span>`;
+      if (backendAvailable) runNowBtn.style.display = 'inline-block';
+      runNowBtn.disabled = false;
+      return;
+    }
+    const data = await resp.json();
+    const jobId = data.job_id;
+    pollStatusEl.textContent = 'Job submitted. Waiting for pipeline to start...';
+    startBackendJobPolling(jobId, datasetKey, label);
+  } catch (err) {
+    pollStatusEl.innerHTML = `<span style="color:#dc2626;">Network error: ${err.message}. Backend might be stopped.</span>`;
+    if (backendAvailable) runNowBtn.style.display = 'inline-block';
+    runNowBtn.disabled = false;
+    checkBackendHealth();
+  }
+});
+
+function startBackendJobPolling(jobId, datasetKey, label) {
+  clearActivePolls();
+  let pollCount = 0;
+  const MAX_POLLS = 300; // ~6 minutes at 1.2s poll
+  const pollTimer = setInterval(async () => {
+    pollCount++;
+    try {
+      const resp = await fetch(`${BACKEND_URL}/api/job-status/${jobId}`);
+      if (!resp.ok) {
+        if (resp.status === 404 && pollCount < 5) return;
+        pollStatusEl.innerHTML = `<span style="color:#dc2626;">Error checking job status (HTTP ${resp.status})</span>`;
+        return;
+      }
+      const data = await resp.json();
+
+      let stepLabel = '';
+      if (data.step === 'ground_truth') {
+        stepLabel = `Step 1/3: Ground truth generation (${data.tiles_done}/${data.tiles_total} tiles)`;
+      } else if (data.step === 'ai_detection') {
+        stepLabel = `Step 2/3: AI detection parallel pool (${data.tiles_done}/${data.tiles_total} tiles)`;
+      } else if (data.step === 'validation') {
+        stepLabel = `Step 3/3: Validating predictions (${data.tiles_done}/${data.tiles_total} tiles)`;
+      } else {
+        stepLabel = `Running (${data.step || 'in progress'})...`;
+      }
+
+      if (data.status === 'running') {
+        pollStatusEl.textContent = `⏳ ${stepLabel}...`;
+      } else if (data.status === 'error') {
+        clearInterval(pollTimer);
+        activePollTimers = activePollTimers.filter(id => id !== pollTimer);
+        pollStatusEl.innerHTML = `<span style="color:#dc2626;">Pipeline failed: ${data.error || 'Unknown error'}</span>`;
+        if (backendAvailable && runNowBtn) {
+          runNowBtn.style.display = 'inline-block';
+          runNowBtn.disabled = false;
+        }
+        return;
+      } else if (data.status === 'done') {
+        clearInterval(pollTimer);
+        activePollTimers = activePollTimers.filter(id => id !== pollTimer);
+        pollStatusEl.textContent = `✓ Pipeline complete! Loading "${label}"...`;
+
+        await refreshDatasetDropdown();
+        if (!DATASETS[datasetKey]) {
+          DATASETS[datasetKey] = { base: `../output_${datasetKey}/`, label: label };
+          datasetManifest[datasetKey] = { key: datasetKey, label: label, base: `../output_${datasetKey}/`, status: 'ready' };
+        }
+        datasetSelectEl.value = datasetKey;
+        datasetSelectValueBeforeOpen = datasetKey;
+        loadDataset(datasetKey);
+        pollStatusEl.textContent = `Done — "${label}" loaded.`;
+        if (runNowBtn) runNowBtn.style.display = 'none';
+        if (drawRect) { map.removeLayer(drawRect); drawRect = null; }
+        selectedTiles = [];
+        return;
+      }
+
+      if (pollCount >= MAX_POLLS) {
+        clearInterval(pollTimer);
+        activePollTimers = activePollTimers.filter(id => id !== pollTimer);
+        pollStatusEl.textContent = 'Timed out waiting for job completion.';
+        if (runNowBtn) runNowBtn.disabled = false;
+      }
+    } catch (err) {
+      console.warn('Status poll failed:', err);
+    }
+  }, 1200);
+  activePollTimers.push(pollTimer);
+}
 
 generateBtn.addEventListener('click', () => {
   if (selectedTiles.length < MIN_TILES_FOR_COMMAND) return; // safety net matching the live-disabled button state
@@ -819,7 +1023,29 @@ function pollAiPredictions(datasetKey, base, tileIds, pendingLayers) {
     if (done.size >= tileIds.length) {
       clearInterval(aiTimer);
       activePollTimers = activePollTimers.filter(id => id !== aiTimer);
-      pollStatusEl.textContent = `Done — ${done.size} of ${tileIds.length} tiles analyzed.`;
+      pollStatusEl.textContent = `AI analysis complete (${done.size}/${tileIds.length} tiles). Finalizing...`;
+
+      let finalizeAttempts = 0;
+      const finalizeTimer = setInterval(async () => {
+        finalizeAttempts++;
+        let isReady = false;
+        try {
+          const manifest = await fetch('../datasets.json').then(r => r.json());
+          const entry = manifest.datasets.find(d => d.key === datasetKey);
+          if (entry && entry.status === 'ready') isReady = true;
+        } catch (e) {}
+
+        if (isReady || finalizeAttempts >= 12) {
+          clearInterval(finalizeTimer);
+          activePollTimers = activePollTimers.filter(id => id !== finalizeTimer);
+          await refreshDatasetDropdown();
+          datasetSelectEl.value = datasetKey;
+          datasetSelectValueBeforeOpen = datasetKey;
+          loadDataset(datasetKey);
+          pollStatusEl.textContent = `Done — "${(datasetManifest[datasetKey] || {}).label || datasetKey}" loaded.`;
+        }
+      }, 1000);
+      activePollTimers.push(finalizeTimer);
       return;
     }
     if (attempts >= MAX_AI_ATTEMPTS) {
@@ -897,22 +1123,40 @@ async function addCoverageOutline(sourceKey, label) {
   const tileIndex = await getTileIndex(sourceKey);
   const bboxes = Object.values(tileIndex).map(t => t.bbox).filter(Boolean);
   if (bboxes.length === 0) return;
+  // Per-tile footprints, not one bounding rectangle: a single bbox over all tiles
+  // falsely implies full coverage inside it — real tile layouts have gaps (Louisiana
+  // especially: 3 separate swaths), so a box-drag inside a gap honestly finds 0
+  // buildings even though the outline said "covered". Drawing every tile's own real
+  // bbox makes the actual coverage (and its gaps) visible at a glance.
+  bboxes.forEach(([minx, miny, maxx, maxy]) => {
+    L.rectangle([[miny, minx], [maxy, maxx]], {
+      pane: 'coveragePane', interactive: false,
+      color: '#64748b', weight: 1, dashArray: '4,4', fill: false
+    }).addTo(map);
+  });
   const minx = Math.min(...bboxes.map(b => b[0]));
   const miny = Math.min(...bboxes.map(b => b[1]));
   const maxx = Math.max(...bboxes.map(b => b[2]));
   const maxy = Math.max(...bboxes.map(b => b[3]));
-  const rect = L.rectangle([[miny, minx], [maxy, maxx]], {
-    pane: 'coveragePane', interactive: false,
-    color: '#64748b', weight: 1.5, dashArray: '6,6', fill: false
-  }).addTo(map);
-  rect.bindTooltip(`SpaceNet 8 coverage: ${label}`, {
+  L.marker([(miny + maxy) / 2, (minx + maxx) / 2], {
+    pane: 'coveragePane', interactive: false, opacity: 0,
+    icon: L.divIcon({ className: '', iconSize: [0, 0] })
+  }).bindTooltip(`SpaceNet 8 coverage: ${label}`, {
     permanent: true, direction: 'center', className: 'coverage-label', interactive: false
-  }).openTooltip();
+  }).addTo(map).openTooltip();
 }
 addCoverageOutline('germany', 'Germany');
 addCoverageOutline('louisiana', 'Louisiana');
 
-refreshDatasetDropdown().then(() => loadDataset('germany'));
+const urlParams = new URLSearchParams(window.location.search);
+const initialKey = urlParams.get('dataset');
+refreshDatasetDropdown().then(() => {
+  const keyToLoad = (initialKey && DATASETS[initialKey]) ? initialKey : 'germany';
+  datasetSelectEl.value = keyToLoad;
+  datasetSelectValueBeforeOpen = keyToLoad;
+  loadDataset(keyToLoad);
+});
+checkBackendHealth();
 
 </script>
 </body>
