@@ -9,6 +9,7 @@ import ZoneList from '../components/ZoneList.jsx';
 import RiskDistributionChart from '../components/RiskDistributionChart.jsx';
 import ImpactChart from '../components/ImpactChart.jsx';
 import StaleBanner from '../components/StaleBanner.jsx';
+import CachedBanner from '../components/CachedBanner.jsx';
 import ErrorState from '../components/states/ErrorState.jsx';
 import EmptyState from '../components/states/EmptyState.jsx';
 import {
@@ -127,12 +128,21 @@ export default function DashboardLayout({
 
       {/* Main Content Area */}
       <main className="flex-1 p-3 sm:p-4 lg:p-6 max-w-7xl w-full mx-auto space-y-4 lg:space-y-6">
-        {/* Stale data banner (T5.2, FR-51) - suppressed when dataMode is "demo" */}
-        <StaleBanner
-          generatedAt={metadata.generatedAt}
-          dataMode={metadata.dataMode || 'demo'}
+        {/* Cached snapshot banner when network fetch failed and offline cache is used */}
+        <CachedBanner
+          isFromCache={metadata.isFromCache}
+          cachedAt={metadata.cachedAt}
           onRefresh={onRefresh}
         />
+
+        {/* Stale data banner (T5.2, FR-51) - suppressed when dataMode is "demo" or when cached banner is shown */}
+        {!metadata.isFromCache && (
+          <StaleBanner
+            generatedAt={metadata.generatedAt}
+            dataMode={metadata.dataMode || 'demo'}
+            onRefresh={onRefresh}
+          />
+        )}
 
         {/* Error notification banner if applicable (FR-50) */}
         {error && (
