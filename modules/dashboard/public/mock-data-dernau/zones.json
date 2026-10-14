@@ -17,6 +17,11 @@
       "exposed_buildings": 1,
       "total_buildings": 12,
       "accessibility": "LIMITED",
+      "needs_survey": true,
+      "provenance": "SpaceNet 8 / Maxar ground truth (test fixture)",
+      "confidence": 0.92,
+      "rank_p10": 25,
+      "rank_p90": 32,
       "reasons": [
         "1 of 12 buildings flood-labelled",
         "1.24% area inundated",
@@ -60,6 +65,11 @@
       "exposed_buildings": 52,
       "total_buildings": 104,
       "accessibility": "LIMITED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "52 of 104 buildings flood-labelled",
         "10.31% area inundated",
@@ -103,6 +113,11 @@
       "exposed_buildings": 0,
       "total_buildings": 3,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 3 buildings flood-labelled"
       ],
@@ -144,6 +159,11 @@
       "exposed_buildings": 1,
       "total_buildings": 3,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "1 of 3 buildings flood-labelled"
       ],
@@ -185,6 +205,11 @@
       "exposed_buildings": null,
       "total_buildings": 0,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "Designated test cases, not measured data: missing exposed_buildings numeric field",
         "Risk score not assessed due to missing numeric input"
@@ -227,6 +252,11 @@
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "LIMITED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0.76% area inundated",
         "61.2m of 104.9m road flooded"
@@ -269,6 +299,11 @@
       "exposed_buildings": 0,
       "total_buildings": 5,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 5 buildings flood-labelled"
       ],
@@ -310,6 +345,11 @@
       "exposed_buildings": 23,
       "total_buildings": 46,
       "accessibility": "LIMITED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "23 of 46 buildings flood-labelled",
         "9.5% area inundated",
@@ -353,6 +393,11 @@
       "exposed_buildings": 3,
       "total_buildings": 36,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "3 of 36 buildings flood-labelled",
         "0.57% area inundated"
@@ -369,6 +414,11 @@
       "exposed_buildings": 20,
       "total_buildings": 21,
       "accessibility": "LIMITED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "20 of 21 buildings flood-labelled",
         "7.5% area inundated",
@@ -412,6 +462,11 @@
       "exposed_buildings": 0,
       "total_buildings": 1,
       "accessibility": "BLOCKED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 1 buildings flood-labelled",
         "0.59% area inundated",
@@ -455,6 +510,11 @@
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "BLOCKED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "2% area inundated",
         "180.1m of 180.1m road flooded"
@@ -497,6 +557,11 @@
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "No flood coverage detected"
       ],
@@ -538,6 +603,11 @@
       "exposed_buildings": 6,
       "total_buildings": 32,
       "accessibility": "LIMITED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "6 of 32 buildings flood-labelled",
         "4.54% area inundated",
@@ -581,6 +651,11 @@
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "No flood coverage detected"
       ],
@@ -622,6 +697,11 @@
       "exposed_buildings": 0,
       "total_buildings": 75,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 75 buildings flood-labelled"
       ],
@@ -663,6 +743,11 @@
       "exposed_buildings": 21,
       "total_buildings": 59,
       "accessibility": "LIMITED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "21 of 59 buildings flood-labelled",
         "5.59% area inundated",
@@ -706,6 +791,11 @@
       "exposed_buildings": 0,
       "total_buildings": 1,
       "accessibility": "UNKNOWN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "Designated test cases, not measured data: UNKNOWN risk level",
         "No road data in zone"
@@ -748,6 +838,11 @@
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "No flood coverage detected"
       ],
@@ -789,6 +884,11 @@
       "exposed_buildings": 0,
       "total_buildings": 1,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 1 buildings flood-labelled",
         "1.05% area inundated",
@@ -832,6 +932,11 @@
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "BLOCKED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "1.29% area inundated",
         "112.4m of 112.4m road flooded"
@@ -874,6 +979,11 @@
       "exposed_buildings": 0,
       "total_buildings": 59,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 59 buildings flood-labelled"
       ],
@@ -915,6 +1025,11 @@
       "exposed_buildings": 6,
       "total_buildings": 111,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "6 of 111 buildings flood-labelled",
         "1.92% area inundated",
@@ -958,6 +1073,11 @@
       "exposed_buildings": 2,
       "total_buildings": 2,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "2 of 2 buildings flood-labelled",
         "0.24% area inundated",
@@ -1001,6 +1121,11 @@
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "No flood coverage detected"
       ],
@@ -1042,6 +1167,11 @@
       "exposed_buildings": 0,
       "total_buildings": 17,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 17 buildings flood-labelled",
         "0.08% area inundated",
@@ -1085,6 +1215,11 @@
       "exposed_buildings": 0,
       "total_buildings": 2,
       "accessibility": "BLOCKED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 2 buildings flood-labelled",
         "1.42% area inundated",
@@ -1128,6 +1263,11 @@
       "exposed_buildings": 0,
       "total_buildings": 35,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 35 buildings flood-labelled"
       ],
@@ -1169,6 +1309,11 @@
       "exposed_buildings": 0,
       "total_buildings": 33,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 33 buildings flood-labelled"
       ],
@@ -1210,6 +1355,11 @@
       "exposed_buildings": 0,
       "total_buildings": 18,
       "accessibility": "LIMITED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 18 buildings flood-labelled",
         "1.9% area inundated",
@@ -1253,6 +1403,11 @@
       "exposed_buildings": 13,
       "total_buildings": 17,
       "accessibility": "BLOCKED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "13 of 17 buildings flood-labelled",
         "10.54% area inundated",
@@ -1296,6 +1451,11 @@
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "No flood coverage detected"
       ],
@@ -1337,6 +1497,11 @@
       "exposed_buildings": 0,
       "total_buildings": 2,
       "accessibility": "UNKNOWN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 2 buildings flood-labelled"
       ],
@@ -1378,6 +1543,11 @@
       "exposed_buildings": 0,
       "total_buildings": 3,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "0 of 3 buildings flood-labelled"
       ],
@@ -1419,6 +1589,11 @@
       "exposed_buildings": 14,
       "total_buildings": 44,
       "accessibility": "LIMITED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "14 of 44 buildings flood-labelled",
         "4.42% area inundated",
@@ -1462,6 +1637,11 @@
       "exposed_buildings": 35,
       "total_buildings": 35,
       "accessibility": "BLOCKED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "35 of 35 buildings flood-labelled",
         "18.85% area inundated",
@@ -1505,6 +1685,11 @@
       "exposed_buildings": 2,
       "total_buildings": 25,
       "accessibility": "OPEN",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "2 of 25 buildings flood-labelled",
         "0.33% area inundated"
@@ -1547,6 +1732,11 @@
       "exposed_buildings": 25,
       "total_buildings": 25,
       "accessibility": "BLOCKED",
+      "needs_survey": false,
+      "provenance": null,
+      "confidence": null,
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
         "25 of 25 buildings flood-labelled",
         "16.87% area inundated",

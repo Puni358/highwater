@@ -166,6 +166,20 @@ function buildDernauDemo() {
       }
     }
 
+    let needs_survey = false;
+    let provenance = null;
+    let confidence = null;
+    let rank_p10 = null;
+    let rank_p90 = null;
+
+    if (z.zone_id === 'zone-001') {
+      needs_survey = true;
+      provenance = 'SpaceNet 8 / Maxar ground truth (test fixture)';
+      confidence = 0.92;
+      rank_p10 = 25;
+      rank_p90 = 32;
+    }
+
     return {
       zone_id: z.zone_id,
       name,
@@ -176,6 +190,11 @@ function buildDernauDemo() {
       exposed_buildings,
       total_buildings,
       accessibility,
+      needs_survey,
+      provenance,
+      confidence,
+      rank_p10,
+      rank_p90,
       reasons,
       geometry
     };
@@ -462,6 +481,8 @@ This directory contains a contract-perfect, fully deterministic demonstration da
    - \`zone-005\` has \`exposed_buildings: null\` (explicitly marked in reasons and documentation as "designated test cases, not measured data") to verify the UI displays "Not available" rather than falsely coercing missing data to 0. Real values for all other fields and zones remain untouched.
 3. **Zone with \`UNKNOWN\` risk level:**
    - \`zone-018\` has \`risk_level: "UNKNOWN"\` and \`risk_score: null\` (explicitly marked in reasons and documentation as "designated test cases, not measured data"; in raw data it contains no road segments, \`road_length_m === 0\`, accessibility \`UNKNOWN\`). Real values for all other fields and zones remain untouched.
+4. **Zone with survey flag and uncertainty bounds (\`needs_survey: true\`):**
+   - \`zone-001\` has \`needs_survey: true\`, \`provenance: "SpaceNet 8 / Maxar ground truth (test fixture)"\`, \`confidence: 0.92\`, \`rank_p10: 25\`, and \`rank_p90: 32\`. These are designated test fixture values, not measured data, included to verify aerial reconnaissance filtering and uncertainty pass-through in the UI.
 
 ## Dataset Statistics
 
