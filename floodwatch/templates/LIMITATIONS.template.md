@@ -1,6 +1,6 @@
 # FloodWatch System Limitations & Empirical Verification
 
-This document provides a factual record of known failure modes, dataset constraints, and empirical calibration results for FloodWatch. All numbers are drawn directly from [`docs/MEASURED.json`](MEASURED.json).
+This document provides a factual record of known failure modes, dataset constraints, and empirical calibration results for FloodWatch. All numbers are traced to measured data or an explicit allow-list (drawn directly from [`docs/MEASURED.json`](MEASURED.json)).
 
 ---
 
@@ -22,7 +22,7 @@ This document provides a factual record of known failure modes, dataset constrai
 Evaluated across all {{measured.dataset.total_tiles}} SpaceNet-8 Germany satellite tiles against rasterized human-annotated GeoJSON vector boundaries:
 * **Ground-Truth Geometry & Resolution:**
   * Coordinate latitude: $\approx {{measured.dataset.resolution.latitude_deg}}^\circ\text{N}$.
-  * GeoTIFF transform scale: $dx = dy = {{measured.dataset.resolution.geotiff_transform_deg_per_px}} \times 10^{-6}\text{ deg/px}$.
+  * GeoTIFF transform scale: $dx = dy \approx 4.6\times 10^{-6}\text{ deg/px}$ (${{measured.dataset.resolution.geotiff_transform_deg_per_px}}\text{ deg/px}$).
   * Ground resolution: Longitude $dx = {{measured.dataset.resolution.ground_resolution_lon_m_per_px}}\text{ m/px}$, Latitude $dy = {{measured.dataset.resolution.ground_resolution_lat_m_per_px}}\text{ m/px}$ (average ground resolution: ${{measured.dataset.resolution.ground_resolution_avg_m_per_px}}\text{ m/px}$).
   * Road buffer assumption: {{measured.dataset.resolution.road_buffer_radius_m}}-meter buffer radius; full {{measured.dataset.resolution.road_corridor_width_m}}-meter road corridor width $= \mathbf{ {{measured.dataset.resolution.road_corridor_width_px}} \text{ pixels} }$ (our heuristic assumption for road surface width, not an official competition standard).
 * **Ground-Truth Composition ({{measured.dataset.flooded_gt_tiles}} Flooded Germany Tiles at 2m Buffer):**
@@ -47,7 +47,9 @@ Evaluated across all {{measured.dataset.total_tiles}} SpaceNet-8 Germany satelli
 | **Tile-Level Flood ROC-AUC** | {{measured.dataset.accuracy_modes_2m.fast_768.roc_auc}} | {{measured.dataset.accuracy_modes_2m.accurate_512_sliding.roc_auc}} |
 | **Client Wall Time (Stress Test Median)** | **{{measured.benchmarks.warm_end_to_end_uncached_stage1.median_ms}} ms median** (P95: {{measured.benchmarks.warm_end_to_end_uncached_stage1.p95_ms}} ms) | **{{measured.benchmarks.stage3_accurate_client_wall_time.median_ms}} ms median** (P95: {{measured.benchmarks.stage3_accurate_client_wall_time.p95_ms}} ms) |
 
-*Key Empirical Insight:* Flooded roads constitute ${{measured.dataset.gt_composition_2m.road_pct}}\%$ of all ground-truth flooded pixels, yet the model achieves only ${{measured.dataset.accuracy_modes_2m.fast_768.road_recall_pct}}\%$ road recall in Fast Mode and ${{measured.dataset.accuracy_modes_2m.accurate_512_sliding.road_recall_pct}}\%$ in Accurate Mode. In contrast, building recall is substantially higher (${{measured.dataset.accuracy_modes_2m.fast_768.building_recall_pct}}\%$ Fast, jumping to ${{measured.dataset.accuracy_modes_2m.accurate_512_sliding.building_recall_pct}}\%$ in Accurate Mode). Consequently, the model functions primarily as a building and open inundation detector, largely missing narrow road flooding.
+*Calibration Re-measurement:* Accurate-mode false positive pixels decreased from 1,364,444 to {{measured.dataset.accuracy_modes_2m.accurate_512_sliding.fp}} (raising F1 from 27.82% to {{measured.dataset.accuracy_modes_2m.accurate_512_sliding.f1_pct:.2f}}%) due to calibration pipeline unification: replacing the separate benchmark sliding-window script with direct calls to production `analyze_tile` and unified metric UTM EPSG:32632 ground-truth rasterization.
+
+*Key Empirical Insight:* Flooded roads constitute ${{measured.dataset.gt_composition_2m.road_pct}}\%$ of all ground-truth flooded pixels, yet the model achieves only ${{measured.dataset.accuracy_modes_2m.fast_768.road_recall_pct}}\%$ road recall in Fast Mode and ${{measured.dataset.accuracy_modes_2m.accurate_512_sliding.road_recall_pct}}\%$ in Accurate Mode. In contrast, building recall is substantially higher: Accurate Mode raises building recall from ${{measured.dataset.accuracy_modes_2m.fast_768.building_recall_pct:.1f}}\%$ to ${{measured.dataset.accuracy_modes_2m.accurate_512_sliding.building_recall_pct:.1f}}\%$. Consequently, the model functions primarily as a building and open inundation detector, largely missing narrow road flooding.
 
 ---
 

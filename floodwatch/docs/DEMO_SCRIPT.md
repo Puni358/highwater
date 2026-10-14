@@ -96,7 +96,7 @@ This script provides an exact, factual, 2-minute walkthrough designed for live p
 
 ### Q1: "Why is your IoU only 11.42% in Fast Mode and 16.55% in Accurate Mode?"
 **Answer:**
-> *"SpaceNet-8 ground truth includes narrow roads buffered by 2 meters, which at 0.419 m/pixel average ground resolution corresponds to a 9.55-pixel corridor width. Roads constitute 45.37% of all ground-truth flooded pixels, yet the model achieves only 4.69% road recall in Fast Mode and 8.88% in Accurate Mode. In contrast, building recall is 21.27% in Fast Mode and jumps to 35.57% in Accurate Mode. Accurate Mode's 512px sliding window doubles building recall and recovers missed building flooding (such as on tile 0_23_62 where building recall jumps from 0.99% to 5.31% and net intrusion rises from +0.08% to +0.58%), raising overall pixel recall from 13.75% to 23.47% and IoU from 11.42% to 16.55%."*
+> *"SpaceNet-8 ground truth includes narrow roads buffered by 2 meters, which at 0.419 m/pixel average ground resolution corresponds to a 9.55-pixel corridor width. Roads constitute 45.37% of all ground-truth flooded pixels, yet the model achieves only 4.69% road recall in Fast Mode and 8.88% in Accurate Mode. In contrast, building recall is 21.27% in Fast Mode and jumps to 35.57% in Accurate Mode. Accurate Mode's 512px sliding window raises building recall from 21.3% to 35.6% and recovers missed building flooding (such as on tile 0_23_62 where building recall jumps from 0.99% to 5.31% and net intrusion rises from +0.08% to +0.58%), raising overall pixel recall from 13.75% to 23.47% and IoU from 11.42% to 16.55%."*
 
 ### Q2: "Did you evaluate on genuinely unseen flood disasters?"
 **Answer:**
