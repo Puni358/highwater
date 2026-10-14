@@ -146,8 +146,21 @@ def test_polygon_utm_area_vs_pixel_area(filename: str, mode: str):
     """
     Test 2:
     The polygon area (computed in UTM Zone 32N) agrees with mask_pixels x pixel area
-    within a stated tolerance (7.0% per-tile upper bound, allowing for 1m metric simplification).
-    Reports measured difference per tile.
+    within a stated tolerance (6.5% per-tile upper bound).
+
+    Root cause of the highest-diff tiles:
+    - 0_23_62 accurate (6.13%): tile has 27 small polygons, majority in the 24–142 px range
+      (~2.7–15.7 m²). SIMPLIFY_TOLERANCE_METERS=1.0 m is comparable to polygon width, so
+      individual polygon area shrinks 30–54%. Aggregate across all polygons sums to 6.13%.
+    - 0_20_66 accurate (5.77%): same cause — 17 small polygons (15–165 px), individual
+      polygon shrinkage 23–60% from simplification.
+    - Tiles with large contiguous flood extents (e.g., 0_41_58, 0_41_59) stay < 0.05%.
+
+    Measured per-tile maxima:
+      Fast mode max:     0_28_63 3.23%
+      Accurate mode max: 0_23_62 6.13%
+
+    Stated tolerance: <= 6.5% (>= 6% headroom above typical < 2% tiles; just above measured max).
     """
     filepath = os.path.join(EXPORTS_DIR, filename)
     with open(filepath, "r", encoding="utf-8") as f:
@@ -181,9 +194,11 @@ def test_polygon_utm_area_vs_pixel_area(filename: str, mode: str):
             "diff_pct": round(diff_pct, 4),
         }
 
-        # Stated tolerance: <= 7.0% (measured max was 6.13% on tile 0_23_62)
-        assert diff_pct <= 7.0, (
-            f"Tile {tile_id} area diff {diff_pct:.2f}% exceeds tolerance 7.0% "
+        # Stated tolerance: <= 6.5%
+        # High-diff tiles have many small polygons (10–165 px) where 1 m simplification
+        # removes a large fraction of area (individual polygon loss up to 60%).
+        assert diff_pct <= 6.5, (
+            f"Tile {tile_id} area diff {diff_pct:.2f}% exceeds tolerance 6.5% "
             f"(actual: {actual_utm_area:.1f} m2, expected: {expected_utm_area:.1f} m2)"
         )
 
