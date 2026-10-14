@@ -79,12 +79,14 @@ export default function FloodMap({
   onZoneSelect,
   droppedCount = 0,
   resetTrigger = 0,
+  tilesOffline: tilesOfflineProp = null,
   children, // For custom/injected test layers
 }) {
   const [internalReset, setInternalReset] = useState(0);
   const [layerErrors, setLayerErrors] = useState({});
-  const [tilesOffline, setTilesOffline] = useState(false);
+  const [internalTilesOffline, setInternalTilesOffline] = useState(false);
 
+  const isTilesOffline = tilesOfflineProp !== null ? tilesOfflineProp : internalTilesOffline;
   const activeReset = resetTrigger || internalReset;
 
   const tileUrl = import.meta.env.VITE_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -97,7 +99,7 @@ export default function FloodMap({
   return (
     <div className="relative w-full h-full min-h-[380px] flex-1 overflow-hidden font-sans">
       {/* Offline Tiles Warning Notice (Section 5 Non-functional requirements) */}
-      {tilesOffline && (
+      {isTilesOffline && (
         <div
           role="alert"
           className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-amber-100 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-card text-xs flex items-center space-x-2 shadow"

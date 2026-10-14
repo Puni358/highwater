@@ -70,19 +70,19 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
 
 ## Phase 5: Test and polish
 
-- [ ] **T5.1 (P0)** `LoadingState`, `EmptyState`, `ErrorState` (FR-50)
+- [x] **T5.1 (P0)** `LoadingState`, `EmptyState`, `ErrorState` (FR-50)
   AC: each demonstrable by editing the fixture or blocking the request; error has a working retry.
-- [ ] **T5.2 (P1)** Stale-data banner (FR-51)
+- [x] **T5.2 (P1)** Stale-data banner (FR-51)
   AC: appears when `generated_at` exceeds `VITE_STALE_MINUTES`.
-- [ ] **T5.3 (P0)** Malformed-data handling (FR-53)
+- [x] **T5.3 (P0)** Malformed-data handling (FR-53)
   AC: invalid GeoJSON produces a readable error; no blank page.
-- [ ] **T5.4 (P0)** Mobile layout and drawer
+- [x] **T5.4 (P0)** Mobile layout and drawer
   AC: no horizontal overflow at 360 px; drawer opens and closes; map resizes correctly.
-- [ ] **T5.5 (P0)** Accessibility pass
+- [x] **T5.5 (P0)** Accessibility pass
   AC: keyboard operation of toggles, list and filters; visible focus; risk never colour-only; AA contrast spot-check.
-- [ ] **T5.6 (P0)** Offline tile fallback
+- [x] **T5.6 (P0)** Offline tile fallback
   AC: with the network disabled, overlays still render over a neutral background and a notice is shown.
-- [ ] **T5.7 (P0)** README
+- [x] **T5.7 (P0)** README
   AC: setup, scripts, contracts, manual map checklist, screenshots (desktop and mobile), changelog.
 
 ## Phase 6: Integration
@@ -123,20 +123,20 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
 | 4 | Filter by HIGH | Only HIGH zones in list; charts follow documented rule | Unit | [x] |
 | 5 | Search by ID or name | List narrows correctly | Unit | [x] |
 | 6 | Sort by score | Order correct; null scores sort last | Unit | [x] |
-| 7 | No zones returned | Empty state; no fabricated risk | Component | [ ] |
+| 7 | No zones returned | Empty state; no fabricated risk | Component | [x] |
 | 8 | Missing risk score | "Not available" | Component | [x] |
 | 9 | Unknown risk category | Displayed as UNKNOWN, not LOW | Unit | [x] |
 | 10 | Zone without geometry | In list; not on map; no crash | Component | [x] |
-| 11 | Invalid flood GeoJSON | Readable error; app does not crash | Manual | [ ] |
+| 11 | Invalid flood GeoJSON | Readable error; app does not crash | Manual | [headless verified, manual pending] |
 | 12 | Swapped lat/lon | Warning; feature dropped or flagged | Unit | [x] |
 | 13 | Unclosed polygon ring | Feature skipped and counted | Unit | [x] |
 | 14 | Route unavailable | No line; clear message | Component | [x] |
 | 15 | All overlays off | Base map still usable | Manual | [headless verified, manual pending] |
 | 16 | Narrow mobile viewport | No horizontal overflow | Manual | [headless verified, manual pending] |
-| 17 | API request fails | Error visible; retry works | Component | [ ] |
+| 17 | API request fails | Error visible; retry works | Component | [x] |
 | 18 | Refresh clicked repeatedly | One in-flight request only | Unit | [x] |
-| 19 | Tiles unreachable | Fallback notice; overlays still render | Manual | [ ] |
-| 20 | Stale `generated_at` | Stale banner shown | Unit | [ ] |
+| 19 | Tiles unreachable | Fallback notice; overlays still render | Manual | [headless verified, manual pending] |
+| 20 | Stale `generated_at` | Stale banner shown | Unit | [x] |
 
 ## Final submission checklist
 
