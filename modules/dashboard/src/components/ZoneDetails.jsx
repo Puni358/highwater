@@ -53,6 +53,7 @@ export default function ZoneDetails({
   zone = null,
   timestamp = null,
   onClearSelection,
+  isTestFixture = false,
 }) {
   if (!zone) {
     return (
@@ -83,6 +84,14 @@ export default function ZoneDetails({
     zone.exposedBuildings === null ||
     zone.floodedAreaKm2 === null ||
     zone.floodedPercent === null
+  );
+
+  const isFixture = Boolean(
+    isTestFixture ||
+    zone.isTestFixture ||
+    zone.isFixture ||
+    (typeof zone.source === 'string' && zone.source.toLowerCase().includes('fixture')) ||
+    (Array.isArray(zone.reasons) && zone.reasons.some((r) => r.toLowerCase().includes('designated test case')))
   );
 
   const scoreDisplay = zone.riskScore !== null ? `${zone.riskScore} / 100` : 'Not assessed';
@@ -215,7 +224,14 @@ export default function ZoneDetails({
         {/* Confidence (as supplied, no rescaling guesses) */}
         {zone.confidence !== null && zone.confidence !== undefined && (
           <div className="p-2.5 rounded bg-surface border border-border/50">
-            <span className="text-[11px] text-text-muted block">Confidence</span>
+            <div className="flex items-center space-x-1">
+              <span className="text-[11px] text-text-muted">Confidence</span>
+              {isFixture && (
+                <span className="text-[10px] text-text-muted italic">
+                  (test fixture)
+                </span>
+              )}
+            </div>
             <span className="text-sm font-bold text-navy-900 mt-0.5 block">
               {String(zone.confidence)}
             </span>
@@ -225,7 +241,14 @@ export default function ZoneDetails({
         {/* Uncertainty Rank Range (P10 to P90) */}
         {(zone.rank_p10 !== null && zone.rank_p10 !== undefined || zone.rank_p90 !== null && zone.rank_p90 !== undefined) && (
           <div className="p-2.5 rounded bg-surface border border-border/50">
-            <span className="text-[11px] text-text-muted block">Rank Range (P10 to P90)</span>
+            <div className="flex items-center space-x-1">
+              <span className="text-[11px] text-text-muted">Rank Range (P10 to P90)</span>
+              {isFixture && (
+                <span className="text-[10px] text-text-muted italic">
+                  (test fixture)
+                </span>
+              )}
+            </div>
             <span className="text-sm font-bold text-navy-900 mt-0.5 block">
               P10: {zone.rank_p10 ?? 'N/A'} • P90: {zone.rank_p90 ?? 'N/A'}
             </span>

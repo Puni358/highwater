@@ -282,6 +282,7 @@ export default function DashboardLayout({
                   zone={selectedZone}
                   timestamp={metadata.generatedAt}
                   onClearSelection={() => setSelectedZoneId(null)}
+                  isTestFixture={metadata.dataMode === 'demo'}
                 />
 
                 {/* Aerial Reconnaissance Survey Needed List */}
@@ -478,6 +479,7 @@ export default function DashboardLayout({
                     zone={selectedZone}
                     timestamp={metadata.generatedAt}
                     onClearSelection={() => setSelectedZoneId(null)}
+                    isTestFixture={metadata.dataMode === 'demo'}
                   />
                   <SurveyNeededList
                     zones={allZones}

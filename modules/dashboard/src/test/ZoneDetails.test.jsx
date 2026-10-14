@@ -141,6 +141,40 @@ describe('ZoneDetails component (T4.5, FR-20, FR-21)', () => {
     expect(screen.queryByText('Rank Range (P10 to P90)')).not.toBeInTheDocument();
   });
 
+  it('renders a small "(test fixture)" note beside confidence and rank values when from a test fixture', () => {
+    const fixtureZone = {
+      ...completeZone,
+      confidence: 0.35,
+      rank_p10: 10,
+      rank_p90: 30,
+      isTestFixture: true,
+    };
+
+    const { rerender } = render(
+      <ZoneDetails zone={fixtureZone} onClearSelection={vi.fn()} isTestFixture={true} />
+    );
+
+    const testFixtureNotes = screen.getAllByText('(test fixture)');
+    expect(testFixtureNotes.length).toBe(2); // Beside Confidence and Rank Range
+    expect(screen.getByText('0.35')).toBeInTheDocument();
+    expect(screen.getByText('P10: 10 • P90: 30')).toBeInTheDocument();
+
+    // When not a fixture (real operational data), "(test fixture)" note must NOT be rendered
+    const liveZone = {
+      ...completeZone,
+      confidence: 0.88,
+      rank_p10: 5,
+      rank_p90: 8,
+      isTestFixture: false,
+    };
+
+    rerender(<ZoneDetails zone={liveZone} onClearSelection={vi.fn()} isTestFixture={false} />);
+
+    expect(screen.queryByText('(test fixture)')).not.toBeInTheDocument();
+    expect(screen.getByText('0.88')).toBeInTheDocument();
+    expect(screen.getByText('P10: 5 • P90: 8')).toBeInTheDocument();
+  });
+
   it('calls onClearSelection when clear button is clicked', () => {
     const handleClear = vi.fn();
     render(<ZoneDetails zone={completeZone} onClearSelection={handleClear} />);
