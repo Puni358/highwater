@@ -168,16 +168,18 @@ function buildDernauDemo() {
 
     let needs_survey = false;
     let provenance = null;
+    let source = null;
     let confidence = null;
     let rank_p10 = null;
     let rank_p90 = null;
 
-    if (z.zone_id === 'zone-001') {
+    if (z.zone_id === 'zone-005') {
       needs_survey = true;
-      provenance = 'SpaceNet 8 / Maxar ground truth (test fixture)';
-      confidence = 0.92;
-      rank_p10 = 25;
-      rank_p90 = 32;
+      provenance = 'observed';
+      source = 'SpaceNet 8 / Maxar ground truth (test fixture)';
+      confidence = 0.35;
+      rank_p10 = 10;
+      rank_p90 = 30;
     }
 
     return {
@@ -192,6 +194,7 @@ function buildDernauDemo() {
       accessibility,
       needs_survey,
       provenance,
+      source,
       confidence,
       rank_p10,
       rank_p90,
@@ -482,7 +485,7 @@ This directory contains a contract-perfect, fully deterministic demonstration da
 3. **Zone with \`UNKNOWN\` risk level:**
    - \`zone-018\` has \`risk_level: "UNKNOWN"\` and \`risk_score: null\` (explicitly marked in reasons and documentation as "designated test cases, not measured data"; in raw data it contains no road segments, \`road_length_m === 0\`, accessibility \`UNKNOWN\`). Real values for all other fields and zones remain untouched.
 4. **Zone with survey flag and uncertainty bounds (\`needs_survey: true\`):**
-   - \`zone-001\` has \`needs_survey: true\`, \`provenance: "SpaceNet 8 / Maxar ground truth (test fixture)"\`, \`confidence: 0.92\`, \`rank_p10: 25\`, and \`rank_p90: 32\`. These are designated test fixture values, not measured data, included to verify aerial reconnaissance filtering and uncertainty pass-through in the UI.
+   - \`zone-005\` (partial data zone) has \`needs_survey: true\`, \`confidence: 0.35\`, \`rank_p10: 10\`, \`rank_p90: 30\`, \`provenance: "observed"\`, and \`source: "SpaceNet 8 / Maxar ground truth (test fixture)"\`. These are designated test fixture values, not measured data, illustrating that a zone with withheld infrastructure data has low assessment confidence (0.35) and is flagged for aerial reconnaissance survey.
 
 ## Dataset Statistics
 
