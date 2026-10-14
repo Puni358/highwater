@@ -1,0 +1,108 @@
+{
+  "method": "Ground truth per tile = any labelled building/road feature in that tile has flooded == 'yes' (from data/raw/annotations/{tile}.geojson, same source as the main processor pipeline). Tiles with no building/road features are excluded.",
+  "tiles_total_in_aoi": 24,
+  "tiles_compared": 22,
+  "tiles_skipped_no_ground_truth_features": [
+    "0_38_59",
+    "0_39_59"
+  ],
+  "tiles_skipped_no_prediction": [],
+  "tiles_skipped_prediction_error": [],
+  "accuracy": 0.7727272727272727,
+  "confusion": {
+    "true_positive_flooded_correctly_caught": 12,
+    "true_negative_dry_correctly_identified": 5,
+    "false_positive_false_alarm": 1,
+    "false_negative_flooded_missed": 4
+  },
+  "per_tile": {
+    "0_36_59": {
+      "ground_truth_flooded": false,
+      "ai_predicted_flooded": false
+    },
+    "0_36_60": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": false
+    },
+    "0_36_61": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": false
+    },
+    "0_36_62": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_37_59": {
+      "ground_truth_flooded": false,
+      "ai_predicted_flooded": false
+    },
+    "0_37_60": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_37_61": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_37_62": {
+      "ground_truth_flooded": false,
+      "ai_predicted_flooded": false
+    },
+    "0_38_60": {
+      "ground_truth_flooded": false,
+      "ai_predicted_flooded": true
+    },
+    "0_38_61": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_38_62": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_39_60": {
+      "ground_truth_flooded": false,
+      "ai_predicted_flooded": false
+    },
+    "0_39_61": {
+      "ground_truth_flooded": false,
+      "ai_predicted_flooded": false
+    },
+    "0_39_62": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_40_59": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": false
+    },
+    "0_40_60": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": false
+    },
+    "0_40_61": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_40_62": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_41_59": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_41_60": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_41_61": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    },
+    "0_41_62": {
+      "ground_truth_flooded": true,
+      "ai_predicted_flooded": true
+    }
+  }
+}
