@@ -1,7 +1,7 @@
 """Validate ai_predictions.json against the SN8 human-labelled ground truth.
 
 Ground-truth method (documented): for each AOI tile, load its raw annotation
-geojson (data/raw/annotations/{tile_id}.geojson), the same source the main
+geojson ({input}/annotations/{tile_id}.geojson), the same source the main
 processor pipeline uses. A tile's ground-truth label is "flooded" if ANY
 labelled building or road feature in that tile has flooded == 'yes'
 (majority-style tile aggregation: one of the labelled flooded features present
@@ -15,27 +15,29 @@ are scored. Both the original flat accuracy (all tiles, any confidence) and
 the confidence-aware accuracy are computed and saved side by side.
 
 Tile bbox (for map rendering) is the bounding box of that tile's own labelled
-building/road features from data/raw/annotations/{tile}.geojson — the same
+building/road features from {input}/annotations/{tile}.geojson — the same
 source geometry already used elsewhere in this module, not invented.
 
-Run: python scripts/validate_ai_predictions.py
+Generalized to any SN8-format dataset: takes --input/--out-dir, and reuses
+processor.select_aoi_tile_ids() for the AOI tile list unless --tiles overrides it.
+
+Run (Germany, default): python scripts/validate_ai_predictions.py
+Run (Louisiana): python scripts/validate_ai_predictions.py --input data/raw_louisiana --out-dir output_louisiana
 """
+import argparse
 import json
 import os
+import sys
 
 from shapely.geometry import shape
 from shapely.ops import unary_union
 
-BASE = os.path.join(os.path.dirname(__file__), "..")
-ANNOTATIONS_DIR = os.path.join(BASE, "data", "raw", "annotations")
-PREDICTIONS_PATH = os.path.join(BASE, "output", "ai_predictions.json")
-OUT_PATH = os.path.join(BASE, "output", "ai_validation_summary.json")
-
-AOI_TILE_IDS = [f"0_{row}_{col}" for row in range(36, 42) for col in range(59, 63)]
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from flood_analysis import processor as proc
 
 
-def tile_features(tile_id):
-    fp = os.path.join(ANNOTATIONS_DIR, f"{tile_id}.geojson")
+def tile_features(annotations_dir, tile_id):
+    fp = os.path.join(annotations_dir, f"{tile_id}.geojson")
     if not os.path.exists(fp):
         return None
     d = json.load(open(fp))
@@ -60,10 +62,20 @@ def tile_bbox(features):
 
 
 def main():
-    if not os.path.exists(PREDICTIONS_PATH):
-        raise SystemExit(f"No predictions found at {PREDICTIONS_PATH}. Run ai_flood_detect.py first.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", default=os.path.join(os.path.dirname(__file__), "..", "data", "raw"))
+    parser.add_argument("--out-dir", default=os.path.join(os.path.dirname(__file__), "..", "output"))
+    parser.add_argument("--tiles", default=None, help="Comma-separated tile ids; default: processor's dynamic AOI selection")
+    args = parser.parse_args()
 
-    predictions = json.load(open(PREDICTIONS_PATH))
+    annotations_dir = os.path.join(args.input, "annotations")
+    predictions_path = os.path.join(args.out_dir, "ai_predictions.json")
+    out_path = os.path.join(args.out_dir, "ai_validation_summary.json")
+    if not os.path.exists(predictions_path):
+        raise SystemExit(f"No predictions found at {predictions_path}. Run ai_flood_detect.py first.")
+
+    predictions = json.load(open(predictions_path))
+    tile_ids = args.tiles.split(",") if args.tiles else list(predictions.keys())
 
     # Flat (original) scoring: every tile with a real prediction + ground truth, any confidence.
     flat_tp = flat_tn = flat_fp = flat_fn = 0
@@ -76,8 +88,8 @@ def main():
     uncertain_tile_ids = []
     per_tile = {}
 
-    for tile_id in AOI_TILE_IDS:
-        features = tile_features(tile_id)
+    for tile_id in tile_ids:
+        features = tile_features(annotations_dir, tile_id)
         truth = tile_ground_truth(features)
         bbox = tile_bbox(features)
 
@@ -138,12 +150,12 @@ def main():
     summary = {
         "method": (
             "Ground truth per tile = any labelled building/road feature in that tile has "
-            "flooded == 'yes' (from data/raw/annotations/{tile}.geojson, same source as the "
+            "flooded == 'yes' (from {input}/annotations/{tile}.geojson, same source as the "
             "main processor pipeline). Tiles with no building/road features are excluded. "
             "Confidence-aware scoring: tiles where the AI reported confidence == 'low' are "
             "excluded from accuracy/TP/TN/FP/FN as an honest 'uncertain', scored separately."
         ),
-        "tiles_total_in_aoi": len(AOI_TILE_IDS),
+        "tiles_total_in_aoi": len(tile_ids),
         "tiles_compared": n_flat,
         "tiles_skipped_no_ground_truth_features": skipped_no_truth,
         "tiles_skipped_no_prediction": skipped_no_prediction,
@@ -179,7 +191,7 @@ def main():
         "per_tile": per_tile,
     }
 
-    with open(OUT_PATH, "w") as fh:
+    with open(out_path, "w") as fh:
         json.dump(summary, fh, indent=2)
 
     print(f"Tiles compared (flat, all confidence): {n_flat}")
@@ -194,7 +206,7 @@ def main():
     print(f"Skipped (no ground-truth features): {skipped_no_truth}")
     print(f"Skipped (no prediction yet): {skipped_no_prediction}")
     print(f"Skipped (prediction error): {skipped_error}")
-    print(f"Written to {OUT_PATH}")
+    print(f"Written to {out_path}")
 
 
 if __name__ == "__main__":

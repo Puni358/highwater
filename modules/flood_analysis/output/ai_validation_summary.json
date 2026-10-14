@@ -1,5 +1,5 @@
 {
-  "method": "Ground truth per tile = any labelled building/road feature in that tile has flooded == 'yes' (from data/raw/annotations/{tile}.geojson, same source as the main processor pipeline). Tiles with no building/road features are excluded. Confidence-aware scoring: tiles where the AI reported confidence == 'low' are excluded from accuracy/TP/TN/FP/FN as an honest 'uncertain', scored separately.",
+  "method": "Ground truth per tile = any labelled building/road feature in that tile has flooded == 'yes' (from {input}/annotations/{tile}.geojson, same source as the main processor pipeline). Tiles with no building/road features are excluded. Confidence-aware scoring: tiles where the AI reported confidence == 'low' are excluded from accuracy/TP/TN/FP/FN as an honest 'uncertain', scored separately.",
   "tiles_total_in_aoi": 24,
   "tiles_compared": 22,
   "tiles_skipped_no_ground_truth_features": [

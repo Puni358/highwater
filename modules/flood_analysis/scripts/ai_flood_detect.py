@@ -2,8 +2,15 @@
 
 This produces a model PREDICTION, compared later against the project's human-labelled
 ground truth. It is never a substitute for that ground truth.
-Run: python scripts/ai_flood_detect.py
+
+Generalized to any SN8-format dataset: takes --input/--out-dir, and reuses
+processor.select_aoi_tile_ids() for the AOI tile list unless --tiles overrides it,
+instead of a second hardcoded tile list per dataset.
+
+Run (Germany, default): python scripts/ai_flood_detect.py
+Run (Louisiana, 2-key pool): python scripts/ai_flood_detect.py --input data/raw_louisiana --out-dir output_louisiana --key-pool
 """
+import argparse
 import glob
 import json
 import os
@@ -13,16 +20,14 @@ import time
 import requests
 
 sys.path.insert(0, os.path.dirname(__file__))
-from vision_api_config import OPENROUTER_API_KEY
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from vision_api_config import OPENROUTER_API_KEY, OPENROUTER_API_KEY_FLOODNET
 from image_compress import tif_to_data_url
+from flood_analysis import processor as proc
 
-RAW_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
-OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "output", "ai_predictions.json")
 MODEL = "dots-studio/dots-3-note-preview:free"
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 REQUEST_DELAY_SECONDS = 4
-
-AOI_TILE_IDS = [f"0_{row}_{col}" for row in range(36, 42) for col in range(59, 63)]
 
 PROMPT = """You are comparing a PRE-event and POST-event satellite image of the same location \
 after a flood event. The first image is PRE-event, the second is POST-event.
@@ -35,30 +40,30 @@ Respond with ONLY a strict JSON object, no other text, in exactly this format:
 """
 
 
-def find_tile_images(tile_id):
-    pre = glob.glob(os.path.join(RAW_DIR, "PRE-event", f"*_{tile_id}.tif"))
-    post = glob.glob(os.path.join(RAW_DIR, "POST-event", f"*_{tile_id}.tif"))
+def find_tile_images(raw_dir, tile_id):
+    pre = glob.glob(os.path.join(raw_dir, "PRE-event", f"*_{tile_id}.tif"))
+    post = glob.glob(os.path.join(raw_dir, "POST-event", f"*_{tile_id}.tif"))
     if not pre or not post:
         return None, None
     return pre[0], post[0]
 
 
-def load_results():
-    if os.path.exists(OUT_PATH):
-        with open(OUT_PATH) as fh:
+def load_results(out_path):
+    if os.path.exists(out_path):
+        with open(out_path) as fh:
             return json.load(fh)
     return {}
 
 
-def save_results(results):
-    tmp = OUT_PATH + ".tmp"
+def save_results(out_path, results):
+    tmp = out_path + ".tmp"
     with open(tmp, "w") as fh:
         json.dump(results, fh, indent=2)
-    os.replace(tmp, OUT_PATH)
+    os.replace(tmp, out_path)
 
 
-def call_openrouter(pre_url, post_url):
-    headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
+def call_openrouter(api_key, pre_url, post_url):
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     body = {
         "model": MODEL,
         "messages": [
@@ -111,59 +116,92 @@ def is_rate_limited(resp):
     return False
 
 
-def process_tile(tile_id):
-    pre_path, post_path = find_tile_images(tile_id)
+def _attempt(tile_id, api_key, pre_url, post_url):
+    """One real HTTP attempt. Returns ('rate_limited', None) or (None, result_or_error_dict)."""
+    try:
+        resp = call_openrouter(api_key, pre_url, post_url)
+    except requests.RequestException as e:
+        print(f"  [{tile_id}] network error: {e}")
+        return None, {"ERROR": f"network_error: {e}"}
+
+    if is_rate_limited(resp):
+        return "rate_limited", None
+
+    if resp.status_code != 200:
+        print(f"  [{tile_id}] HTTP {resp.status_code}: {resp.text[:300]}")
+        return None, {"ERROR": f"http_{resp.status_code}: {resp.text[:200]}"}
+
+    try:
+        result = parse_response(resp)
+    except (KeyError, ValueError, json.JSONDecodeError) as e:
+        print(f"  [{tile_id}] parse error: {e}")
+        return None, {"ERROR": f"parse_error: {e}"}
+
+    result["model"] = MODEL
+    return None, result
+
+
+def process_tile(raw_dir, tile_id, keys, key_state):
+    """keys: list of API keys (pool). key_state: {'idx': int}, mutated in place and
+    persisted across tiles so rotation sticks once a key proves good."""
+    pre_path, post_path = find_tile_images(raw_dir, tile_id)
     if pre_path is None:
         return {"ERROR": "missing_imagery"}
 
     pre_url = tif_to_data_url(pre_path)
     post_url = tif_to_data_url(post_path)
 
-    for attempt in range(2):
-        try:
-            resp = call_openrouter(pre_url, post_url)
-        except requests.RequestException as e:
-            print(f"  [{tile_id}] network error: {e}")
-            return {"ERROR": f"network_error: {e}"}
-
-        if is_rate_limited(resp):
-            if attempt == 0:
-                print(f"  [{tile_id}] rate limited, waiting 15s and retrying once...")
-                time.sleep(15)
-                continue
-            print(f"  [{tile_id}] still rate limited after retry")
-            return {"ERROR": "rate_limited_after_retry"}
-
-        if resp.status_code != 200:
-            print(f"  [{tile_id}] HTTP {resp.status_code}: {resp.text[:300]}")
-            return {"ERROR": f"http_{resp.status_code}: {resp.text[:200]}"}
-
-        try:
-            result = parse_response(resp)
-        except (KeyError, ValueError, json.JSONDecodeError) as e:
-            print(f"  [{tile_id}] parse error: {e}")
-            return {"ERROR": f"parse_error: {e}"}
-
-        result["model"] = MODEL
+    status, result = _attempt(tile_id, keys[key_state["idx"]], pre_url, post_url)
+    if status != "rate_limited":
         return result
 
-    return {"ERROR": "unexpected_retry_exhaustion"}
+    if len(keys) > 1:
+        old_idx = key_state["idx"]
+        key_state["idx"] = (key_state["idx"] + 1) % len(keys)
+        print(f"  [{tile_id}] rate limited on key #{old_idx}, rotating to key #{key_state['idx']} and retrying...")
+        status2, result2 = _attempt(tile_id, keys[key_state["idx"]], pre_url, post_url)
+        if status2 == "rate_limited":
+            print(f"  [{tile_id}] still rate limited on key #{key_state['idx']} too")
+            return {"ERROR": "all_keys_exhausted"}
+        return result2
+    else:
+        # Single-key pool: original behavior, sleep then retry the same key once.
+        print(f"  [{tile_id}] rate limited, waiting 15s and retrying once...")
+        time.sleep(15)
+        status2, result2 = _attempt(tile_id, keys[key_state["idx"]], pre_url, post_url)
+        if status2 == "rate_limited":
+            return {"ERROR": "rate_limited_after_retry"}
+        return result2
 
 
 def main():
-    results = load_results()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", default=os.path.join(os.path.dirname(__file__), "..", "data", "raw"))
+    parser.add_argument("--out-dir", default=os.path.join(os.path.dirname(__file__), "..", "output"))
+    parser.add_argument("--tiles", default=None, help="Comma-separated tile ids; default: processor's dynamic AOI selection")
+    parser.add_argument("--key-pool", action="store_true", help="Rotate between OPENROUTER_API_KEY and OPENROUTER_API_KEY_FLOODNET on rate limits")
+    args = parser.parse_args()
+
+    tile_ids = args.tiles.split(",") if args.tiles else proc.select_aoi_tile_ids(args.input)
+    keys = [OPENROUTER_API_KEY, OPENROUTER_API_KEY_FLOODNET] if args.key_pool else [OPENROUTER_API_KEY]
+    key_state = {"idx": 0}
+    out_path = os.path.join(args.out_dir, "ai_predictions.json")
+
+    print(f"AOI: {len(tile_ids)} tiles. Key pool size: {len(keys)}. Active key: #0")
+
+    results = load_results(out_path)
     processed = 0
     errored = 0
 
-    for tile_id in AOI_TILE_IDS:
+    for tile_id in tile_ids:
         if tile_id in results and "ERROR" not in results.get(tile_id, {}):
             print(f"[{tile_id}] already done, skipping")
             continue
 
         print(f"[{tile_id}] processing...")
-        result = process_tile(tile_id)
+        result = process_tile(args.input, tile_id, keys, key_state)
         results[tile_id] = result
-        save_results(results)
+        save_results(out_path, results)
 
         if "ERROR" in result:
             errored += 1

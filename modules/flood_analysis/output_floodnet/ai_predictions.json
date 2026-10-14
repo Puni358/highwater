@@ -178,5 +178,119 @@
     "confidence": "high",
     "reasoning": "The streets, driveways, and lawns appear completely dry with no visible standing water, flood debris, or submerged structures.",
     "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "6700": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "The image shows extensive brown standing water flooding streets, yards, and surrounding residential homes, indicating severe flood damage.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "6717": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "The image shows extensive standing water inundating a residential neighborhood, submerging yards, driveways, and streets around houses.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "6744": {
+    "flood_damage_detected": false,
+    "confidence": "high",
+    "reasoning": "No submerged structures, roads, or flood debris are visible, only a canal and adjacent green residential and wetland areas.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7241": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "The image shows extensive standing water flooding residential streets, yards, and surrounding houses, indicating severe flood damage.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7268": {
+    "flood_damage_detected": true,
+    "confidence": "medium",
+    "reasoning": "A straight line indicating a submerged road or causeway is visible beneath the extensive floodwaters, indicating flooded infrastructure.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7279": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "Extensive muddy standing floodwater is visible, submerging large areas of land, roads, and properties near buildings.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7284": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "Large expanses of muddy standing water cover the landscape, partially submerging trees and grassy areas next to residential properties.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7294": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "The image shows a residential neighborhood with streets completely submerged in deep standing water, surrounding houses and yards, indicating severe flooding.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7300": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "Extensive brown standing water is visible surrounding houses, submerging yards, streets, and driveways throughout the neighborhood.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7301": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "The image shows extensive brown standing water submerging yards, streets, and surrounding residential structures throughout the neighborhood.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7307": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "The aerial view shows extensive standing water completely submerging streets, lawns, and the surroundings of residential houses, indicating severe flood damage.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7308": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "Extensive brown standing water is visible surrounding residential houses, submerging yards and driveways.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7315": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "Extensive dark standing water completely surrounds residential homes, submerging yards, streets, and access paths, showing severe flood damage.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7320": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "The image shows extensive brown standing water submerging streets, yards, and surrounding residential homes.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7323": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "Extensive brown standing water is clearly visible flooding the yards, streets, and driveways between residential houses.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7333": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "Extensive standing water completely surrounds residential homes, submerging streets, yards, and driveways.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7413": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "Extensive standing water is clearly visible flooding streets, yards, and surrounding residential properties.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7415": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "The aerial view shows extensive standing water completely submerging streets, yards, and surrounding residential properties.",
+    "model": "dots-studio/dots-3-note-preview:free"
+  },
+  "7420": {
+    "flood_damage_detected": true,
+    "confidence": "high",
+    "reasoning": "The aerial view shows a residential neighborhood with streets, yards, and properties completely submerged in extensive standing floodwater.",
+    "model": "dots-studio/dots-3-note-preview:free"
   }
 }

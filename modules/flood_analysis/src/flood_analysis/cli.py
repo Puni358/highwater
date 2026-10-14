@@ -5,19 +5,34 @@ import os
 
 from flood_analysis import processor as proc
 
-# Contiguous 6x4 block of SN8 Germany tiles (rows 36-41, cols 59-62) with a
-# mix of flooded and non-flooded buildings/roads, all present in the dataset.
-AOI_TILE_IDS = [
+
+DERNAU_TILE_IDS = [
     f"0_{row}_{col}" for row in range(36, 42) for col in range(59, 63)
 ]
 
 
-def run(input_dir, out_dir):
+def run(input_dir, out_dir, tile_ids=None, dataset_name=None):
+    """tile_ids: explicit tile id list (e.g. a user's drawn-box selection) overrides
+    the dynamic AOI auto-selection; None keeps canonical Dernau tiles for data/raw
+    or dynamic selection for other datasets."""
     os.makedirs(out_dir, exist_ok=True)
 
-    features = proc.load_tile_features(input_dir, AOI_TILE_IDS)
+    is_dernau = os.path.exists(os.path.join(input_dir, "annotations", "0_36_59.geojson"))
+    default_name = "Germany (Dernau)" if is_dernau else (
+        os.path.basename(os.path.normpath(input_dir)).replace("raw_", "").replace("_", " ") or "SN8 dataset"
+    )
+    dataset_name = dataset_name or default_name
+
+    if tile_ids:
+        aoi_tile_ids = tile_ids
+    elif is_dernau:
+        aoi_tile_ids = DERNAU_TILE_IDS
+    else:
+        aoi_tile_ids = proc.select_aoi_tile_ids(input_dir)
+
+    features = proc.load_tile_features(input_dir, aoi_tile_ids)
     if not features:
-        raise RuntimeError(f"No building/road features found for tiles {AOI_TILE_IDS}")
+        raise RuntimeError(f"No building/road features found for tiles {aoi_tile_ids}")
 
     aoi = proc.build_aoi(features)
     utm_epsg, fwd, inv = proc.to_utm_transformer(aoi)
@@ -44,7 +59,7 @@ def run(input_dir, out_dir):
         json.dump(
             {
                 "schema_version": "1.0",
-                "source": "SpaceNet 8 Germany (Dernau)",
+                "source": f"SpaceNet 8 {dataset_name}",
                 "crs": "EPSG:4326",
                 "zones": zones,
             },
@@ -54,10 +69,17 @@ def run(input_dir, out_dir):
 
     minlon, minlat, maxlon, maxlat = aoi.bounds
     metadata = {
-        "dataset": "SpaceNet 8 Flood Detection Challenge, Germany training set (Dernau area, June 2021 Western Europe floods)",
+        "dataset": f"SpaceNet 8 Flood Detection Challenge, {dataset_name} training set",
         "license": "CC BY-SA 4.0 (annotations); Maxar imagery stated as CC BY-NC 4.0 in the SN8 paper — imagery itself is not redistributed here, only small derived vector outputs",
         "attribution": "SpaceNet 8 (SpaceNet on Amazon Web Services), Maxar Technologies",
-        "aoi_tiles": AOI_TILE_IDS,
+        "aoi_tiles": aoi_tile_ids,
+        "aoi_selection_method": (
+            "User-drawn custom selection (explicit tile list)." if tile_ids else (
+                f"Dynamically selected: a {proc.AOI_WINDOW_ROWS}x{proc.AOI_WINDOW_COLS} tile window "
+                f"(>= {proc.AOI_MIN_TILES_PRESENT} tiles present) maximizing building+road density, "
+                "required to contain both flooded and non-flooded buildings/roads. Not hardcoded per dataset."
+            )
+        ),
         "aoi_bbox_lonlat": [minlon, minlat, maxlon, maxlat],
         "input_crs": "OGC:CRS84 (lon/lat, equivalent to EPSG:4326) — annotation geojson files",
         "input_resolution": "vector annotations (no fixed raster resolution); PRE/POST tif imagery in the raw data is ~0.3-0.4m/pixel RGB, not used in this derivation",
@@ -85,8 +107,8 @@ def run(input_dir, out_dir):
         },
         "limitations": [
             "flood_extent.geojson is derived from labelled flooded buildings/roads, not a measured water boundary (no flood raster in this dataset).",
-            "AOI is a fixed 6x4 tile block chosen for a mix of flooded/non-flooded features, not the full Dernau extent.",
-            "Dataset covers a single flood event (June 2021); not generalizable without re-running on other AOIs.",
+            f"AOI is a dynamically-selected {proc.AOI_WINDOW_ROWS}x{proc.AOI_WINDOW_COLS} tile block chosen for a mix of flooded/non-flooded features, not the full dataset extent.",
+            "Dataset covers a single flood event; not generalizable without re-running the AOI selection per dataset.",
         ],
     }
     with open(f"{out_dir}/metadata.json", "w") as fh:
@@ -99,8 +121,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", default="data/raw")
     parser.add_argument("--out", default="output")
+    parser.add_argument("--tiles", default=None, help="Comma-separated explicit tile ids; default: dynamic AOI auto-selection")
     args = parser.parse_args()
-    metadata, zones = run(args.input, args.out)
+    tile_ids = args.tiles.split(",") if args.tiles else None
+    metadata, zones = run(args.input, args.out, tile_ids=tile_ids)
     print(f"Wrote {len(zones)} zones, {metadata['counts']} to {args.out}")
 
 

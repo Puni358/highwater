@@ -69,6 +69,155 @@ def build_aoi(features):
     return box(*unary_union([f.geometry for f in features]).bounds)
 
 
+AOI_WINDOW_ROWS = 6
+AOI_WINDOW_COLS = 4
+AOI_MIN_TILES_PRESENT = 12  # out of window_rows*window_cols=24; below this a window is too sparse/rural
+
+
+def _tile_stats(raw_dir):
+    """Per-tile (prefix, row, col) -> counts, parsed once from every annotation file.
+
+    Tile ids follow SN8's own naming, '{prefix}_{row}_{col}.geojson'; prefix groups
+    tiles into separate spatial swaths (Germany only has one, Louisiana has several),
+    so AOI search must stay within a single prefix group.
+    """
+    import os
+    import re
+
+    pattern = re.compile(r"^(\d+)_(\d+)_(\d+)\.geojson$")
+    stats = {}
+    ann_dir = os.path.join(raw_dir, "annotations")
+    for fname in os.listdir(ann_dir):
+        m = pattern.match(fname)
+        if not m:
+            continue
+        prefix, row, col = m.group(1), int(m.group(2)), int(m.group(3))
+        d = json.load(open(os.path.join(ann_dir, fname)))
+        n_buildings = n_roads = n_flooded_buildings = n_flooded_roads = 0
+        for f in d["features"]:
+            p = f["properties"]
+            flooded = p.get("flooded") == "yes"
+            if p.get("building") is not None:
+                n_buildings += 1
+                n_flooded_buildings += flooded
+            elif p.get("highway") is not None:
+                n_roads += 1
+                n_flooded_roads += flooded
+        stats[(prefix, row, col)] = {
+            "tile_id": f"{prefix}_{row}_{col}",
+            "buildings": n_buildings,
+            "roads": n_roads,
+            "flooded_buildings": n_flooded_buildings,
+            "flooded_roads": n_flooded_roads,
+        }
+    return stats
+
+
+def build_tile_index(raw_dir):
+    """Per-tile id -> {bbox, buildings, roads, flooded_buildings, flooded_roads},
+    for every tile in the dataset. Used client-side (map.html draw-box mode) to
+    compute live tile-count/flooded-mix previews without a backend — the map just
+    fetches this precomputed JSON and does the box-overlap math itself.
+    """
+    import os
+    import re
+
+    pattern = re.compile(r"^(\d+)_(\d+)_(\d+)\.geojson$")
+    index = {}
+    ann_dir = os.path.join(raw_dir, "annotations")
+    for fname in os.listdir(ann_dir):
+        m = pattern.match(fname)
+        if not m:
+            continue
+        tile_id = f"{m.group(1)}_{m.group(2)}_{m.group(3)}"
+        d = json.load(open(os.path.join(ann_dir, fname)))
+        n_buildings = n_roads = n_flooded_buildings = n_flooded_roads = 0
+        geoms = []
+        for f in d["features"]:
+            p = f["properties"]
+            flooded = p.get("flooded") == "yes"
+            if p.get("building") is not None:
+                n_buildings += 1
+                n_flooded_buildings += flooded
+            elif p.get("highway") is not None:
+                n_roads += 1
+                n_flooded_roads += flooded
+            else:
+                continue
+            geoms.append(shape(f["geometry"]))
+        bbox = list(unary_union(geoms).bounds) if geoms else None
+        index[tile_id] = {
+            "bbox": bbox,
+            "buildings": n_buildings,
+            "roads": n_roads,
+            "flooded_buildings": n_flooded_buildings,
+            "flooded_roads": n_flooded_roads,
+        }
+    return index
+
+
+def select_aoi_tile_ids(
+    raw_dir,
+    window_rows=AOI_WINDOW_ROWS,
+    window_cols=AOI_WINDOW_COLS,
+    min_tiles_present=AOI_MIN_TILES_PRESENT,
+):
+    """Pick a compact, contiguous tile block with a real flooded/non-flooded mix.
+
+    Works for any SN8-format dataset (no hardcoded tile numbers): scans every
+    tile's per-feature counts once, then slides a window_rows x window_cols
+    rectangle (within a single tile-id prefix group, since different prefixes
+    are separate, non-contiguous swaths) and scores each candidate window by
+    feature density, requiring both a flooded and a non-flooded example among
+    its buildings/roads so the AOI isn't degenerate (all-flooded or all-dry).
+    """
+    stats = _tile_stats(raw_dir)
+    if not stats:
+        raise RuntimeError(f"No annotation tiles found under {raw_dir}/annotations")
+
+    by_prefix = {}
+    for (prefix, row, col), s in stats.items():
+        by_prefix.setdefault(prefix, {})[(row, col)] = s
+
+    best = None  # (score, tile_ids)
+    for prefix, tiles in by_prefix.items():
+        rows = sorted(set(r for r, c in tiles))
+        cols = sorted(set(c for r, c in tiles))
+        for r0 in range(min(rows), max(rows) + 1):
+            for c0 in range(min(cols), max(cols) + 1):
+                window = [
+                    tiles[(r, c)]
+                    for r in range(r0, r0 + window_rows)
+                    for c in range(c0, c0 + window_cols)
+                    if (r, c) in tiles
+                ]
+                if len(window) < min_tiles_present:
+                    continue
+                flooded_b = sum(w["flooded_buildings"] for w in window)
+                flooded_r = sum(w["flooded_roads"] for w in window)
+                dry_b = sum(w["buildings"] - w["flooded_buildings"] for w in window)
+                dry_r = sum(w["roads"] - w["flooded_roads"] for w in window)
+                has_mix = (flooded_b > 0 or flooded_r > 0) and (dry_b > 0 or dry_r > 0)
+                if not has_mix:
+                    continue
+                density = sum(w["buildings"] + w["roads"] for w in window)
+                compactness = len(window) / (window_rows * window_cols)
+                # Score favors a genuine, balanced mix (not just >0 on each side) over
+                # raw density — the minority class size (flooded or dry, whichever is
+                # smaller) is the main driver, density/compactness only break ties.
+                mix_quality = min(flooded_b + flooded_r, dry_b + dry_r)
+                score = (mix_quality, density * compactness)
+                if best is None or score > best[0]:
+                    best = (score, [w["tile_id"] for w in window])
+
+    if best is None:
+        raise RuntimeError(
+            f"No {window_rows}x{window_cols} tile window under {raw_dir}/annotations had both "
+            f"flooded and non-flooded buildings/roads with >= {min_tiles_present} tiles present"
+        )
+    return best[1]
+
+
 def to_utm_transformer(aoi):
     c = aoi.centroid
     utm_epsg = utm_crs_for(c.x, c.y)

@@ -181,6 +181,120 @@
       "flooded_pixels": 0,
       "total_pixels": 12000000,
       "flooded_percent": 0.0
+    },
+    "6700": {
+      "flooded": true,
+      "flooded_pixels": 2965024,
+      "total_pixels": 14106624,
+      "flooded_percent": 21.018664706736352
+    },
+    "6717": {
+      "flooded": true,
+      "flooded_pixels": 4495991,
+      "total_pixels": 14106624,
+      "flooded_percent": 31.87148817463342
+    },
+    "6744": {
+      "flooded": false,
+      "flooded_pixels": 0,
+      "total_pixels": 12000000,
+      "flooded_percent": 0.0
+    },
+    "7241": {
+      "flooded": true,
+      "flooded_pixels": 5678457,
+      "total_pixels": 14106624,
+      "flooded_percent": 40.25383394354312
+    },
+    "7268": {
+      "flooded": false,
+      "flooded_pixels": 0,
+      "total_pixels": 14106624,
+      "flooded_percent": 0.0
+    },
+    "7279": {
+      "flooded": true,
+      "flooded_pixels": 499941,
+      "total_pixels": 14106624,
+      "flooded_percent": 3.5440159176284842
+    },
+    "7284": {
+      "flooded": true,
+      "flooded_pixels": 159188,
+      "total_pixels": 14106624,
+      "flooded_percent": 1.1284627703977932
+    },
+    "7294": {
+      "flooded": true,
+      "flooded_pixels": 5915139,
+      "total_pixels": 14106624,
+      "flooded_percent": 41.9316414756642
+    },
+    "7300": {
+      "flooded": true,
+      "flooded_pixels": 6621549,
+      "total_pixels": 14106624,
+      "flooded_percent": 46.93928894680967
+    },
+    "7301": {
+      "flooded": true,
+      "flooded_pixels": 6113689,
+      "total_pixels": 14106624,
+      "flooded_percent": 43.339136280941496
+    },
+    "7307": {
+      "flooded": true,
+      "flooded_pixels": 5546489,
+      "total_pixels": 14106624,
+      "flooded_percent": 39.318330168862516
+    },
+    "7308": {
+      "flooded": true,
+      "flooded_pixels": 5611181,
+      "total_pixels": 14106624,
+      "flooded_percent": 39.77692323833116
+    },
+    "7315": {
+      "flooded": true,
+      "flooded_pixels": 7365965,
+      "total_pixels": 14106624,
+      "flooded_percent": 52.21635594739039
+    },
+    "7320": {
+      "flooded": true,
+      "flooded_pixels": 6688109,
+      "total_pixels": 14106624,
+      "flooded_percent": 47.411124022303284
+    },
+    "7323": {
+      "flooded": true,
+      "flooded_pixels": 5803996,
+      "total_pixels": 14106624,
+      "flooded_percent": 41.143763383783394
+    },
+    "7333": {
+      "flooded": true,
+      "flooded_pixels": 10104225,
+      "total_pixels": 14106624,
+      "flooded_percent": 71.62752051802048
+    },
+    "7413": {
+      "flooded": true,
+      "flooded_pixels": 5949198,
+      "total_pixels": 14106624,
+      "flooded_percent": 42.17308124183362
+    },
+    "7415": {
+      "flooded": true,
+      "flooded_pixels": 6622492,
+      "total_pixels": 14106624,
+      "flooded_percent": 46.94597374963705
+    },
+    "7420": {
+      "flooded": true,
+      "flooded_pixels": 5742206,
+      "total_pixels": 14106624,
+      "flooded_percent": 40.705742210184376
     }
   }
 }
