@@ -40,6 +40,8 @@ from risk_engine.scorer import (
     _natural_sort_key,
     _priority_label,
     assess_zone_data_quality,
+    calculate_zone_risk,
+    classify_risk_score,
     compute_score_breakdown,
     export_dashboard,
     load_config,
@@ -2946,5 +2948,241 @@ class TestRiskRankingSensitivityAnalysis:
         assert len(res_tool.scenarios) == len(DEFAULT_SENSITIVITY_SCENARIOS)
 
 
+class TestDynamicDataDrivenScoringAndRegression:
+    """Rigorous regression and property-based verification of dynamic data-driven scoring.
 
+    Verifies:
+    - Different inputs produce different scores/categories.
+    - Monotonicity: increasing flood coverage/exposure never reduces risk.
+    - Reprocessing updated data dynamically updates output scores and categories.
+    - Idempotence: identical inputs yield identical outputs.
+    - Boundary thresholds classify strictly and correctly.
+    - Missing/invalid data cannot silently become LOW.
+    - Leading zeros in zone IDs are preserved through the full pipeline.
+    - Zones 024, 030, and 035 reflect their true inputs under documented scoring rules.
+    """
 
+    def test_different_inputs_produce_different_scores_and_categories(self, default_config):
+        """Varying underlying measurements dynamically shifts risk score and priority category."""
+        z_low = _make_zone(
+            zone_id="zone-low",
+            flooded_percent=1.0,
+            flooded_area_m2=200.0,
+            total_buildings=20,
+            exposed_buildings=1,
+            accessibility="ACCESSIBLE",
+        )
+        z_high = _make_zone(
+            zone_id="zone-high",
+            flooded_percent=25.0,
+            flooded_area_m2=12000.0,
+            total_buildings=20,
+            exposed_buildings=18,
+            accessibility="BLOCKED",
+        )
+        doc = _make_zones_doc(z_low, z_high)
+        recs = score_zones(doc, default_config, [])
+
+        rec_low = next(r for r in recs if r.zone_id == "zone-low")
+        rec_high = next(r for r in recs if r.zone_id == "zone-high")
+
+        assert rec_low.score < 20.0
+        assert rec_low.priority == "LOW"
+        assert rec_high.score >= 45.0
+        assert rec_high.priority in ("HIGH", "CRITICAL")
+        assert rec_high.score > rec_low.score
+
+    @settings(max_examples=40, deadline=None)
+    @given(
+        fp1=st.floats(min_value=0.0, max_value=30.0, allow_nan=False, allow_infinity=False),
+        fp2=st.floats(min_value=0.0, max_value=30.0, allow_nan=False, allow_infinity=False),
+    )
+    def test_monotonicity_flood_percent_property(self, fp1, fp2):
+        """Higher flood percentage strictly cannot result in a lower risk score."""
+        cfg = load_config()
+        low_fp, high_fp = sorted([fp1, fp2])
+        z1 = _make_zone(zone_id="z1", flooded_percent=low_fp, exposed_buildings=5, flooded_area_m2=1000.0)
+        z2 = _make_zone(zone_id="z2", flooded_percent=high_fp, exposed_buildings=5, flooded_area_m2=1000.0)
+
+        res1 = calculate_zone_risk(z1, cfg)
+        res2 = calculate_zone_risk(z2, cfg)
+
+        assert res2["score"] >= res1["score"], f"Monotonicity violated: {high_fp}% got {res2['score']} < {low_fp}% got {res1['score']}"
+
+    @settings(max_examples=40, deadline=None)
+    @given(
+        b1=st.integers(min_value=0, max_value=75),
+        b2=st.integers(min_value=0, max_value=75),
+    )
+    def test_monotonicity_exposed_buildings_property(self, b1, b2):
+        """More exposed buildings strictly cannot result in a lower risk score."""
+        cfg = load_config()
+        low_b, high_b = sorted([b1, b2])
+        z1 = _make_zone(zone_id="z1", flooded_percent=5.0, exposed_buildings=low_b, flooded_area_m2=1000.0)
+        z2 = _make_zone(zone_id="z2", flooded_percent=5.0, exposed_buildings=high_b, flooded_area_m2=1000.0)
+
+        res1 = calculate_zone_risk(z1, cfg)
+        res2 = calculate_zone_risk(z2, cfg)
+
+        assert res2["score"] >= res1["score"], f"Monotonicity violated: {high_b} bldgs got {res2['score']} < {low_b} bldgs got {res1['score']}"
+
+    def test_monotonicity_accessibility_penalty(self, default_config):
+        """Moving from ACCESSIBLE to PARTIAL to BLOCKED strictly increases risk score."""
+        z_acc = _make_zone(zone_id="z-acc", flooded_percent=10.0, exposed_buildings=5, accessibility="ACCESSIBLE")
+        z_part = _make_zone(zone_id="z-part", flooded_percent=10.0, exposed_buildings=5, accessibility="PARTIAL")
+        z_blk = _make_zone(zone_id="z-blk", flooded_percent=10.0, exposed_buildings=5, accessibility="BLOCKED")
+
+        r_acc = calculate_zone_risk(z_acc, default_config)
+        r_part = calculate_zone_risk(z_part, default_config)
+        r_blk = calculate_zone_risk(z_blk, default_config)
+
+        assert r_blk["score"] > r_part["score"] > r_acc["score"]
+        assert math.isclose(r_part["score"] - r_acc["score"], 7.5, abs_tol=0.1)
+        assert math.isclose(r_blk["score"] - r_part["score"], 7.5, abs_tol=0.1)
+
+    def test_reprocessing_updated_dataset_updates_outputs_without_code_change(self, tmp_path, default_config):
+        """Reprocessing an updated input dataset dynamically alters output scores and priorities."""
+        out_dir = tmp_path / "dynamic_out"
+        zones_file = tmp_path / "zones.json"
+
+        # Pass 1: Zone 024 has low water
+        z = _make_zone(zone_id="zone-024", flooded_percent=0.24, flooded_area_m2=211.9, exposed_buildings=2, accessibility="ACCESSIBLE")
+        zones_file.write_text(json.dumps(_make_zones_doc(z)), encoding="utf-8")
+
+        cli_run(zones_file, out_dir, output_format="dashboard")
+        dash_out_1 = json.loads((out_dir / "zones.json").read_text(encoding="utf-8"))
+        z_res1 = dash_out_1["zones"][0]
+        assert z_res1["risk_score"] == 1.5
+        assert z_res1["risk_level"] == "LOW"
+
+        # Pass 2: Extreme flood arrives at zone 024 (e.g. 28% flooded, 30 exposed buildings, blocked roads)
+        z_updated = _make_zone(zone_id="zone-024", flooded_percent=28.0, flooded_area_m2=14000.0, exposed_buildings=30, accessibility="BLOCKED")
+        zones_file.write_text(json.dumps(_make_zones_doc(z_updated)), encoding="utf-8")
+
+        cli_run(zones_file, out_dir, output_format="dashboard")
+        dash_out_2 = json.loads((out_dir / "zones.json").read_text(encoding="utf-8"))
+        z_res2 = dash_out_2["zones"][0]
+        assert z_res2["risk_score"] > 60.0
+        assert z_res2["risk_level"] in ("HIGH", "CRITICAL")
+        assert z_res2["risk_level"] != "LOW"
+
+    def test_identical_inputs_produce_identical_results(self, default_config):
+        """Identical inputs and configuration are completely deterministic."""
+        z = _make_zone(zone_id="zone-024", flooded_percent=12.5, flooded_area_m2=5400.0, exposed_buildings=7, accessibility="PARTIAL")
+        res1 = calculate_zone_risk(z, default_config)
+        res2 = calculate_zone_risk(z, default_config)
+
+        assert res1 == res2
+        assert res1["score"] == res2["score"]
+        assert res1["priority"] == res2["priority"]
+
+    def test_score_to_category_thresholds_boundaries(self, default_config):
+        """Verify strict behavior at category threshold boundaries."""
+        thresholds = default_config.get("priority_thresholds") or default_config.get("scoring", {}).get("priority_thresholds")
+
+        # CRITICAL boundary: 70.0
+        assert classify_risk_score(70.0, thresholds) == "CRITICAL"
+        assert classify_risk_score(69.99, thresholds) == "HIGH"
+
+        # HIGH boundary: 45.0
+        assert classify_risk_score(45.0, thresholds) == "HIGH"
+        assert classify_risk_score(44.99, thresholds) == "MEDIUM"
+
+        # MEDIUM boundary: 20.0
+        assert classify_risk_score(20.0, thresholds) == "MEDIUM"
+        assert classify_risk_score(19.99, thresholds) == "LOW"
+
+        # LOW boundary: 0.0
+        assert classify_risk_score(0.0, thresholds) == "LOW"
+        assert classify_risk_score(0.01, thresholds) == "LOW"
+
+        # Invalid / Negative / Missing
+        assert classify_risk_score(-0.01, thresholds) == "UNKNOWN"
+        assert classify_risk_score(-10.0, thresholds) == "UNKNOWN"
+        assert classify_risk_score(None, thresholds) == "UNKNOWN"
+        assert classify_risk_score(float("nan"), thresholds) == "UNKNOWN"
+        assert classify_risk_score(float("inf"), thresholds) == "UNKNOWN"
+
+    def test_missing_and_invalid_data_cannot_silently_become_low(self, default_config):
+        """Missing or corrupt input measurements cannot silently be scored as LOW risk."""
+        # Zone missing exposed_buildings
+        z_bad = _make_zone(zone_id="zone-bad")
+        del z_bad["exposed_buildings"]
+
+        doc = _make_zones_doc(z_bad)
+        warnings = [DataQualityWarning(zone_id="zone-bad", field="exposed_buildings", issue="missing")]
+        recs = score_zones(doc, default_config, warnings)
+
+        assert len(recs) == 1
+        r = recs[0]
+        # Must be flagged as UNKNOWN and insufficient data
+        assert r.priority == "UNKNOWN"
+        assert r.score is None
+        assert r.score_basis in ("none", "insufficient_data")
+
+    def test_zone_ids_leading_zeros_preserved(self, default_config):
+        """Leading zeros in zone IDs like zone-001, zone-024, 035 are preserved without string/int truncation."""
+        z1 = _make_zone(zone_id="zone-001")
+        z2 = _make_zone(zone_id="zone-024")
+        z3 = _make_zone(zone_id="035")
+
+        doc = _make_zones_doc(z1, z2, z3)
+        recs = score_zones(doc, default_config, [])
+        scored_ids = [r.zone_id for r in recs]
+
+        assert "zone-001" in scored_ids
+        assert "zone-024" in scored_ids
+        assert "035" in scored_ids
+        assert not any(sid in scored_ids for sid in ["zone-1", "zone-24", "35", 1, 24, 35])
+
+    def test_zones_024_030_035_exact_scores_and_categories(self, default_config):
+        """Zones 024, 030, and 035 strictly match their authentic measurements and documented model."""
+        # Zone 024: 0.24% flooded, 211.9 m2, 2/2 buildings, ACCESSIBLE
+        z024 = _make_zone(
+            zone_id="zone-024",
+            flooded_percent=0.24,
+            flooded_area_m2=211.9,
+            total_buildings=2,
+            exposed_buildings=2,
+            road_length_m=130.6,
+            flooded_road_length_m=10.8,
+            accessibility="ACCESSIBLE",
+        )
+        # Zone 030: 1.90% flooded, 1710.9 m2, 0/18 buildings, PARTIAL
+        z030 = _make_zone(
+            zone_id="zone-030",
+            flooded_percent=1.90,
+            flooded_area_m2=1710.9,
+            total_buildings=18,
+            exposed_buildings=0,
+            road_length_m=749.1,
+            flooded_road_length_m=168.1,
+            accessibility="PARTIAL",
+        )
+        # Zone 035: 4.42% flooded, 3976.4 m2, 14/44 buildings, PARTIAL
+        z035 = _make_zone(
+            zone_id="zone-035",
+            flooded_percent=4.42,
+            flooded_area_m2=3976.4,
+            total_buildings=44,
+            exposed_buildings=14,
+            road_length_m=1389.9,
+            flooded_road_length_m=225.0,
+            accessibility="PARTIAL",
+        )
+
+        r024 = calculate_zone_risk(z024, default_config)
+        r030 = calculate_zone_risk(z030, default_config)
+        r035 = calculate_zone_risk(z035, default_config)
+
+        # 024: very minor flood -> LOW (score ~ 1.5)
+        assert r024["score"] == 1.5
+        assert r024["priority"] == "LOW"
+
+        # 030: 0 exposed buildings, partial isolation gives 7.5 pts -> LOW (score ~ 10.9)
+        assert r030["score"] == 10.9
+        assert r030["priority"] == "LOW"
+
+        # 035: 14 exposed buildings + 7.5 isolation -> MEDIUM (score ~ 22.8, crossing >= 20.0 threshold)
+        assert r035["score"] == 22.8
+        assert r035["priority"] == "MEDIUM"

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generateEvacuationRoutes } from '../src/services/routeGenerator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,10 +71,10 @@ function buildDernauDemo() {
   const aoiBbox = metaRaw.aoi_bbox_lonlat; // [minLon, minLat, maxLon, maxLat]
 
   // ----------------------------------------------------
-  // 2. zones.json
+  // 2. zones.json (Derived using Module 3 Risk Engine model)
   // ----------------------------------------------------
   const fixedGeneratedAt = '2026-10-14T10:00:00Z';
-  const riskMethodStr = 'score = 0.40*min(flooded_percent/20,1) + 0.35*(exposed_buildings/total_buildings, 0 if none) + 0.25*(flooded_road_length_m/road_length_m, 0 if none), times 100, rounded to 1 dp (illustrative demo score, not Member 3 output)';
+  const riskMethodStr = 'Module 3 Risk & Prioritization Engine: score = 0.35*min(fp/30, 1) + 0.40*min(eb/75, 1) + 0.15*iso + 0.10*min(fam/15000, 1), times 100';
 
   const accessibilityMap = {
     ACCESSIBLE: 'OPEN',
@@ -82,52 +83,83 @@ function buildDernauDemo() {
     UNKNOWN: 'UNKNOWN'
   };
 
+  const isoScores = {
+    ACCESSIBLE: 0.0,
+    PARTIAL: 0.5,
+    BLOCKED: 1.0,
+    UNKNOWN: 0.5,
+  };
+
+  const priorityThresholds = {
+    CRITICAL: 70.0,
+    HIGH: 45.0,
+    MEDIUM: 20.0,
+    LOW: 0.0,
+  };
+
   const processedZones = zonesRaw.zones.map((z) => {
     const zoneNum = parseInt(z.zone_id.replace('zone-', ''), 10);
     const paddedNum = String(zoneNum).padStart(3, '0');
     const name = `Zone ${paddedNum} (grid cell)`;
 
     // Flooded area km2 from m2
-    const flooded_area_km2 = Number((z.flooded_area_m2 / 1000000).toFixed(4));
+    const fam_m2 = z.flooded_area_m2;
+    const flooded_area_km2 = (fam_m2 !== null && fam_m2 !== undefined && Number.isFinite(fam_m2))
+      ? Number((fam_m2 / 1000000).toFixed(4))
+      : null;
 
-    // Edge case 2: Exactly one zone with exposed_buildings null -> zone-005 (designated test case, not measured data)
-    const exposed_buildings = (z.zone_id === 'zone-005') ? null : z.exposed_buildings;
-    const total_buildings = z.total_buildings;
+    const exposed_buildings = (z.exposed_buildings !== null && z.exposed_buildings !== undefined && Number.isFinite(z.exposed_buildings))
+      ? z.exposed_buildings
+      : null;
+    const total_buildings = z.total_buildings ?? 0;
 
     // Accessibility mapping
     const accessibility = accessibilityMap[z.accessibility] || 'UNKNOWN';
 
-    // Edge case 3: At least one UNKNOWN risk zone
-    // zone-018 has road_length_m: 0 and accessibility UNKNOWN; marked as designated test case, not measured data
+    // Data-driven risk score calculation using documented Module 3 model
     let risk_score = null;
     let risk_level = 'UNKNOWN';
 
-    if (z.zone_id === 'zone-018' || z.zone_id === 'zone-005' || exposed_buildings === null || (total_buildings === 0 && (!z.road_length_m || z.road_length_m === 0))) {
+    if (z.flooded_percent === null || z.flooded_percent === undefined || !Number.isFinite(z.flooded_percent) || exposed_buildings === null) {
       risk_level = 'UNKNOWN';
       risk_score = null;
     } else {
-      const bPart = (total_buildings > 0 && exposed_buildings !== null)
-        ? (exposed_buildings / total_buildings)
-        : 0;
-      const rPart = (z.road_length_m > 0)
-        ? (z.flooded_road_length_m / z.road_length_m)
-        : 0;
+      const fp = Math.max(0.0, Math.min(100.0, z.flooded_percent));
+      const eb = Math.max(0, exposed_buildings);
+      const accKey = z.accessibility in isoScores ? z.accessibility : 'UNKNOWN';
+      const isoNorm = isoScores[accKey] ?? 0.5;
 
-      const rawScore = (0.40 * Math.min(z.flooded_percent / 20, 1) + 0.35 * bPart + 0.25 * rPart) * 100;
-      risk_score = Math.round(rawScore * 10) / 10;
-      if (risk_score >= 60) {
+      const fpNorm = Math.min(fp / 30.0, 1.0);
+      const ebNorm = Math.min(eb / 75.0, 1.0);
+
+      let rawScore = 0.0;
+      if (fam_m2 !== null && fam_m2 !== undefined && Number.isFinite(fam_m2) && fam_m2 >= 0) {
+        const famNorm = Math.min(fam_m2 / 15000.0, 1.0);
+        rawScore = 0.35 * fpNorm + 0.40 * ebNorm + 0.15 * isoNorm + 0.10 * famNorm;
+      } else if (fp === 0.0) {
+        rawScore = 0.35 * fpNorm + 0.40 * ebNorm + 0.15 * isoNorm;
+      } else {
+        // Drop flood_area_density and renormalize active weights
+        rawScore = (0.35 / 0.90) * fpNorm + (0.40 / 0.90) * ebNorm + (0.15 / 0.90) * isoNorm;
+      }
+
+      rawScore = Math.max(0.0, Math.min(1.0, rawScore));
+      risk_score = Math.round(rawScore * 1000) / 10;
+
+      if (risk_score >= priorityThresholds.CRITICAL) {
+        risk_level = 'CRITICAL';
+      } else if (risk_score >= priorityThresholds.HIGH) {
         risk_level = 'HIGH';
-      } else if (risk_score >= 30) {
+      } else if (risk_score >= priorityThresholds.MEDIUM) {
         risk_level = 'MEDIUM';
       } else {
         risk_level = 'LOW';
       }
     }
 
-    // Edge case 1: Exactly one zone with geometry null -> zone-009 (LOW risk, real geometry preserved in raw data)
-    // zone-038 (HIGH risk, score 93.7) retains its real rectangle polygon geometry on the map.
+    // Geometry synthesized from bbox
     let geometry = null;
-    if (z.zone_id !== 'zone-009') {
+    if (Array.isArray(z.bbox) && z.bbox.length === 4) {
       const [minLon, minLat, maxLon, maxLat] = z.bbox;
       geometry = {
         type: 'Polygon',
@@ -143,44 +175,33 @@ function buildDernauDemo() {
       };
     }
 
-    // Reasons derived purely from metrics, explicitly marking designated test cases
+    // Explanations derived purely from measurements
     const reasons = [];
-    if (z.zone_id === 'zone-018') {
-      reasons.push('Designated test cases, not measured data: UNKNOWN risk level');
-      reasons.push('No road data in zone');
-    } else if (z.zone_id === 'zone-005') {
-      reasons.push('Designated test cases, not measured data: missing exposed_buildings numeric field');
-      reasons.push('Risk score not assessed due to missing numeric input');
+    if (risk_level === 'UNKNOWN') {
+      reasons.push('INSUFFICIENT DATA: Required flood coverage or building exposure measurement is missing; priority UNKNOWN');
     } else {
+      if (z.flooded_percent > 0) {
+        reasons.push(`${z.flooded_percent.toFixed(1)}% of zone area estimated as flooded`);
+      } else {
+        reasons.push('No derived flood coverage in this zone');
+      }
       if (total_buildings > 0) {
         reasons.push(`${exposed_buildings} of ${total_buildings} buildings flood-labelled`);
       }
-      if (z.flooded_percent > 0) {
-        reasons.push(`${z.flooded_percent}% area inundated`);
+      if (z.accessibility === 'BLOCKED') {
+        reasons.push('Zone roads are BLOCKED — road isolation penalty applied');
+      } else if (z.accessibility === 'PARTIAL') {
+        reasons.push('Zone roads are PARTIAL — partial road isolation penalty applied');
+      } else if (z.accessibility === 'UNKNOWN') {
+        reasons.push('Road accessibility unknown — intermediate isolation penalty applied');
       }
-      if (z.flooded_road_length_m > 0 && z.road_length_m > 0) {
-        reasons.push(`${z.flooded_road_length_m.toFixed(1)}m of ${z.road_length_m.toFixed(1)}m road flooded`);
-      }
-      if (reasons.length === 0) {
-        reasons.push('No flood coverage detected');
+      if (fam_m2 !== null && fam_m2 > 0) {
+        reasons.push(`Flood extent footprint: ${fam_m2.toFixed(0)} m²`);
       }
     }
 
-    let needs_survey = false;
-    let provenance = null;
-    let source = null;
-    let confidence = null;
-    let rank_p10 = null;
-    let rank_p90 = null;
-
-    if (z.zone_id === 'zone-005') {
-      needs_survey = true;
-      provenance = 'observed';
-      source = 'SpaceNet 8 / Maxar ground truth (test fixture)';
-      confidence = 0.35;
-      rank_p10 = 10;
-      rank_p90 = 30;
-    }
+    const needs_survey = (risk_level === 'UNKNOWN');
+    const confidence = (risk_level === 'UNKNOWN') ? 'LOW' : (z.accessibility === 'UNKNOWN' ? 'MEDIUM' : 'HIGH');
 
     return {
       zone_id: z.zone_id,
@@ -193,24 +214,25 @@ function buildDernauDemo() {
       total_buildings,
       accessibility,
       needs_survey,
-      provenance,
-      source,
+      provenance: 'derived',
+      source: 'SpaceNet 8 Germany (Dernau)',
       confidence,
-      rank_p10,
-      rank_p90,
+      rank_p10: null,
+      rank_p90: null,
       reasons,
       geometry
     };
   });
 
   const zonesOutput = {
-    schema_version: '1.0',
+    schema_version: '1.1',
     generated_at: fixedGeneratedAt,
     data_mode: 'demo',
     source: 'SpaceNet 8 Germany (Dernau)',
     study_area: 'Dernau (Ahr valley), Germany',
     crs: 'EPSG:4326',
     risk_method: riskMethodStr,
+    priority_thresholds: priorityThresholds,
     zones: processedZones
   };
 
@@ -318,7 +340,7 @@ function buildDernauDemo() {
   fs.writeFileSync(path.join(OUTPUT_DIR, 'blocked_roads.geojson'), JSON.stringify(blockedRoadsOutput, null, 2) + '\n', 'utf8');
 
   // ----------------------------------------------------
-  // 5. facilities.geojson (3 simulated demo points in non-flooded areas)
+  // 5. facilities.geojson (Simulated emergency facilities in verified safe, low-risk areas)
   // ----------------------------------------------------
   const facilitiesOutput = {
     type: 'FeatureCollection',
@@ -333,7 +355,7 @@ function buildDernauDemo() {
         },
         geometry: {
           type: 'Point',
-          coordinates: [7.01678, 50.52059] // Near dry road node in zone-016
+          coordinates: [7.01678, 50.52059] // Near dry road node in zone-016 (LOW risk)
         }
       },
       {
@@ -346,7 +368,7 @@ function buildDernauDemo() {
         },
         geometry: {
           type: 'Point',
-          coordinates: [7.03392, 50.51549] // Non-flooded centroid in zone-007
+          coordinates: [7.03392, 50.51549] // Non-flooded centroid in zone-007 (LOW risk)
         }
       },
       {
@@ -359,7 +381,46 @@ function buildDernauDemo() {
         },
         geometry: {
           type: 'Point',
-          coordinates: [7.04249, 50.51294] // Non-flooded centroid in zone-003
+          coordinates: [7.04249, 50.51294] // Non-flooded centroid in zone-003 (LOW risk)
+        }
+      },
+      {
+        type: 'Feature',
+        properties: {
+          facility_id: 'fac-004',
+          name: 'North-Central Relief Staging',
+          type: 'shelter',
+          provenance: 'simulated'
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [7.03650, 50.52109] // Non-flooded road node in zone-020 (LOW risk)
+        }
+      },
+      {
+        type: 'Feature',
+        properties: {
+          facility_id: 'fac-005',
+          name: 'North Emergency Assembly Post',
+          type: 'shelter',
+          provenance: 'simulated'
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [7.03706, 50.53108] // Non-flooded road node in zone-037 (LOW risk)
+        }
+      },
+      {
+        type: 'Feature',
+        properties: {
+          facility_id: 'fac-006',
+          name: 'East Relief Assembly Post',
+          type: 'depot',
+          provenance: 'simulated'
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [7.04423, 50.52664] // Non-flooded road node in zone-032 (LOW risk)
         }
       }
     ]
@@ -370,61 +431,12 @@ function buildDernauDemo() {
   // ----------------------------------------------------
   // 6. routes.json
   // ----------------------------------------------------
-  // Find real non-flooded road sequences from roadsRaw
-  const dryRoadWays = roadsRaw.features.filter(
-    (f) => f.properties && f.properties.flooded === false && f.geometry.type === 'LineString'
-  );
-
-  const route1Feat = dryRoadWays.find((f) => f.properties.id === 'way/847402010');
-  const route2Feat = dryRoadWays.find((f) => f.properties.id === 'way/847402013');
-
-  if (!route1Feat || !route2Feat) {
-    throw new Error('Could not locate required non-flooded road paths for routes');
-  }
-
-  const coords1 = route1Feat.geometry.coordinates;
-  const coords2 = route2Feat.geometry.coordinates;
-
-  const dist1 = computePathDistance(coords1);
-  const dist2 = computePathDistance(coords2);
-
-  const routesOutput = {
-    routes: [
-      {
-        route_id: 'route-001',
-        name: 'Route 001 (North Access)',
-        status: 'OK',
-        distance_m: dist1,
-        eta_minutes: null,
-        provenance: 'simulated',
-        geometry: {
-          type: 'LineString',
-          coordinates: coords1
-        }
-      },
-      {
-        route_id: 'route-002',
-        name: 'Route 002 (West Access)',
-        status: 'OK',
-        distance_m: dist2,
-        eta_minutes: null,
-        provenance: 'simulated',
-        geometry: {
-          type: 'LineString',
-          coordinates: coords2
-        }
-      },
-      {
-        route_id: 'route-003',
-        name: 'Route 003 (Cut-off Sector)',
-        status: 'UNREACHABLE',
-        distance_m: null,
-        eta_minutes: null,
-        provenance: 'simulated',
-        geometry: null
-      }
-    ]
-  };
+  // Generate data-driven evacuation routes evaluating affected zones and avoiding flooded roads
+  const routesOutput = generateEvacuationRoutes({
+    zones: processedZones,
+    roads: roadsRaw,
+    facilities: facilitiesOutput,
+  });
 
   fs.writeFileSync(path.join(OUTPUT_DIR, 'routes.json'), JSON.stringify(routesOutput, null, 2) + '\n', 'utf8');
 
@@ -470,9 +482,9 @@ This directory contains a contract-perfect, fully deterministic demonstration da
   - \`LOW\`: score $< 30$
   - \`UNKNOWN\`: score is \`null\` when a zone has insufficient infrastructure data.
 - **Facilities (\`facilities.geojson\`):**
-  Three simulated points (hospital, shelter, depot) placed in non-flooded areas inside the AOI. Provenance: \`simulated\`.
+  Simulated emergency destinations (hospital, shelter, depot, staging posts) placed in verified safe, low-risk areas inside the AOI. Provenance: \`simulated\`.
 - **Routes (\`routes.json\`):**
-  Two \`OK\` routes with geometry reused from real non-flooded road segments in \`roads_status.geojson\` with Haversine distance, and one \`UNREACHABLE\` route with \`geometry: null\`. \`eta_minutes\` is \`null\` (no fabricated speeds). Provenance: \`simulated\`.
+  Evacuation routes computed for qualifying High- and Medium-risk zones leading toward safe shelter destinations via unflooded road segments. Cut-off zones with flooded access or no reachable shelter correctly report \`status: "NO_SAFE_ROUTE"\` with \`geometry: null\`. Provenance: \`simulated\`.
 - **AOI Location:**
   Dernau (Ahr valley), Rhineland-Palatinate, Germany (approx bbox \`[7.015, 50.511]\` to \`[7.044, 50.531]\`). The dashboard map must fit its bounds dynamically from the dataset.
 
@@ -498,7 +510,7 @@ This directory contains a contract-perfect, fully deterministic demonstration da
 - **Flood Polygons (valid inside AOI with 0.0005 deg tolerance):** ${floodFeatures.length}
 - **Dropped Features:** ${floodFeaturesDropped}
 - **Facilities:** ${facilitiesOutput.features.length}
-- **Routes:** ${routesOutput.routes.length} (2 OK, 1 UNREACHABLE)
+- **Routes:** ${routesOutput.routes.length} (${routesOutput.routes.filter((r) => r.status === 'OK').length} OK, ${routesOutput.routes.filter((r) => r.status !== 'OK').length} NO_SAFE_ROUTE)
 - **Exposed Buildings:** ${buildingsRaw.features.length}
 `;
 

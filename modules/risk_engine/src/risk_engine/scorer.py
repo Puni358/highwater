@@ -115,12 +115,12 @@ class ZoneDataQualityAssessment:
 class ZoneRiskRecord:
     zone_id: str
     rank: int
-    score: float          # 0.0 – 100.0 (display rounded)
-    priority: str         # CRITICAL | HIGH | MEDIUM | LOW
-    raw_score: float      # Unrounded [0.0, 1.0] for deterministic ranking
+    score: float | None          # 0.0 – 100.0 (display rounded) or None for unassessed
+    priority: str         # CRITICAL | HIGH | MEDIUM | LOW | UNKNOWN
+    raw_score: float      # Unrounded [0.0, 1.0] for deterministic ranking (-1.0 if unassessed)
     reasons: list[str]
     warnings: list[str]
-    score_basis: str      # "full" | "partial"
+    score_basis: str      # "full" | "partial" | "none"
     omitted_components: list[str]
     # Component contributions (each 0.0-1.0, before weighting)
     flood_percent_component: float
@@ -129,13 +129,13 @@ class ZoneRiskRecord:
     flood_area_component: float
     exposure_fraction_component: float
     # Raw inputs
-    flooded_percent: float
-    exposed_buildings: int
+    flooded_percent: float | None
+    exposed_buildings: int | None
     total_buildings: int
     accessibility: str
     road_length_m: float
     flooded_road_length_m: float
-    flooded_area_m2: float
+    flooded_area_m2: float | None
     centroid: list[float]
     bbox: list[float]
     # Data quality & confidence
@@ -228,6 +228,7 @@ def load_zones(
 
     cfg_dq = (config or {}).get("data_quality", {})
     on_neg_exposure = cfg_dq.get("on_negative_exposure", "error")
+    on_missing_required = cfg_dq.get("on_missing_required", "error")
 
     for idx, zone in enumerate(zones):
         if not isinstance(zone, dict):
@@ -241,9 +242,26 @@ def load_zones(
         seen_ids.add(zone_id)
 
         # 1. Required field checks
-        for req in ("flooded_percent", "exposed_buildings", "accessibility"):
-            if req not in zone or zone[req] is None:
-                raise InputValidationError(f"Zone '{zone_id}', field '{req}': missing required field")
+        missing_req = [req for req in ("flooded_percent", "exposed_buildings", "accessibility") if req not in zone or zone[req] is None]
+        if missing_req:
+            if on_missing_required == "unknown":
+                for req in missing_req:
+                    warnings.append(DataQualityWarning(
+                        zone_id=zone_id,
+                        field=req,
+                        issue=f"Zone '{zone_id}', field '{req}': missing required field; classified as UNKNOWN (INSUFFICIENT_DATA)",
+                    ))
+                coerced = dict(zone)
+                coerced["zone_id"] = zone_id
+                coerced["flooded_percent"] = None
+                coerced["exposed_buildings"] = None
+                coerced["accessibility"] = zone.get("accessibility") or "UNKNOWN"
+                coerced["_is_insufficient_data"] = True
+                coerced["_missing_fields"] = missing_req
+                coerced_zones.append(coerced)
+                continue
+            else:
+                raise InputValidationError(f"Zone '{zone_id}', field '{missing_req[0]}': missing required field")
 
         # 2. flooded_percent validation
         fp = zone["flooded_percent"]
@@ -464,14 +482,157 @@ def _natural_sort_key(s: str) -> list[int | str]:
     return [int(text) if text.isdigit() else text.lower() for text in re.split(r"(\d+)", s)]
 
 
-def _priority_label(score: float, thresholds: dict[str, Any]) -> str:
-    if score >= thresholds["CRITICAL"]:
+def classify_risk_score(
+    score: float | int | None,
+    thresholds: dict[str, float] | PriorityThresholds | None = None,
+) -> str:
+    """Classify a numerical risk score (0.0 - 100.0) into a priority category.
+
+    Centralized classification policy:
+        CRITICAL: score >= thresholds['CRITICAL'] (default: 70.0)
+        HIGH:     score >= thresholds['HIGH']     (default: 45.0)
+        MEDIUM:   score >= thresholds['MEDIUM']   (default: 20.0)
+        LOW:      score >= thresholds['LOW']      (default: 0.0)
+        UNKNOWN:  missing, null, NaN, or non-finite score
+
+    Returns:
+        'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN'
+    """
+    if score is None or isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
+        return "UNKNOWN"
+
+    if thresholds is None:
+        th = DEFAULT_PRIORITY_THRESHOLDS
+    elif isinstance(thresholds, PriorityThresholds):
+        th = thresholds.to_dict()
+    elif isinstance(thresholds, dict):
+        th = thresholds
+    else:
+        th = DEFAULT_PRIORITY_THRESHOLDS
+
+    crit = th.get("CRITICAL", 70.0)
+    high = th.get("HIGH", 45.0)
+    med = th.get("MEDIUM", 20.0)
+    low = th.get("LOW", 0.0)
+
+    if score >= crit:
         return "CRITICAL"
-    if score >= thresholds["HIGH"]:
+    if score >= high:
         return "HIGH"
-    if score >= thresholds["MEDIUM"]:
+    if score >= med:
         return "MEDIUM"
-    return "LOW"
+    if score >= low:
+        return "LOW"
+    return "UNKNOWN"
+
+
+def _priority_label(score: float, thresholds: dict[str, Any]) -> str:
+    return classify_risk_score(score, thresholds)
+
+
+def calculate_zone_risk(
+    zone: dict[str, Any],
+    config: dict[str, Any] | RiskEngineConfig | None = None,
+) -> dict[str, Any]:
+    """Calculate the numerical risk score and category for a single zone dictionary.
+
+    Derives the score strictly from actual measurements and configured weights.
+    Employs no special cases by zone ID.
+
+    Returns:
+        dict containing 'zone_id', 'score', 'raw_score', 'priority', 'status', 'confidence',
+        'components', 'active_weights', 'needs_verification'.
+    """
+    cfg_obj: dict[str, Any]
+    if config is None:
+        cfg_obj = load_config()
+    elif isinstance(config, RiskEngineConfig):
+        cfg_obj = config.to_dict()
+    else:
+        cfg_obj = config
+
+    weights_clean = _strip_comments(cfg_obj["scoring"]["weights"])
+    norms = _strip_comments(cfg_obj["scoring"]["normalization"])
+    iso_scores = _strip_comments(cfg_obj["scoring"]["isolation_score"])
+    thresholds = _strip_comments(cfg_obj["priority_thresholds"])
+
+    zid = str(zone.get("zone_id", "unknown"))
+    fp_raw = zone.get("flooded_percent")
+    eb_raw = zone.get("exposed_buildings")
+
+    if fp_raw is None or eb_raw is None or not _is_finite_num(fp_raw) or not _is_finite_num(eb_raw):
+        return {
+            "zone_id": zid,
+            "score": None,
+            "raw_score": None,
+            "priority": "UNKNOWN",
+            "status": "INSUFFICIENT_DATA",
+            "confidence": "LOW",
+            "needs_verification": True,
+            "components": {},
+            "active_weights": weights_clean,
+        }
+
+    fp = max(0.0, min(100.0, float(fp_raw)))
+    eb = max(0, int(eb_raw))
+    tb = max(0, int(zone.get("total_buildings") or 0))
+    acc_raw = zone.get("accessibility")
+    acc = acc_raw if isinstance(acc_raw, str) and acc_raw in ACCESSIBILITY_VALUES else "UNKNOWN"
+    fam_raw = zone.get("flooded_area_m2")
+    fam = float(fam_raw) if fam_raw is not None and _is_finite_num(fam_raw) and fam_raw >= 0 else None
+
+    flood_c = min(fp / norms["flood_percent_max"], 1.0)
+    exposure_c = min(eb / norms["exposed_buildings_max"], 1.0)
+    isolation_c = iso_scores.get(acc, iso_scores["UNKNOWN"])
+    exp_frac_c = min(1.0, max(0.0, eb / tb)) if tb > 0 else 0.0
+
+    if fam is not None and fam >= 0.0:
+        flood_area_c = min(fam / norms["flood_area_m2_max"], 1.0)
+        active_weights = dict(weights_clean)
+        status = "VERIFIED"
+    elif fp == 0.0:
+        flood_area_c = 0.0
+        active_weights = dict(weights_clean)
+        status = "VERIFIED"
+    else:
+        flood_area_c = 0.0
+        active_weights = {k: v for k, v in weights_clean.items() if k != "flood_area_density"}
+        rem = sum(active_weights.values())
+        if rem > 0:
+            active_weights = {k: v / rem for k, v in active_weights.items()}
+        status = "INCOMPLETE"
+
+    raw = (
+        active_weights.get("flood_percent", 0.0) * flood_c
+        + active_weights.get("exposure", 0.0) * exposure_c
+        + active_weights.get("isolation", 0.0) * isolation_c
+        + active_weights.get("flood_area_density", 0.0) * flood_area_c
+        + active_weights.get("exposure_fraction", 0.0) * exp_frac_c
+    )
+    raw = max(0.0, min(1.0, raw))
+    score = round(raw * 100.0, 1)
+    priority = classify_risk_score(score, thresholds)
+
+    confidence = "HIGH" if (status == "VERIFIED" and acc != "UNKNOWN") else ("MEDIUM" if status == "INCOMPLETE" or acc == "UNKNOWN" else "LOW")
+    needs_ver = priority == "LOW" and confidence != "HIGH"
+
+    return {
+        "zone_id": zid,
+        "score": score,
+        "raw_score": round(raw, 6),
+        "priority": priority,
+        "status": status,
+        "confidence": confidence,
+        "needs_verification": needs_ver,
+        "components": {
+            "flood_percent": round(flood_c, 4),
+            "exposure": round(exposure_c, 4),
+            "isolation": round(isolation_c, 4),
+            "flood_area_density": round(flood_area_c, 4),
+            "exposure_fraction": round(exp_frac_c, 4),
+        },
+        "active_weights": active_weights,
+    }
 
 
 def compute_score_breakdown(
@@ -1061,8 +1222,8 @@ def score_zones(
 
     for zone in zones_doc["zones"]:
         zid = zone["zone_id"]
-        fp = float(zone["flooded_percent"])
-        eb = int(zone["exposed_buildings"])
+        fp_raw = zone.get("flooded_percent")
+        eb_raw = zone.get("exposed_buildings")
         tb_raw = zone.get("total_buildings")
         tb = int(tb_raw) if tb_raw is not None else 0
         rl_raw = zone.get("road_length_m")
@@ -1075,6 +1236,45 @@ def score_zones(
         else:
             acc = acc_raw
         fam = zone.get("flooded_area_m2")
+
+        if zone.get("_is_insufficient_data") or fp_raw is None or eb_raw is None or not _is_finite_num(fp_raw) or not _is_finite_num(eb_raw):
+            zone_warnings = [w.issue for w in global_warnings if w.zone_id == zid]
+            if not zone_warnings:
+                zone_warnings = ["insufficient_data: missing required flood or exposure measurements"]
+            records.append(ZoneRiskRecord(
+                zone_id=zid,
+                rank=0,
+                score=None,
+                priority="UNKNOWN",
+                raw_score=-1.0,
+                reasons=["INSUFFICIENT DATA: Required flood coverage or building exposure data is missing or invalid; cannot reliably determine risk score (priority UNKNOWN)."],
+                warnings=zone_warnings,
+                score_basis="none",
+                omitted_components=["all"],
+                flood_percent_component=0.0,
+                exposure_component=0.0,
+                isolation_component=0.0,
+                flood_area_component=0.0,
+                exposure_fraction_component=0.0,
+                flooded_percent=None,
+                exposed_buildings=None,
+                total_buildings=tb,
+                accessibility=acc,
+                road_length_m=rl,
+                flooded_road_length_m=frl,
+                flooded_area_m2=float(fam) if (fam is not None and _is_finite_num(fam)) else None,
+                centroid=list(zone.get("centroid") or []),
+                bbox=list(zone.get("bbox") or []),
+                confidence="LOW",
+                needs_verification=True,
+                data_quality_status="INSUFFICIENT_DATA",
+                data_quality_issues=["insufficient_data"],
+                score_breakdown={},
+            ))
+            continue
+
+        fp = float(fp_raw)
+        eb = int(eb_raw)
 
         # 1. Component normalization [0.0, 1.0]
         flood_c = min(fp / norms["flood_percent_max"], 1.0)
@@ -1188,9 +1388,10 @@ def score_zones(
     # Deterministic Ranking
     records.sort(
         key=lambda r: (
-            -r.raw_score,
-            -r.exposed_buildings,
-            -r.flooded_percent,
+            0 if (r.score is not None and r.raw_score is not None and r.raw_score >= 0) else 1,
+            -r.raw_score if (r.raw_score is not None and r.raw_score >= 0) else 0.0,
+            -(r.exposed_buildings if r.exposed_buildings is not None else -1),
+            -(r.flooded_percent if r.flooded_percent is not None else -1.0),
             _natural_sort_key(r.zone_id),
         )
     )
@@ -1440,21 +1641,30 @@ def export_dashboard(
         acc_raw = inp.get("accessibility", "UNKNOWN")
         acc_mapped = ACCESSIBILITY_DASHBOARD_MAP.get(acc_raw, "UNKNOWN")
 
-        fam_m2 = inp.get("flooded_area_m2") or 0.0
-        fam_km2 = round(fam_m2 / 1e6, 6)
+        fam_m2 = inp.get("flooded_area_m2")
+        fam_km2 = round(float(fam_m2) / 1e6, 6) if (fam_m2 is not None and _is_finite_num(fam_m2) and fam_m2 >= 0) else None
+
+        zid = z["zone_id"]
+        num_part = zid.replace("zone-", "") if zid.startswith("zone-") else zid
+        zone_name = z.get("name") or f"Zone {num_part}"
+
+        score_val = round(float(z["score"]), 1) if (z.get("score") is not None and _is_finite_num(z["score"])) else None
+        fp_val = float(inp["flooded_percent"]) if (inp.get("flooded_percent") is not None and _is_finite_num(inp["flooded_percent"])) else None
+        eb_val = int(inp["exposed_buildings"]) if (inp.get("exposed_buildings") is not None and _is_finite_num(inp["exposed_buildings"])) else None
+        tb_val = int(inp["total_buildings"]) if (inp.get("total_buildings") is not None and _is_finite_num(inp["total_buildings"])) else None
 
         dashboard_zones.append({
             "zone_id": z["zone_id"],
-            "name": f"Zone {z['zone_id']}",
+            "name": zone_name,
             "risk_level": z["priority"],
-            "risk_score": round(float(z["score"]), 1),
+            "risk_score": score_val,
             "confidence": z.get("confidence", "HIGH"),
             "needs_verification": z.get("needs_verification", False),
             "needs_survey": z.get("needs_verification", False),
-            "flooded_percent": float(inp.get("flooded_percent", 0.0)),
+            "flooded_percent": fp_val,
             "flooded_area_km2": fam_km2,
-            "exposed_buildings": int(inp.get("exposed_buildings", 0)),
-            "total_buildings": int(inp.get("total_buildings", 0)),
+            "exposed_buildings": eb_val,
+            "total_buildings": tb_val,
             "accessibility": acc_mapped,
             "isolation": z.get("isolation"),
             "reasons": z.get("reasons", []),
@@ -1462,11 +1672,20 @@ def export_dashboard(
             "score_breakdown": z.get("score_breakdown"),
         })
 
+    thresh = (
+        output_dict.get("scoring_config", {}).get("priority_thresholds")
+        or DEFAULT_PRIORITY_THRESHOLDS
+    )
+
     return {
         "schema_version": "1.1",
         "generated_at": output_dict.get("generated_at", datetime.now(timezone.utc).isoformat()),
         "data_mode": data_mode,
         "study_area": study_area,
+        "source": source_doc.get("source") or "SpaceNet 8 Germany (Dernau)",
+        "crs": source_doc.get("crs", "EPSG:4326"),
         "score_scale": "0-100",
+        "priority_thresholds": thresh,
+        "scoring_config": output_dict.get("scoring_config"),
         "zones": dashboard_zones,
     }

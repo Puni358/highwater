@@ -25,15 +25,17 @@ export function normalizeNumber(val) {
   return null;
 }
 
+import { DEFAULT_PRIORITY_THRESHOLDS, classifyRiskScore } from '../config/thresholds.js';
+
 /**
- * Normalises risk level. Anything not strictly HIGH, MEDIUM, LOW becomes UNKNOWN.
+ * Normalises risk level. Anything not strictly CRITICAL, HIGH, MEDIUM, LOW becomes UNKNOWN.
  * @param {string} level 
- * @returns {"HIGH"|"MEDIUM"|"LOW"|"UNKNOWN"}
+ * @returns {"CRITICAL"|"HIGH"|"MEDIUM"|"LOW"|"UNKNOWN"}
  */
 export function normalizeRiskLevel(level) {
   if (typeof level !== 'string') return 'UNKNOWN';
   const upper = level.toUpperCase().trim();
-  if (upper === 'HIGH' || upper === 'MEDIUM' || upper === 'LOW') {
+  if (upper === 'CRITICAL' || upper === 'HIGH' || upper === 'MEDIUM' || upper === 'LOW') {
     return upper;
   }
   return 'UNKNOWN';
@@ -118,6 +120,10 @@ export function adaptZones(rawZonesPayload) {
     }
   }
 
+  const payloadThresholds = rawZonesPayload.priority_thresholds
+    || rawZonesPayload.scoring_config?.priority_thresholds
+    || DEFAULT_PRIORITY_THRESHOLDS;
+
   const metadata = {
     schemaVersion: rawZonesPayload.schema_version || '1.0',
     generatedAt: rawZonesPayload.generated_at || null,
@@ -126,6 +132,7 @@ export function adaptZones(rawZonesPayload) {
     riskMethod: rawZonesPayload.risk_method || null,
     source: rawZonesPayload.source || null,
     dataSource: rawZonesPayload.data_source || null,
+    priorityThresholds: payloadThresholds,
   };
 
   const zones = rawZones.map((z, idx) => {
@@ -136,17 +143,23 @@ export function adaptZones(rawZonesPayload) {
       z.flooded_area_km2 ?? (z.flooded_area_m2 ? z.flooded_area_m2 / 1000000 : null)
     );
     const exposedBuildings = normalizeNumber(z.exposed_buildings);
+    const rawScore = normalizeNumber(z.risk_score ?? z.score);
     const scoreResult = normalizeRiskScore(z.risk_score ?? z.score);
 
     // Rule:
     // Only force UNKNOWN when risk_level or risk_score is missing or invalid.
     // If risk_level is supplied but other numeric fields are null, keep the risk level and add a partialData flag.
-    const normalizedRisk = normalizeRiskLevel(z.risk_level || z.priority);
-    const isRiskMissingOrInvalid =
-      normalizedRisk === 'UNKNOWN' ||
-      scoreResult.score === null;
+    const rawRiskInput = z.risk_level !== undefined ? z.risk_level : z.priority;
+    let riskLevel = 'UNKNOWN';
 
-    const riskLevel = isRiskMissingOrInvalid ? 'UNKNOWN' : normalizedRisk;
+    if (scoreResult.score === null) {
+      riskLevel = 'UNKNOWN';
+    } else if (rawRiskInput !== undefined && rawRiskInput !== null) {
+      riskLevel = normalizeRiskLevel(rawRiskInput);
+    } else {
+      riskLevel = classifyRiskScore(rawScore ?? scoreResult.score, payloadThresholds);
+    }
+
     const riskScore = scoreResult.score;
 
     const partialData =
@@ -193,6 +206,7 @@ export function adaptZones(rawZonesPayload) {
       name,
       riskLevel,
       riskScore,
+      rawRiskScore: rawScore,
       floodedPercent,
       floodedAreaKm2,
       exposedBuildings,
@@ -234,11 +248,17 @@ export function adaptRoutes(rawRoutesPayload) {
   return rawList.map((r, idx) => ({
     routeId: r.route_id || `route-${idx + 1}`,
     zoneId: r.zone_id || null,
+    zoneName: r.zone_name || null,
+    riskLevel: r.risk_level || r.riskLevel || null,
     destinationName: r.destination_name || null,
+    destinationId: r.destination_id || null,
+    originId: r.origin_id || null,
+    originCoords: r.origin_coords || null,
     status: (r.status || 'UNKNOWN').toUpperCase(),
     distanceM: normalizeNumber(r.distance_m ?? (r.distance_km ? r.distance_km * 1000 : null)),
     etaMinutes: normalizeNumber(r.eta_minutes),
     provenance: r.provenance || 'derived',
+    reason: r.reason || null,
     geometry: r.geometry || null,
   }));
 }

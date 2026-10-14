@@ -99,6 +99,12 @@ export default function DashboardLayout({
     return allZones.find((z) => z.zoneId === selectedZoneId) || null;
   }, [allZones, selectedZoneId]);
 
+  // Selected route object
+  const selectedRoute = useMemo(() => {
+    if (!selectedZoneId || !Array.isArray(data?.routes)) return null;
+    return data.routes.find((r) => r.zoneId === selectedZoneId) || null;
+  }, [selectedZoneId, data?.routes]);
+
   // Geographic extent verification and historical/simulated event labeling
   const geoVerification = useMemo(() => {
     return verifyGeographicData({
@@ -335,6 +341,7 @@ export default function DashboardLayout({
                 {/* Zone Details Inspection Panel (FR-20, FR-21, T4.5) */}
                 <ZoneDetails
                   zone={selectedZone}
+                  route={selectedRoute}
                   timestamp={metadata.generatedAt}
                   onClearSelection={() => setSelectedZoneId(null)}
                   isTestFixture={metadata.dataMode === 'demo'}
@@ -532,6 +539,7 @@ export default function DashboardLayout({
                 <div className="space-y-4">
                   <ZoneDetails
                     zone={selectedZone}
+                    route={selectedRoute}
                     timestamp={metadata.generatedAt}
                     onClearSelection={() => setSelectedZoneId(null)}
                     isTestFixture={metadata.dataMode === 'demo'}

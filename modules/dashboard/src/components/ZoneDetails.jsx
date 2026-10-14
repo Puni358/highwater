@@ -51,6 +51,7 @@ function getAccessibilityDisplay(accessibility) {
  */
 export default function ZoneDetails({
   zone = null,
+  route = null,
   timestamp = null,
   onClearSelection,
   isTestFixture = false,
@@ -255,6 +256,50 @@ export default function ZoneDetails({
           </div>
         )}
       </div>
+
+      {/* Evacuation Route Assessment */}
+      {route && (
+        <div
+          className={`p-2.5 rounded border text-xs flex items-start space-x-2 ${
+            route.status === 'OK'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+              : 'bg-red-50 border-red-200 text-red-950'
+          }`}
+          role="status"
+          aria-label="Evacuation Route Assessment"
+        >
+          {route.status === 'OK' ? (
+            <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" aria-hidden="true" />
+          ) : (
+            <Ban className="w-4 h-4 shrink-0 text-red-600 mt-0.5" aria-hidden="true" />
+          )}
+          <div className="space-y-0.5 min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold">
+                {route.status === 'OK' ? 'Evacuation Route Clear' : 'No Safe Route (Cut Off)'}
+              </span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                route.status === 'OK' ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'
+              }`}>
+                {route.status}
+              </span>
+            </div>
+            {route.destinationName && (
+              <div className="text-text-muted">
+                Destination: <span className="font-medium text-text">{route.destinationName}</span>
+                {route.distanceM !== null && (
+                  <span> ({route.distanceM >= 1000 ? `${(route.distanceM / 1000).toFixed(1)} km` : `${route.distanceM} m`})</span>
+                )}
+              </div>
+            )}
+            {route.reason && (
+              <p className="text-[11px] leading-snug text-text-muted mt-1">
+                {route.reason}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Operational Reasons (FR-21) */}
       <div className="pt-2 border-t border-border space-y-1.5">

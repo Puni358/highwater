@@ -23,9 +23,9 @@ This directory contains a contract-perfect, fully deterministic demonstration da
   - `LOW`: score $< 30$
   - `UNKNOWN`: score is `null` when a zone has insufficient infrastructure data.
 - **Facilities (`facilities.geojson`):**
-  Three simulated points (hospital, shelter, depot) placed in non-flooded areas inside the AOI. Provenance: `simulated`.
+  Simulated emergency destinations (hospital, shelter, depot, staging posts) placed in verified safe, low-risk areas inside the AOI. Provenance: `simulated`.
 - **Routes (`routes.json`):**
-  Two `OK` routes with geometry reused from real non-flooded road segments in `roads_status.geojson` with Haversine distance, and one `UNREACHABLE` route with `geometry: null`. `eta_minutes` is `null` (no fabricated speeds). Provenance: `simulated`.
+  Evacuation routes computed for qualifying High- and Medium-risk zones leading toward safe shelter destinations via unflooded road segments. Cut-off zones with flooded access or no reachable shelter correctly report `status: "NO_SAFE_ROUTE"` with `geometry: null`. Provenance: `simulated`.
 - **AOI Location:**
   Dernau (Ahr valley), Rhineland-Palatinate, Germany (approx bbox `[7.015, 50.511]` to `[7.044, 50.531]`). The dashboard map must fit its bounds dynamically from the dataset.
 
@@ -43,13 +43,13 @@ This directory contains a contract-perfect, fully deterministic demonstration da
 ## Dataset Statistics
 
 - **Total Zones:** 38
-  - `HIGH`: 4
-  - `MEDIUM`: 4
-  - `LOW`: 28
-  - `UNKNOWN`: 2
+  - `HIGH`: 3
+  - `MEDIUM`: 5
+  - `LOW`: 30
+  - `UNKNOWN`: 0
 - **Blocked Roads:** 45
 - **Flood Polygons (valid inside AOI with 0.0005 deg tolerance):** 196
 - **Dropped Features:** 0
-- **Facilities:** 3
-- **Routes:** 3 (2 OK, 1 UNREACHABLE)
+- **Facilities:** 6
+- **Routes:** 8 (2 OK, 6 NO_SAFE_ROUTE)
 - **Exposed Buildings:** 759

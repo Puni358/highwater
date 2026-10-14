@@ -55,6 +55,12 @@ export default function MapLegend({
             <ProvenanceBadge value="derived" />
           </div>
           <div className="grid grid-cols-2 gap-1 text-[11px]">
+            {THEME.riskColors.CRITICAL && (
+              <div className="flex items-center space-x-1.5">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: THEME.riskColors.CRITICAL }} />
+                <span>CRITICAL</span>
+              </div>
+            )}
             <div className="flex items-center space-x-1.5">
               <div className="w-3 h-3 rounded" style={{ backgroundColor: THEME.riskColors.HIGH }} />
               <span>HIGH</span>

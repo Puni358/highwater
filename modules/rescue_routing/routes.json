@@ -12,9 +12,9 @@
     "benchmark": "synthetic",
     "population": "synthetic_demo",
     "input_files": {
-      "data/zaragoza_network.json": "832abfe858e3b6bfb035f07adf18f1ccaae75017839a012a42a9946fd2aca73a",
-      "data/synthetic_depth_map.json": "b7dbe3427aaa8312ab811af50738b7735753c4397be4c46465a1a530666d3983",
-      "data/population_zones.json": "a9447951203f58d0de3e2dac83d9c6ccfd8110c410b7ec95cbb9d2c64695bcd0"
+      "data/zaragoza_network.json": "70f76ad1904484ef24a1f79f3c06ecab421a020992ec14da9b15b5c3e5cdfdf8",
+      "data/synthetic_depth_map.json": "51d6cf1bcdd37f51d6317a91fb2a2883d0fa1dad61b72f3e39214c08ba3ca810",
+      "data/population_zones.json": "90ac73fb4d50085b391a756b634da8384caa341e0f8e2719ae7e02b9297ecfd6"
     },
     "deterministic_seed": 42
   },

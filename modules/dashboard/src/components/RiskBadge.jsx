@@ -7,7 +7,12 @@ import { AlertOctagon, AlertCircle, ShieldCheck, HelpCircle } from 'lucide-react
  * Hard rule: Risk is never conveyed by colour alone.
  * UNKNOWN zones use dashed outline.
  */
-const RISK_CONFIG = {
+export const RISK_CONFIG = {
+  CRITICAL: {
+    icon: AlertOctagon,
+    label: 'CRITICAL',
+    className: 'bg-red-100 text-red-950 border border-red-600 font-black',
+  },
   HIGH: {
     icon: AlertOctagon,
     label: 'HIGH',

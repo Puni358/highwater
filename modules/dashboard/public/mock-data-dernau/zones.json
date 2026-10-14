@@ -1,32 +1,39 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "generated_at": "2026-10-14T10:00:00Z",
   "data_mode": "demo",
   "source": "SpaceNet 8 Germany (Dernau)",
   "study_area": "Dernau (Ahr valley), Germany",
   "crs": "EPSG:4326",
-  "risk_method": "score = 0.40*min(flooded_percent/20,1) + 0.35*(exposed_buildings/total_buildings, 0 if none) + 0.25*(flooded_road_length_m/road_length_m, 0 if none), times 100, rounded to 1 dp (illustrative demo score, not Member 3 output)",
+  "risk_method": "Module 3 Risk & Prioritization Engine: score = 0.35*min(fp/30, 1) + 0.40*min(eb/75, 1) + 0.15*iso + 0.10*min(fam/15000, 1), times 100",
+  "priority_thresholds": {
+    "CRITICAL": 70,
+    "HIGH": 45,
+    "MEDIUM": 20,
+    "LOW": 0
+  },
   "zones": [
     {
       "zone_id": "zone-001",
       "name": "Zone 001 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 12.4,
+      "risk_score": 10.2,
       "flooded_percent": 1.24,
       "flooded_area_km2": 0.0011,
       "exposed_buildings": 1,
       "total_buildings": 12,
       "accessibility": "LIMITED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "1.2% of zone area estimated as flooded",
         "1 of 12 buildings flood-labelled",
-        "1.24% area inundated",
-        "103.5m of 371.7m road flooded"
+        "Zone roads are PARTIAL — partial road isolation penalty applied",
+        "Flood extent footprint: 1114 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -59,23 +66,24 @@
     {
       "zone_id": "zone-002",
       "name": "Zone 002 (grid cell)",
-      "risk_level": "MEDIUM",
-      "risk_score": 52.9,
+      "risk_level": "HIGH",
+      "risk_score": 53.4,
       "flooded_percent": 10.31,
       "flooded_area_km2": 0.0093,
       "exposed_buildings": 52,
       "total_buildings": 104,
       "accessibility": "LIMITED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "10.3% of zone area estimated as flooded",
         "52 of 104 buildings flood-labelled",
-        "10.31% area inundated",
-        "439.8m of 744.6m road flooded"
+        "Zone roads are PARTIAL — partial road isolation penalty applied",
+        "Flood extent footprint: 9275 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -116,12 +124,13 @@
       "total_buildings": 3,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "No derived flood coverage in this zone",
         "0 of 3 buildings flood-labelled"
       ],
       "geometry": {
@@ -156,20 +165,22 @@
       "zone_id": "zone-004",
       "name": "Zone 004 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 11.7,
+      "risk_score": 0.5,
       "flooded_percent": 0,
       "flooded_area_km2": 0,
       "exposed_buildings": 1,
       "total_buildings": 3,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "1 of 3 buildings flood-labelled"
+        "No derived flood coverage in this zone",
+        "1 of 3 buildings flood-labelled",
+        "Flood extent footprint: 1 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -202,22 +213,21 @@
     {
       "zone_id": "zone-005",
       "name": "Zone 005 (grid cell)",
-      "risk_level": "UNKNOWN",
-      "risk_score": null,
+      "risk_level": "LOW",
+      "risk_score": 0,
       "flooded_percent": 0,
       "flooded_area_km2": 0,
-      "exposed_buildings": null,
+      "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "OPEN",
-      "needs_survey": true,
-      "provenance": "observed",
-      "source": "SpaceNet 8 / Maxar ground truth (test fixture)",
-      "confidence": 0.35,
-      "rank_p10": 10,
-      "rank_p90": 30,
+      "needs_survey": false,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
+      "rank_p10": null,
+      "rank_p90": null,
       "reasons": [
-        "Designated test cases, not measured data: missing exposed_buildings numeric field",
-        "Risk score not assessed due to missing numeric input"
+        "No derived flood coverage in this zone"
       ],
       "geometry": {
         "type": "Polygon",
@@ -251,21 +261,22 @@
       "zone_id": "zone-006",
       "name": "Zone 006 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 16.1,
+      "risk_score": 8.8,
       "flooded_percent": 0.76,
       "flooded_area_km2": 0.0007,
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "LIMITED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "0.76% area inundated",
-        "61.2m of 104.9m road flooded"
+        "0.8% of zone area estimated as flooded",
+        "Zone roads are PARTIAL — partial road isolation penalty applied",
+        "Flood extent footprint: 680 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -306,12 +317,13 @@
       "total_buildings": 5,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "No derived flood coverage in this zone",
         "0 of 5 buildings flood-labelled"
       ],
       "geometry": {
@@ -346,22 +358,23 @@
       "zone_id": "zone-008",
       "name": "Zone 008 (grid cell)",
       "risk_level": "MEDIUM",
-      "risk_score": 49.2,
+      "risk_score": 36.5,
       "flooded_percent": 9.5,
       "flooded_area_km2": 0.0085,
       "exposed_buildings": 23,
       "total_buildings": 46,
       "accessibility": "LIMITED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "9.5% of zone area estimated as flooded",
         "23 of 46 buildings flood-labelled",
-        "9.5% area inundated",
-        "338.1m of 666.0m road flooded"
+        "Zone roads are PARTIAL — partial road isolation penalty applied",
+        "Flood extent footprint: 8547 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -395,44 +408,72 @@
       "zone_id": "zone-009",
       "name": "Zone 009 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 4.1,
+      "risk_score": 2.6,
       "flooded_percent": 0.57,
       "flooded_area_km2": 0.0005,
       "exposed_buildings": 3,
       "total_buildings": 36,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "0.6% of zone area estimated as flooded",
         "3 of 36 buildings flood-labelled",
-        "0.57% area inundated"
+        "Flood extent footprint: 511 m²"
       ],
-      "geometry": null
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.0147169211358245,
+              50.516514300662465
+            ],
+            [
+              7.019059061268224,
+              50.516514300662465
+            ],
+            [
+              7.019059061268224,
+              50.519282717251976
+            ],
+            [
+              7.0147169211358245,
+              50.519282717251976
+            ],
+            [
+              7.0147169211358245,
+              50.516514300662465
+            ]
+          ]
+        ]
+      }
     },
     {
       "zone_id": "zone-010",
       "name": "Zone 010 (grid cell)",
-      "risk_level": "HIGH",
-      "risk_score": 60.2,
+      "risk_level": "MEDIUM",
+      "risk_score": 31.4,
       "flooded_percent": 7.5,
       "flooded_area_km2": 0.0068,
       "exposed_buildings": 20,
       "total_buildings": 21,
       "accessibility": "LIMITED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "7.5% of zone area estimated as flooded",
         "20 of 21 buildings flood-labelled",
-        "7.5% area inundated",
-        "133.1m of 280.5m road flooded"
+        "Zone roads are PARTIAL — partial road isolation penalty applied",
+        "Flood extent footprint: 6752 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -466,22 +507,23 @@
       "zone_id": "zone-011",
       "name": "Zone 011 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 26.2,
+      "risk_score": 16,
       "flooded_percent": 0.59,
       "flooded_area_km2": 0.0005,
       "exposed_buildings": 0,
       "total_buildings": 1,
       "accessibility": "BLOCKED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "0.6% of zone area estimated as flooded",
         "0 of 1 buildings flood-labelled",
-        "0.59% area inundated",
-        "49.5m of 49.5m road flooded"
+        "Zone roads are BLOCKED — road isolation penalty applied",
+        "Flood extent footprint: 528 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -515,21 +557,22 @@
       "zone_id": "zone-012",
       "name": "Zone 012 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 29,
+      "risk_score": 18.5,
       "flooded_percent": 2,
       "flooded_area_km2": 0.0018,
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "BLOCKED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "2% area inundated",
-        "180.1m of 180.1m road flooded"
+        "2.0% of zone area estimated as flooded",
+        "Zone roads are BLOCKED — road isolation penalty applied",
+        "Flood extent footprint: 1797 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -570,13 +613,13 @@
       "total_buildings": 0,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "No flood coverage detected"
+        "No derived flood coverage in this zone"
       ],
       "geometry": {
         "type": "Polygon",
@@ -610,22 +653,23 @@
       "zone_id": "zone-014",
       "name": "Zone 014 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 24.3,
+      "risk_score": 18.7,
       "flooded_percent": 4.54,
       "flooded_area_km2": 0.0041,
       "exposed_buildings": 6,
       "total_buildings": 32,
       "accessibility": "LIMITED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "4.5% of zone area estimated as flooded",
         "6 of 32 buildings flood-labelled",
-        "4.54% area inundated",
-        "337.8m of 973.4m road flooded"
+        "Zone roads are PARTIAL — partial road isolation penalty applied",
+        "Flood extent footprint: 4089 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -666,13 +710,13 @@
       "total_buildings": 0,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "No flood coverage detected"
+        "No derived flood coverage in this zone"
       ],
       "geometry": {
         "type": "Polygon",
@@ -713,12 +757,13 @@
       "total_buildings": 75,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "No derived flood coverage in this zone",
         "0 of 75 buildings flood-labelled"
       ],
       "geometry": {
@@ -753,22 +798,23 @@
       "zone_id": "zone-017",
       "name": "Zone 017 (grid cell)",
       "risk_level": "MEDIUM",
-      "risk_score": 33.7,
+      "risk_score": 28.6,
       "flooded_percent": 5.59,
       "flooded_area_km2": 0.005,
       "exposed_buildings": 21,
       "total_buildings": 59,
       "accessibility": "LIMITED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "5.6% of zone area estimated as flooded",
         "21 of 59 buildings flood-labelled",
-        "5.59% area inundated",
-        "153.0m of 381.1m road flooded"
+        "Zone roads are PARTIAL — partial road isolation penalty applied",
+        "Flood extent footprint: 5035 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -801,22 +847,23 @@
     {
       "zone_id": "zone-018",
       "name": "Zone 018 (grid cell)",
-      "risk_level": "UNKNOWN",
-      "risk_score": null,
+      "risk_level": "LOW",
+      "risk_score": 7.5,
       "flooded_percent": 0,
       "flooded_area_km2": 0,
       "exposed_buildings": 0,
       "total_buildings": 1,
       "accessibility": "UNKNOWN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "MEDIUM",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "Designated test cases, not measured data: UNKNOWN risk level",
-        "No road data in zone"
+        "No derived flood coverage in this zone",
+        "0 of 1 buildings flood-labelled",
+        "Road accessibility unknown — intermediate isolation penalty applied"
       ],
       "geometry": {
         "type": "Polygon",
@@ -857,13 +904,13 @@
       "total_buildings": 0,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "No flood coverage detected"
+        "No derived flood coverage in this zone"
       ],
       "geometry": {
         "type": "Polygon",
@@ -897,22 +944,22 @@
       "zone_id": "zone-020",
       "name": "Zone 020 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 4.6,
+      "risk_score": 1.9,
       "flooded_percent": 1.05,
       "flooded_area_km2": 0.0009,
       "exposed_buildings": 0,
       "total_buildings": 1,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "1.1% of zone area estimated as flooded",
         "0 of 1 buildings flood-labelled",
-        "1.05% area inundated",
-        "80.2m of 806.3m road flooded"
+        "Flood extent footprint: 950 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -946,21 +993,22 @@
       "zone_id": "zone-021",
       "name": "Zone 021 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 27.6,
+      "risk_score": 17.3,
       "flooded_percent": 1.29,
       "flooded_area_km2": 0.0012,
       "exposed_buildings": 0,
       "total_buildings": 0,
       "accessibility": "BLOCKED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "1.29% area inundated",
-        "112.4m of 112.4m road flooded"
+        "1.3% of zone area estimated as flooded",
+        "Zone roads are BLOCKED — road isolation penalty applied",
+        "Flood extent footprint: 1157 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1001,12 +1049,13 @@
       "total_buildings": 59,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "No derived flood coverage in this zone",
         "0 of 59 buildings flood-labelled"
       ],
       "geometry": {
@@ -1041,22 +1090,22 @@
       "zone_id": "zone-023",
       "name": "Zone 023 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 7.6,
+      "risk_score": 6.6,
       "flooded_percent": 1.92,
       "flooded_area_km2": 0.0017,
       "exposed_buildings": 6,
       "total_buildings": 111,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "1.9% of zone area estimated as flooded",
         "6 of 111 buildings flood-labelled",
-        "1.92% area inundated",
-        "64.6m of 859.2m road flooded"
+        "Flood extent footprint: 1728 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1089,23 +1138,23 @@
     {
       "zone_id": "zone-024",
       "name": "Zone 024 (grid cell)",
-      "risk_level": "MEDIUM",
-      "risk_score": 37.5,
+      "risk_level": "LOW",
+      "risk_score": 1.5,
       "flooded_percent": 0.24,
       "flooded_area_km2": 0.0002,
       "exposed_buildings": 2,
       "total_buildings": 2,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "0.2% of zone area estimated as flooded",
         "2 of 2 buildings flood-labelled",
-        "0.24% area inundated",
-        "10.8m of 130.6m road flooded"
+        "Flood extent footprint: 212 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1146,13 +1195,13 @@
       "total_buildings": 0,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "No flood coverage detected"
+        "No derived flood coverage in this zone"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1186,22 +1235,22 @@
       "zone_id": "zone-026",
       "name": "Zone 026 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 0.4,
+      "risk_score": 0.1,
       "flooded_percent": 0.08,
       "flooded_area_km2": 0.0001,
       "exposed_buildings": 0,
       "total_buildings": 17,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "0.1% of zone area estimated as flooded",
         "0 of 17 buildings flood-labelled",
-        "0.08% area inundated",
-        "4.1m of 422.7m road flooded"
+        "Flood extent footprint: 70 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1235,22 +1284,23 @@
       "zone_id": "zone-027",
       "name": "Zone 027 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 27.8,
+      "risk_score": 17.5,
       "flooded_percent": 1.42,
       "flooded_area_km2": 0.0013,
       "exposed_buildings": 0,
       "total_buildings": 2,
       "accessibility": "BLOCKED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "1.4% of zone area estimated as flooded",
         "0 of 2 buildings flood-labelled",
-        "1.42% area inundated",
-        "128.1m of 128.1m road flooded"
+        "Zone roads are BLOCKED — road isolation penalty applied",
+        "Flood extent footprint: 1278 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1291,12 +1341,13 @@
       "total_buildings": 35,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "No derived flood coverage in this zone",
         "0 of 35 buildings flood-labelled"
       ],
       "geometry": {
@@ -1338,12 +1389,13 @@
       "total_buildings": 33,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "No derived flood coverage in this zone",
         "0 of 33 buildings flood-labelled"
       ],
       "geometry": {
@@ -1378,22 +1430,23 @@
       "zone_id": "zone-030",
       "name": "Zone 030 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 9.4,
+      "risk_score": 10.9,
       "flooded_percent": 1.9,
       "flooded_area_km2": 0.0017,
       "exposed_buildings": 0,
       "total_buildings": 18,
       "accessibility": "LIMITED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "1.9% of zone area estimated as flooded",
         "0 of 18 buildings flood-labelled",
-        "1.9% area inundated",
-        "168.1m of 749.1m road flooded"
+        "Zone roads are PARTIAL — partial road isolation penalty applied",
+        "Flood extent footprint: 1711 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1426,23 +1479,24 @@
     {
       "zone_id": "zone-031",
       "name": "Zone 031 (grid cell)",
-      "risk_level": "HIGH",
-      "risk_score": 70.4,
+      "risk_level": "MEDIUM",
+      "risk_score": 40.6,
       "flooded_percent": 10.54,
       "flooded_area_km2": 0.0095,
       "exposed_buildings": 13,
       "total_buildings": 17,
       "accessibility": "BLOCKED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "10.5% of zone area estimated as flooded",
         "13 of 17 buildings flood-labelled",
-        "10.54% area inundated",
-        "742.0m of 820.8m road flooded"
+        "Zone roads are BLOCKED — road isolation penalty applied",
+        "Flood extent footprint: 9484 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1483,13 +1537,13 @@
       "total_buildings": 0,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "No flood coverage detected"
+        "No derived flood coverage in this zone"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1523,20 +1577,22 @@
       "zone_id": "zone-033",
       "name": "Zone 033 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 0,
+      "risk_score": 7.5,
       "flooded_percent": 0,
       "flooded_area_km2": 0,
       "exposed_buildings": 0,
       "total_buildings": 2,
       "accessibility": "UNKNOWN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "MEDIUM",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
-        "0 of 2 buildings flood-labelled"
+        "No derived flood coverage in this zone",
+        "0 of 2 buildings flood-labelled",
+        "Road accessibility unknown — intermediate isolation penalty applied"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1577,12 +1633,13 @@
       "total_buildings": 3,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "No derived flood coverage in this zone",
         "0 of 3 buildings flood-labelled"
       ],
       "geometry": {
@@ -1616,23 +1673,24 @@
     {
       "zone_id": "zone-035",
       "name": "Zone 035 (grid cell)",
-      "risk_level": "LOW",
-      "risk_score": 24,
+      "risk_level": "MEDIUM",
+      "risk_score": 22.8,
       "flooded_percent": 4.42,
       "flooded_area_km2": 0.004,
       "exposed_buildings": 14,
       "total_buildings": 44,
       "accessibility": "LIMITED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "4.4% of zone area estimated as flooded",
         "14 of 44 buildings flood-labelled",
-        "4.42% area inundated",
-        "225.0m of 1389.9m road flooded"
+        "Zone roads are PARTIAL — partial road isolation penalty applied",
+        "Flood extent footprint: 3976 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1666,22 +1724,23 @@
       "zone_id": "zone-036",
       "name": "Zone 036 (grid cell)",
       "risk_level": "HIGH",
-      "risk_score": 97.7,
+      "risk_score": 65.7,
       "flooded_percent": 18.85,
       "flooded_area_km2": 0.017,
       "exposed_buildings": 35,
       "total_buildings": 35,
       "accessibility": "BLOCKED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "18.9% of zone area estimated as flooded",
         "35 of 35 buildings flood-labelled",
-        "18.85% area inundated",
-        "1145.5m of 1145.5m road flooded"
+        "Zone roads are BLOCKED — road isolation penalty applied",
+        "Flood extent footprint: 16969 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1715,21 +1774,22 @@
       "zone_id": "zone-037",
       "name": "Zone 037 (grid cell)",
       "risk_level": "LOW",
-      "risk_score": 3.5,
+      "risk_score": 1.5,
       "flooded_percent": 0.33,
       "flooded_area_km2": 0.0001,
       "exposed_buildings": 2,
       "total_buildings": 25,
       "accessibility": "OPEN",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "0.3% of zone area estimated as flooded",
         "2 of 25 buildings flood-labelled",
-        "0.33% area inundated"
+        "Flood extent footprint: 118 m²"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1763,22 +1823,23 @@
       "zone_id": "zone-038",
       "name": "Zone 038 (grid cell)",
       "risk_level": "HIGH",
-      "risk_score": 93.7,
+      "risk_score": 52,
       "flooded_percent": 16.87,
       "flooded_area_km2": 0.006,
       "exposed_buildings": 25,
       "total_buildings": 25,
       "accessibility": "BLOCKED",
       "needs_survey": false,
-      "provenance": null,
-      "source": null,
-      "confidence": null,
+      "provenance": "derived",
+      "source": "SpaceNet 8 Germany (Dernau)",
+      "confidence": "HIGH",
       "rank_p10": null,
       "rank_p90": null,
       "reasons": [
+        "16.9% of zone area estimated as flooded",
         "25 of 25 buildings flood-labelled",
-        "16.87% area inundated",
-        "215.4m of 215.4m road flooded"
+        "Zone roads are BLOCKED — road isolation penalty applied",
+        "Flood extent footprint: 6018 m²"
       ],
       "geometry": {
         "type": "Polygon",

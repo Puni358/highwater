@@ -31,14 +31,15 @@ describe('dataAdapter', () => {
   });
 
   describe('normalizeRiskLevel', () => {
-    it('preserves HIGH, MEDIUM, LOW', () => {
+    it('preserves CRITICAL, HIGH, MEDIUM, LOW', () => {
+      expect(normalizeRiskLevel('CRITICAL')).toBe('CRITICAL');
       expect(normalizeRiskLevel('HIGH')).toBe('HIGH');
       expect(normalizeRiskLevel('medium')).toBe('MEDIUM');
       expect(normalizeRiskLevel('low ')).toBe('LOW');
     });
 
     it('converts unknown or missing risk to UNKNOWN (never LOW)', () => {
-      expect(normalizeRiskLevel('CRITICAL')).toBe('UNKNOWN');
+      expect(normalizeRiskLevel('EXTREME')).toBe('UNKNOWN');
       expect(normalizeRiskLevel('')).toBe('UNKNOWN');
       expect(normalizeRiskLevel(null)).toBe('UNKNOWN');
       expect(normalizeRiskLevel(undefined)).toBe('UNKNOWN');
@@ -157,7 +158,7 @@ describe('dataAdapter', () => {
           {
             zone_id: 'z-invalid-risk',
             name: 'Invalid Risk Level',
-            risk_level: 'CRITICAL', // invalid level
+            risk_level: 'EXTREME', // invalid level
             risk_score: 85,
             flooded_percent: 50.0,
             flooded_area_km2: 1.0,
