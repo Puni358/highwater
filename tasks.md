@@ -89,7 +89,7 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
 
 - [ ] **T6.1 (P0)** Confirm schemas and endpoints with each module owner
   AC: written agreement in the README; no guessed endpoint names.
-- [ ] **T6.2 (P0)** Implement the real fetch behind `getDashboardData()`; add `VITE_DATA_SOURCE`
+- [x] **T6.2 (P0)** Implement the real fetch behind `getDashboardData()`; add `VITE_DATA_SOURCE`
   AC: switching between `mock` and `api` requires no component changes.
 - [ ] **T6.3 (P0)** Map real field names in the adapter only
   AC: git diff touches `dataAdapter.js` and `dashboardApi.js`, not layer components.
