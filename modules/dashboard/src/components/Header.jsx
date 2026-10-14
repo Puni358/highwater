@@ -9,10 +9,19 @@ export default function Header({
   studyArea = 'Bengaluru, Karnataka',
   timestamp = null,
   dataMode = 'demo',
+  dataSource = null,
+  source = null,
   onRefresh,
   loading = false,
 }) {
-  const isDemo = dataMode === 'demo';
+  const isDernau =
+    dataMode === 'demo' &&
+    !studyArea?.includes('Bengaluru') &&
+    (dataSource === 'mock-dernau' ||
+      (typeof source === 'string' && source.includes('SpaceNet')) ||
+      (typeof studyArea === 'string' && studyArea.includes('Dernau')));
+
+  const isDemo = dataMode === 'demo' && !isDernau;
 
   const formatTimestamp = (ts) => {
     if (!ts) return 'Timestamp not available';
@@ -54,7 +63,16 @@ export default function Header({
 
       {/* Right: Mode Badge & Refresh Action */}
       <div className="flex items-center space-x-3">
-        {isDemo ? (
+        {isDernau ? (
+          <div
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-demo-bg text-demo-text text-xs font-semibold tracking-wide border border-amber-300/60"
+            role="status"
+            aria-label="Historical ground truth data active"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-demo-text" aria-hidden="true" />
+            <span>Historical ground truth (SpaceNet 8)</span>
+          </div>
+        ) : isDemo ? (
           <div
             className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-demo-bg text-demo-text text-xs font-semibold tracking-wide border border-amber-300/60"
             role="status"

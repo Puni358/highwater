@@ -32,7 +32,7 @@ describe('ZoneList component (T4.4, T4.6, FR-22, FR-26)', () => {
 
     expect(screen.getByText('#2')).toBeInTheDocument();
     expect(screen.getByText('Delta Staging')).toBeInTheDocument();
-    expect(screen.getByText('Score: Not available')).toBeInTheDocument();
+    expect(screen.getByText('Score: Not assessed')).toBeInTheDocument();
     expect(screen.getByText('Bldgs: Not available')).toBeInTheDocument();
   });
 

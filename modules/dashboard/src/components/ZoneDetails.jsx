@@ -78,12 +78,12 @@ export default function ZoneDetails({
   const AccessIcon = access.icon;
 
   const hasNullNumeric =
-    zone.riskScore !== null &&
-    (zone.floodedAreaKm2 === null ||
-      zone.floodedPercent === null ||
-      zone.exposedBuildings === null);
+    zone.riskScore === null ||
+    zone.floodedAreaKm2 === null ||
+    zone.floodedPercent === null ||
+    zone.exposedBuildings === null;
 
-  const scoreDisplay = zone.riskScore !== null ? `${zone.riskScore} / 100` : 'Not available';
+  const scoreDisplay = (zone.riskScore !== null && !hasNullNumeric) ? `${zone.riskScore} / 100` : 'Not assessed';
   const floodAreaDisplay = zone.floodedAreaKm2 !== null ? `${zone.floodedAreaKm2} km²` : 'Not available';
   const floodPctDisplay = zone.floodedPercent !== null ? `${zone.floodedPercent}%` : 'Not available';
   const exposedBldgsDisplay = zone.exposedBuildings !== null ? zone.exposedBuildings : 'Not available';
@@ -142,16 +142,9 @@ export default function ZoneDetails({
         {/* Risk Score */}
         <div className="p-2.5 rounded bg-surface border border-border/50">
           <span className="text-[11px] text-text-muted block">Priority Score</span>
-          <div className="flex items-baseline space-x-1 mt-0.5">
-            <span className="text-sm font-bold text-navy-900 block">
-              {scoreDisplay}
-            </span>
-            {hasNullNumeric && (
-              <span className="text-[11px] font-normal text-text-muted">
-                (demo-derived)
-              </span>
-            )}
-          </div>
+          <span className={`text-sm font-bold block mt-0.5 ${zone.riskScore === null || hasNullNumeric ? 'text-text-muted font-normal' : 'text-navy-900'}`}>
+            {scoreDisplay}
+          </span>
         </div>
 
         {/* Accessibility Status */}

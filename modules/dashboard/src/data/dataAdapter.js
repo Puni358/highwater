@@ -112,17 +112,29 @@ export function adaptZones(rawZonesPayload) {
     dataMode: (rawZonesPayload.data_mode || 'demo').toLowerCase(),
     studyArea: rawZonesPayload.study_area || 'Bengaluru, Karnataka',
     riskMethod: rawZonesPayload.risk_method || null,
+    source: rawZonesPayload.source || null,
+    dataSource: rawZonesPayload.data_source || null,
   };
 
   const zones = rawZones.map((z, idx) => {
     const zoneId = z.zone_id || `zone-${idx + 1}`;
     const name = z.name || `Zone ${zoneId}`;
-    const riskLevel = normalizeRiskLevel(z.risk_level);
-    const scoreResult = normalizeRiskScore(z.risk_score);
-
     const floodedPercent = normalizeNumber(z.flooded_percent);
     const floodedAreaKm2 = normalizeNumber(z.flooded_area_km2);
     const exposedBuildings = normalizeNumber(z.exposed_buildings);
+    const scoreResult = normalizeRiskScore(z.risk_score);
+
+    // Rule (architecture.md & Phase 6 closeout):
+    // For any zone with a null numeric input, set risk to UNKNOWN and riskScore to null (not assessed).
+    const hasNullNumeric =
+      z.flooded_percent === null ||
+      z.flooded_area_km2 === null ||
+      z.exposed_buildings === null ||
+      z.risk_score === null ||
+      scoreResult.score === null;
+
+    const riskLevel = hasNullNumeric ? 'UNKNOWN' : normalizeRiskLevel(z.risk_level);
+    const riskScore = hasNullNumeric ? null : scoreResult.score;
 
     let accessibility = 'UNKNOWN';
     if (typeof z.accessibility === 'string') {

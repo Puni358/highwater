@@ -26,7 +26,7 @@ cp .env.example .env
 Configured environment variables:
 | Variable | Default | Purpose |
 |---|---|---|
-| `VITE_DATA_SOURCE` | `mock` | Data source switcher (`mock` or `api`) |
+| `VITE_DATA_SOURCE` | `mock` | Data source switcher (`mock`, `mock-dernau`, or `api`) |
 | `VITE_API_BASE_URL` | `http://localhost:8000/api` | Backend API base URL when in `api` mode |
 | `VITE_REFRESH_INTERVAL_MS` | `30000` | Auto-refresh poll interval in milliseconds |
 | `VITE_STALE_MINUTES` | `60` | Age threshold for displaying stale-data warning banner |
@@ -69,13 +69,34 @@ Service (dashboardApi) -> Adapter (dataAdapter) -> Hook (useDashboardData) -> Se
 - **Fault-Tolerant Geometry**: Unclosed rings, coordinate boundary violations, or missing geometries are isolated, logged, and surfaced in the layer warning banner without crashing the application.
 - **In-flight Request Guard**: The dashboard prevents duplicate concurrent network fetches during rapid manual refresh clicks.
 
-### Mock Fixtures
-Located in `src/mock/`:
-- `zones.geojson`: Assessment zones with polygons and attributes (satisfies HIGH, MEDIUM, LOW, UNKNOWN, un-geometried `zone-009`, missing numeric `zone-005`).
-- `floodExtent.geojson`: Water depth contours and inundation extents.
-- `facilities.geojson`: Critical infrastructure points (hospitals, schools, shelters).
-- `blockedRoads.geojson`: Flooded, obstructed, and impassable road line segments.
-- `evacuationRoutes.geojson`: Primary and secondary egress corridors with clearance status.
+### Mock Fixtures & Demonstration Datasets
+
+The dashboard supports two independent fixture datasets configured via `VITE_DATA_SOURCE`:
+
+#### 1. Synthetic Fixtures (`VITE_DATA_SOURCE=mock`, default)
+Located in `public/mock-data/`:
+- `zones.json`: Assessment zones (Bengaluru, Karnataka) covering HIGH, MEDIUM, LOW, UNKNOWN, un-geometried `zone-009`, and null-metric edge cases.
+- `flood_extent.geojson`: Inundation polygon contours.
+- `facilities.geojson`: Critical infrastructure points (hospitals, shelters, command centers).
+- `blocked_roads.geojson`: Flooded and impassable road line segments.
+- `routes.json`: Primary and secondary evacuation routes with status.
+
+#### 2. SpaceNet 8 Dernau Historical Dataset (`VITE_DATA_SOURCE=mock-dernau`)
+Located in `public/mock-data-dernau/`:
+- **Source & Attribution**: Derived from the SpaceNet 8 Flood Dataset (Maxar Technologies) and OpenStreetMap for Dernau (Ahr valley, Germany), licensed under CC BY-SA 4.0. Unmodified source copies are preserved in `modules/dashboard/integration-samples/`.
+- **Operational Reality**: Generated deterministically by `scripts/build-dernau-demo.mjs` and verified by `scripts/validate-dernau-demo.mjs`.
+- **Contract-Perfect Resources**:
+  - `zones.json`: 38 assessment zones with derived risk scores, explicit reasons, and designated test cases (`zone-018` for UNKNOWN assessment; `zone-005` with withheld building count displaying as `"Not assessed"`).
+  - `flood_extent.geojson`: 196 flood polygons derived from labelled building and road inundation points within the AOI.
+  - `blocked_roads.geojson`: 45 impassable road segments labelled flooded in ground-truth data.
+  - `facilities.geojson`: 3 critical facilities (fire station, hospital, community hall).
+  - `routes.json`: 3 evacuation routes (2 clear, 1 degraded corridor).
+  - `buildings_exposed.geojson`: 759 exposed building footprints (6th map overlay layer).
+- **Honest UI Presentation**:
+  - Displays `"Historical ground truth (SpaceNet 8)"` header badge with amber styling (WCAG AA 5.39:1 contrast). Never claims live or real-time.
+  - Stat cards visibly clarify: Flooded area as derived from labelled flooded buildings/roads (not a measured water boundary), Blocked roadways as roads labelled flooded in ground truth, and designated test cases explicitly disclosed.
+  - Illustrative risk score disclaimer banner displayed.
+  - Fitted coordinate bounds automatically computed to encompass Dernau AOI geometry.
 
 ---
 
@@ -211,3 +232,8 @@ Per PRD.md section 6, agreements with module owners are required before live API
   - Added malformed GeoJSON handling and offline tile fallback.
   - Implemented mobile bottom drawer with tab switcher and `map.invalidateSize()` resize handler.
   - Completed accessibility pass (ARIA attributes, 2px focus ring, high-contrast risk labels).
+- **Dernau Historical Demonstration (SpaceNet 8)**:
+  - Deterministically built and validated contract-perfect demonstration dataset in `public/mock-data-dernau/` from SpaceNet 8 flood data for Dernau (Ahr valley, Germany).
+  - Wired `VITE_DATA_SOURCE=mock-dernau` into `dashboardApi.js`, supporting dynamic data-bounds auto-fitting (`computeDataBounds`).
+  - Integrated 6th map overlay (`BuildingLayer`) for exposed building footprints with dedicated toggle and legend entry.
+  - Added honest UI labelling: `"Historical ground truth (SpaceNet 8)"` header badge, provenance badges (`derived`, `simulated`), disclaimer for demo risk scores, and `"Not assessed"` status for zones with withheld metrics (`zone-005`).

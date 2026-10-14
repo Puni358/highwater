@@ -216,13 +216,18 @@ FeatureCollection of Point. Properties: `facility_id`, `name`, `type` (`hospital
 
 `.env.example`
 ```
-VITE_DATA_SOURCE=mock          # mock | api
+VITE_DATA_SOURCE=mock          # mock | mock-dernau | api
 VITE_API_BASE_URL=             # set only once endpoints are agreed
 VITE_STALE_MINUTES=60
 VITE_TILE_URL=https://tile.openstreetmap.org/{z}/{x}/{y}.png
 VITE_TILE_ATTRIBUTION=© OpenStreetMap contributors
 ```
 No secrets in frontend code. Any tile provider that needs a key is out of scope.
+
+### 8.1 Data Sources
+- **`mock`**: Default demonstration dataset based on Bengaluru, Karnataka study area fixtures in `/mock-data/` (`zones.json`, `flood_extent.geojson`, `blocked_roads.geojson`, `facilities.geojson`, `routes.json`). Displays generic `DEMO MODE` header badge.
+- **`mock-dernau`**: Realistic flood operations demonstration dataset derived from the SpaceNet 8 flood dataset for Dernau (Ahr valley, Germany) in `/mock-data-dernau/`. Includes 38 zones, 196 flood polygons, 45 blocked road segments, 3 critical facilities, 3 evacuation corridors, and 759 exposed buildings (6th map overlay). Displays `"Historical ground truth (SpaceNet 8)"` header badge (never claims live or real-time).
+- **`api`**: Live backend integration. Requires explicit configuration of `VITE_API_BASE_URL` and all resource paths (`VITE_API_ZONES_PATH`, `VITE_API_FLOOD_PATH`, `VITE_API_ROADS_PATH`, `VITE_API_FACILITIES_PATH`, `VITE_API_ROUTES_PATH`). Throws clear configuration errors if required variables are omitted.
 
 ## 9. Test architecture
 

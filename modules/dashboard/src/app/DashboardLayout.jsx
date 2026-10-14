@@ -119,6 +119,8 @@ export default function DashboardLayout({
         studyArea={metadata.studyArea}
         timestamp={metadata.generatedAt}
         dataMode={metadata.dataMode || 'demo'}
+        dataSource={metadata.dataSource}
+        source={metadata.source}
         onRefresh={onRefresh}
         loading={loading}
       />

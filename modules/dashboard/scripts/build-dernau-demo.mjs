@@ -102,7 +102,7 @@ function buildDernauDemo() {
     let risk_score = null;
     let risk_level = 'UNKNOWN';
 
-    if (z.zone_id === 'zone-018' || (total_buildings === 0 && (!z.road_length_m || z.road_length_m === 0))) {
+    if (z.zone_id === 'zone-018' || z.zone_id === 'zone-005' || exposed_buildings === null || (total_buildings === 0 && (!z.road_length_m || z.road_length_m === 0))) {
       risk_level = 'UNKNOWN';
       risk_score = null;
     } else {
@@ -150,7 +150,7 @@ function buildDernauDemo() {
       reasons.push('No road data in zone');
     } else if (z.zone_id === 'zone-005') {
       reasons.push('Designated test cases, not measured data: missing exposed_buildings numeric field');
-      reasons.push('No flood coverage detected');
+      reasons.push('Risk score not assessed due to missing numeric input');
     } else {
       if (total_buildings > 0) {
         reasons.push(`${exposed_buildings} of ${total_buildings} buildings flood-labelled`);

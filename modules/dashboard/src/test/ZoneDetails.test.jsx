@@ -61,6 +61,7 @@ describe('ZoneDetails component (T4.5, FR-20, FR-21)', () => {
     );
 
     expect(screen.getByText('Peripheral Relief Staging')).toBeInTheDocument();
+    expect(screen.getByText('Not assessed')).toBeInTheDocument();
     expect(screen.getAllByText('Not available').length).toBeGreaterThanOrEqual(4);
     expect(screen.getByText('None reported')).toBeInTheDocument();
     expect(screen.getByText('Non-spatial staging area')).toBeInTheDocument();

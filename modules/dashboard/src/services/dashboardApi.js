@@ -131,6 +131,10 @@ export async function getDashboardData(options = {}) {
       : null,
   ]);
 
+  if (zones && typeof zones === 'object' && !zones.data_source) {
+    zones.data_source = dataSource;
+  }
+
   return {
     rawZones: zones,
     rawFloodExtent: floodExtent,

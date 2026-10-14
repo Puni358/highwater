@@ -80,6 +80,13 @@ export function sortZones(zones, sortBy = 'priority') {
     }
 
     // Default: 'priority' (combines risk level weight then risk score)
+    // Any zone without a score sorts after scored zones
+    const isScoredA = typeof a.riskScore === 'number' && Number.isFinite(a.riskScore);
+    const isScoredB = typeof b.riskScore === 'number' && Number.isFinite(b.riskScore);
+    if (isScoredA !== isScoredB) {
+      return isScoredB ? 1 : -1;
+    }
+
     const weightA = RISK_PRIORITY_WEIGHT[a.riskLevel] || 0;
     const weightB = RISK_PRIORITY_WEIGHT[b.riskLevel] || 0;
     if (weightA !== weightB) {

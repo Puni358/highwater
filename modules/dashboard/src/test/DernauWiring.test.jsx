@@ -248,10 +248,42 @@ describe('Dernau Wiring & 6th Overlay Suite', () => {
 
     render(<DashboardLayout data={mockData} onRefresh={vi.fn()} />);
 
-    expect(screen.getByText('DEMO MODE')).toBeInTheDocument();
+    expect(screen.getByText('Historical ground truth (SpaceNet 8)')).toBeInTheDocument();
     expect(
       screen.getByText('Risk scores are illustrative (demo formula), not from the risk engine.')
     ).toBeInTheDocument();
+  });
+
+  it('renders generic DEMO MODE badge when dataMode is demo and not Dernau', () => {
+    const bengaluruData = {
+      metadata: {
+        generatedAt: '2026-10-14T10:00:00Z',
+        dataMode: 'demo',
+        studyArea: 'Bengaluru, Karnataka',
+      },
+      zones: [
+        {
+          zoneId: 'zone-001',
+          name: 'Zone 001',
+          riskLevel: 'LOW',
+          riskScore: 12.4,
+          floodedPercent: 1.24,
+          floodedAreaKm2: 0.0011,
+          exposedBuildings: 1,
+          accessibility: 'LIMITED',
+          reasons: [],
+          hasGeometry: true,
+        },
+      ],
+      floodExtent: { type: 'FeatureCollection', features: [] },
+      blockedRoads: { type: 'FeatureCollection', features: [] },
+      facilities: { type: 'FeatureCollection', features: [] },
+      routes: [],
+      buildingsExposed: { type: 'FeatureCollection', features: [] },
+    };
+
+    render(<DashboardLayout data={bengaluruData} onRefresh={vi.fn()} />);
+    expect(screen.getByText('DEMO MODE')).toBeInTheDocument();
   });
 
   it('ProvenanceBadge renders observed, derived, and simulated styles correctly', () => {
@@ -266,7 +298,7 @@ describe('Dernau Wiring & 6th Overlay Suite', () => {
   });
 
   // --------------------------------------------------------------------------
-  // 5. Stat Card Honesty Captions & Zone-005 Demo-Derived Notice
+  // 5. Stat Card Honesty Captions & Zone-005 Not Assessed
   // --------------------------------------------------------------------------
   it('renders the three honesty captions on StatCards when data has partial/ground-truth values', () => {
     const dataWithPartial = {
@@ -291,8 +323,8 @@ describe('Dernau Wiring & 6th Overlay Suite', () => {
         {
           zoneId: 'zone-005',
           name: 'Zone 005',
-          riskLevel: 'LOW',
-          riskScore: 0,
+          riskLevel: 'UNKNOWN',
+          riskScore: null,
           floodedPercent: 0,
           floodedAreaKm2: 0,
           exposedBuildings: null, // designated test case with withheld value
@@ -329,12 +361,25 @@ describe('Dernau Wiring & 6th Overlay Suite', () => {
     ).toBeInTheDocument();
   });
 
-  it('displays "(demo-derived)" beside Priority Score in ZoneDetails and ZoneList for zone with null numeric field', () => {
+  it('displays "Not assessed" for zone with null numeric input, UNKNOWN risk, and sorts after scored zones', () => {
+    const scoredZone = {
+      zoneId: 'zone-001',
+      name: 'Zone 001 (scored)',
+      riskLevel: 'LOW',
+      riskScore: 15,
+      floodedAreaKm2: 0.1,
+      floodedPercent: 2,
+      exposedBuildings: 10,
+      accessibility: 'OPEN',
+      reasons: ['Measured low inundation'],
+      hasGeometry: true,
+    };
+
     const zoneWithNullNumeric = {
       zoneId: 'zone-005',
       name: 'Zone 005 (grid cell)',
-      riskLevel: 'LOW',
-      riskScore: 0,
+      riskLevel: 'UNKNOWN',
+      riskScore: null,
       floodedAreaKm2: 0,
       floodedPercent: 0,
       exposedBuildings: null,
@@ -344,8 +389,8 @@ describe('Dernau Wiring & 6th Overlay Suite', () => {
     };
 
     const data = {
-      metadata: { generatedAt: '2026-10-14T10:00:00Z', dataMode: 'demo' },
-      zones: [zoneWithNullNumeric],
+      metadata: { generatedAt: '2026-10-14T10:00:00Z', dataMode: 'demo', studyArea: 'Dernau (Ahr valley), Germany' },
+      zones: [zoneWithNullNumeric, scoredZone], // Passed in reverse order to test sorting
       floodExtent: { type: 'FeatureCollection', features: [] },
       blockedRoads: { type: 'FeatureCollection', features: [] },
       facilities: { type: 'FeatureCollection', features: [] },
@@ -355,17 +400,26 @@ describe('Dernau Wiring & 6th Overlay Suite', () => {
 
     render(<DashboardLayout data={data} onRefresh={vi.fn()} />);
 
-    // In ZoneList: row shows Score: 0 and (demo-derived)
-    expect(screen.getByText('Score: 0')).toBeInTheDocument();
-    expect(screen.getAllByText('(demo-derived)').length).toBeGreaterThanOrEqual(1);
+    // In ZoneList: row shows Score: Not assessed (never 0)
+    expect(screen.getByText('Score: Not assessed')).toBeInTheDocument();
+    expect(screen.queryByText('Score: 0')).not.toBeInTheDocument();
+
+    // "(demo-derived)" tag must be completely removed
+    expect(screen.queryByText('(demo-derived)')).not.toBeInTheDocument();
+
+    // Scored zone must sort BEFORE unscored zone
+    const rows = screen.getAllByRole('button', { name: /Zone 00/i });
+    expect(rows[0]).toHaveTextContent('Zone 001');
+    expect(rows[1]).toHaveTextContent('Zone 005');
 
     // Click row to open ZoneDetails
     fireEvent.click(screen.getByRole('button', { name: /Zone 005/i }));
 
-    // In ZoneDetails: Priority Score shows 0 / 100 with (demo-derived) and Exposed Buildings shows Not available
+    // In ZoneDetails: Priority Score shows Not assessed and Exposed Buildings shows Not available
     const detailsRegion = screen.getByRole('region', { name: /Zone Inspection Details/i });
-    expect(detailsRegion).toHaveTextContent('0 / 100');
-    expect(detailsRegion).toHaveTextContent('(demo-derived)');
+    expect(detailsRegion).toHaveTextContent('Not assessed');
     expect(detailsRegion).toHaveTextContent('Not available');
+    expect(detailsRegion).not.toHaveTextContent('0 / 100');
+    expect(screen.queryByText('(demo-derived)')).not.toBeInTheDocument();
   });
 });

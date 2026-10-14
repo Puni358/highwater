@@ -43,8 +43,8 @@ This directory contains a contract-perfect, fully deterministic demonstration da
 - **Total Zones:** 38
   - `HIGH`: 4
   - `MEDIUM`: 4
-  - `LOW`: 29
-  - `UNKNOWN`: 1
+  - `LOW`: 28
+  - `UNKNOWN`: 2
 - **Blocked Roads:** 45
 - **Flood Polygons (valid inside AOI with 0.0005 deg tolerance):** 196
 - **Dropped Features:** 0
