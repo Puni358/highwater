@@ -77,7 +77,7 @@ export default function RouteLayer({ routes = [] }) {
                 </div>
                 <div className="space-y-0.5 text-text-muted">
                   {originLabel && <div>Origin: <span className="font-semibold text-text">{originLabel}</span></div>}
-                  <div>Status: <span className="font-bold text-emerald-600">CLEAR</span></div>
+                  <div>Status: <span className="font-bold text-emerald-600">{route.status || 'OK'}</span></div>
                   <div>Distance: <span className="font-semibold text-text">{formatDistance(route.distanceM)}</span></div>
                   {route.etaMinutes && <div>ETA: <span className="font-semibold text-text">{route.etaMinutes} mins</span></div>}
                   {route.reason && <div className="text-[11px] text-slate-500 italic mt-1 pt-1 border-t">{route.reason}</div>}

@@ -8,7 +8,9 @@
     "build": "vite build",
     "test": "vitest run",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:demo": "node scripts/build-dernau-demo.mjs",
+    "validate:demo": "node scripts/validate-dernau-demo.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

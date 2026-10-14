@@ -789,8 +789,12 @@ describe('Evacuation Route Selection and Optimization Engine', () => {
       expect(adapted08).toBeDefined();
       expect(adapted08.status).toBe('OK');
       expect(adapted08.riskLevel).toBe('MEDIUM');
+      expect(adapted08.originId).toBe('pickup-zone-008');
+      expect(adapted08.originCoords).toBeDefined();
+      expect(adapted08.originType).toBe('road_pickup_point');
       expect(adapted08.destinationId).toBe('fac-004');
       expect(adapted08.destinationName).toBe('North-Central Relief Staging');
+      expect(adapted08.destinationCoords).toBeDefined();
       expect(adapted08.distanceM).toBeGreaterThan(0);
       expect(adapted08.etaMinutes).toBeGreaterThan(0);
       expect(adapted08.geometry.type).toBe('LineString');

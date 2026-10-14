@@ -338,6 +338,7 @@ function buildDernauDemo() {
   };
 
   fs.writeFileSync(path.join(OUTPUT_DIR, 'blocked_roads.geojson'), JSON.stringify(blockedRoadsOutput, null, 2) + '\n', 'utf8');
+  fs.writeFileSync(path.join(OUTPUT_DIR, 'roads_status.geojson'), JSON.stringify(roadsRaw, null, 2) + '\n', 'utf8');
 
   // ----------------------------------------------------
   // 5. facilities.geojson (Simulated emergency facilities in verified safe, low-risk areas)
