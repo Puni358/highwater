@@ -202,11 +202,11 @@ export default function DashboardLayout({
         {/* 3. Primary Workspace: Map & Side Panel (Responsive) */}
         {allZones.length > 0 && (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
-              {/* Map Container Area (Col span 8 on desktop, full on mobile/tablet) */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 lg:gap-6 items-start">
+              {/* Map Container Area (Col span 7 on tablet, 8 on desktop, full on mobile < 640px) */}
               <section
                 aria-label="Flood Map View"
-                className="lg:col-span-8 bg-card border border-border rounded-card shadow-sm overflow-hidden flex flex-col h-[50vh] min-h-[380px] sm:h-[480px] lg:h-[560px]"
+                className="sm:col-span-7 lg:col-span-8 bg-card border border-border rounded-card shadow-sm overflow-hidden flex flex-col h-[50vh] min-h-[380px] sm:h-[480px] lg:h-[560px]"
               >
                 <div className="px-4 py-3 border-b border-border bg-slate-50/50 flex items-center justify-between shrink-0">
                   <div className="flex items-center space-x-2 text-text font-semibold text-sm">
@@ -235,10 +235,10 @@ export default function DashboardLayout({
                 </div>
               </section>
 
-              {/* Side Panel on Desktop: Controls & Details Container (Hidden on small screens, moved to drawer) */}
+              {/* Side Panel on Tablet & Desktop: Controls & Details Container (Hidden under 640px mobile, moved to drawer) */}
               <aside
                 aria-label="Layer Controls and Zone Details"
-                className="hidden lg:block lg:col-span-4 space-y-4"
+                className="hidden sm:block sm:col-span-5 lg:col-span-4 space-y-4"
               >
                 {/* Layer Controls Switch Panel */}
                 <MapControls
@@ -317,8 +317,8 @@ export default function DashboardLayout({
         )}
       </main>
 
-      {/* Floating Drawer Trigger for Mobile & Tablet (T5.4) */}
-      <div className="lg:hidden fixed bottom-4 right-4 z-[1000]">
+      {/* Floating Drawer Trigger for Mobile (< 640px) (T5.4) */}
+      <div className="sm:hidden fixed bottom-4 right-4 z-[1000]">
         <button
           type="button"
           onClick={() => setIsMobileDrawerOpen(true)}

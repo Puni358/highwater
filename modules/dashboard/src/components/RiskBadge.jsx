@@ -16,7 +16,7 @@ const RISK_CONFIG = {
   MEDIUM: {
     icon: AlertCircle,
     label: 'MEDIUM',
-    className: 'bg-amber-50 text-risk-medium border border-risk-medium/30',
+    className: 'bg-amber-50 text-amber-900 border border-risk-medium/60',
   },
   LOW: {
     icon: ShieldCheck,
@@ -26,7 +26,7 @@ const RISK_CONFIG = {
   UNKNOWN: {
     icon: HelpCircle,
     label: 'UNKNOWN',
-    className: 'bg-gray-100 text-risk-unknown border border-dashed border-gray-400',
+    className: 'bg-gray-100 text-gray-700 border border-dashed border-gray-400',
   },
 };
 

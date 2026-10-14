@@ -47,7 +47,7 @@ export default function StaleBanner({
       role="status"
       aria-live="polite"
       aria-label="Stale Data Warning"
-      className="p-3 bg-amber-50 border border-amber-300 rounded-card text-xs text-amber-900 flex items-center justify-between gap-3 shadow-xs font-sans"
+      className="p-3 bg-amber-50 border border-amber-600 rounded-card text-xs text-amber-900 flex items-center justify-between gap-3 shadow-xs font-sans"
     >
       <div className="flex items-center space-x-2 min-w-0">
         <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" aria-hidden="true" />

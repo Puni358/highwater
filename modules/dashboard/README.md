@@ -29,7 +29,7 @@ Configured environment variables:
 | `VITE_DATA_SOURCE` | `mock` | Data source switcher (`mock` or `api`) |
 | `VITE_API_BASE_URL` | `http://localhost:8000/api` | Backend API base URL when in `api` mode |
 | `VITE_REFRESH_INTERVAL_MS` | `30000` | Auto-refresh poll interval in milliseconds |
-| `VITE_STALE_MINUTES` | `30` | Age threshold for displaying stale-data warning banner |
+| `VITE_STALE_MINUTES` | `60` | Age threshold for displaying stale-data warning banner |
 | `VITE_MAP_TILE_URL` | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | Base map tile provider template |
 
 ### Running the App
@@ -104,7 +104,7 @@ When a filter is active, stat cards visibly display the contextual badge:
 - **Stale Data Banner**: Prominent top alert triggered when payload `generated_at` exceeds `VITE_STALE_MINUTES`.
 - **Malformed GeoJSON Resilience**: Catches invalid geometries, syntax errors, or coordinate faults at adapter level; isolates broken layers and presents inline layer alerts while the remaining map operates uninterrupted.
 - **Offline Base Map Fallback**: When tile network requests fail or are blocked, the map provides an accessible neutral background (`#e2e8f0`) with an operational notice, preserving interactive vector overlays (flood extents, routes, facilities).
-- **Responsive Mobile Drawer**: At viewports `<= 768px`, operational controls collapse into a mobile drawer with dedicated Map/Controls tabs, preventing horizontal overflow (`<= 360px`) and triggering Leaflet `map.invalidateSize()` on drawer toggle.
+- **Responsive Mobile Drawer & Tablet Layout**: On tablet (640px - 1023px), maintains a 2-column layout with Map and Side Panel side-by-side. On mobile (< 640px), operational controls collapse into a bottom drawer with dedicated tab navigation, preventing horizontal overflow (verified at 360px) and triggering Leaflet `map.invalidateSize()` on drawer toggle.
 
 ---
 
@@ -134,7 +134,7 @@ All operational states captured from headless Chrome test runs:
 ### Desktop Views & Operational States
 | State | Screenshot |
 |---|---|
-| **Full Desktop Dashboard (Phase 3)** | ![Desktop Dashboard](docs/screenshots/phase3_map_desktop.png) |
+| **Full Desktop Dashboard (1280px)** | ![Desktop Dashboard](docs/screenshots/desktop_1280px.png) |
 | **Loading State** | ![Loading State](docs/screenshots/loading_state.png) |
 | **Empty State** | ![Empty State](docs/screenshots/empty_state.png) |
 | **Error State with Retry** | ![Error State](docs/screenshots/error_state.png) |

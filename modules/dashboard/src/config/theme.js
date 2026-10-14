@@ -23,7 +23,8 @@ export const THEME = {
     route: '#6A1B9A',
     selected: '#0B1F33',
     demo: {
-      text: '#B26A00',
+      text: '#965300', // WCAG AA compliant (5.39:1 on #FFF3D6)
+      specText: '#B26A00', // Base design token from design.md
       bg: '#FFF3D6',
     },
   },
