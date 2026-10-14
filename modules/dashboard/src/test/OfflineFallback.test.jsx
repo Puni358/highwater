@@ -37,6 +37,36 @@ describe('Offline Tile Fallback (T5.6, test matrix #19)', () => {
     );
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/Base map tiles unreachable\. Vector flood overlays continue to operate offline\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Map tiles unavailable/i)).toBeInTheDocument();
+    expect(screen.getByText(/Base map tiles unreachable/i)).toBeInTheDocument();
+  });
+
+  it('keeps vector layers readable and mounted when map tiles are unavailable', () => {
+    const sampleZones = [
+      {
+        zoneId: 'zone-offline-01',
+        name: 'Offline Zone',
+        riskLevel: 'HIGH',
+        riskScore: 88,
+        hasGeometry: true,
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[[77.5, 12.9], [77.6, 12.9], [77.6, 13.0], [77.5, 13.0], [77.5, 12.9]]],
+        },
+      },
+    ];
+
+    const { container } = render(
+      <FloodMap
+        floodGeoJSON={{ type: 'FeatureCollection', features: [] }}
+        riskZones={sampleZones}
+        tilesOffline={true}
+      />
+    );
+
+    // Vector pane & alert are present and accessible on top of neutral background
+    expect(screen.getByRole('alert')).toHaveTextContent(/Map tiles unavailable/i);
+    expect(container.querySelector('.leaflet-container')).toHaveClass('bg-slate-200');
+    expect(container.querySelector('.leaflet-overlay-pane')).toBeInTheDocument();
   });
 });

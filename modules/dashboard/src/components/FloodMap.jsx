@@ -105,6 +105,7 @@ export default function FloodMap({
   const [internalReset, setInternalReset] = useState(0);
   const [layerErrors, setLayerErrors] = useState({});
   const [internalTilesOffline, setInternalTilesOffline] = useState(false);
+  const tilesOfflineRef = useRef(false);
 
   const isTilesOffline = tilesOfflineProp !== null ? tilesOfflineProp : internalTilesOffline;
   const activeReset = resetTrigger || internalReset;
@@ -115,6 +116,13 @@ export default function FloodMap({
 
   const tileUrl = import.meta.env.VITE_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   const tileAttribution = import.meta.env.VITE_TILE_ATTRIBUTION || '© OpenStreetMap contributors';
+
+  const handleTileError = useCallback(() => {
+    if (!tilesOfflineRef.current) {
+      tilesOfflineRef.current = true;
+      setInternalTilesOffline(true);
+    }
+  }, []);
 
   const handleLayerError = useCallback((layerKey, err) => {
     setLayerErrors((prev) => ({ ...prev, [layerKey]: err.message || 'Rendering failed' }));
@@ -138,7 +146,7 @@ export default function FloodMap({
           className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-amber-100 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-card text-xs flex items-center space-x-2 shadow"
         >
           <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
-          <span>Base map tiles unreachable. Vector flood overlays continue to operate offline.</span>
+          <span>Map tiles unavailable. Base map tiles unreachable; vector flood overlays continue to operate offline.</span>
         </div>
       )}
 
@@ -178,7 +186,7 @@ export default function FloodMap({
           url={tileUrl}
           attribution={tileAttribution}
           eventHandlers={{
-            tileerror: () => setInternalTilesOffline(true),
+            tileerror: handleTileError,
           }}
         />
 
