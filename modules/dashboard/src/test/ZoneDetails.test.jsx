@@ -99,6 +99,43 @@ describe('ZoneDetails component (T4.5, FR-20, FR-21)', () => {
     expect(screen.getByText(/Select a zone on the map or in the list/i)).toBeInTheDocument();
   });
 
+  it('renders provenance, confidence and the P10 to P90 range when supplied and nothing when null', () => {
+    const zoneWithSuppliedFields = {
+      ...completeZone,
+      provenance: 'SpaceNet 8 / Maxar ground truth',
+      confidence: 0.95,
+      rank_p10: 12,
+      rank_p90: 18,
+    };
+
+    const { rerender } = render(
+      <ZoneDetails zone={zoneWithSuppliedFields} onClearSelection={vi.fn()} />
+    );
+
+    expect(screen.getByText('Provenance')).toBeInTheDocument();
+    expect(screen.getByText('SpaceNet 8 / Maxar ground truth')).toBeInTheDocument();
+    expect(screen.getByText('Confidence')).toBeInTheDocument();
+    expect(screen.getByText('0.95')).toBeInTheDocument();
+    expect(screen.getByText('Rank Range (P10 to P90)')).toBeInTheDocument();
+    expect(screen.getByText('P10: 12 • P90: 18')).toBeInTheDocument();
+
+    // Now test with null values
+    const zoneWithNullFields = {
+      ...completeZone,
+      provenance: null,
+      confidence: null,
+      rank_p10: null,
+      rank_p90: null,
+    };
+
+    rerender(<ZoneDetails zone={zoneWithNullFields} onClearSelection={vi.fn()} />);
+
+    expect(screen.queryByText('Provenance')).not.toBeInTheDocument();
+    expect(screen.queryByText('SpaceNet 8 / Maxar ground truth')).not.toBeInTheDocument();
+    expect(screen.queryByText('Confidence')).not.toBeInTheDocument();
+    expect(screen.queryByText('Rank Range (P10 to P90)')).not.toBeInTheDocument();
+  });
+
   it('calls onClearSelection when clear button is clicked', () => {
     const handleClear = vi.fn();
     render(<ZoneDetails zone={completeZone} onClearSelection={handleClear} />);

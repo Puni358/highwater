@@ -196,6 +196,16 @@ export default function ZoneDetails({
           </span>
         </div>
 
+        {/* Provenance */}
+        {zone.provenance !== null && zone.provenance !== undefined && (
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Provenance</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {String(zone.provenance)}
+            </span>
+          </div>
+        )}
+
         {/* Confidence (as supplied, no rescaling guesses) */}
         {zone.confidence !== null && zone.confidence !== undefined && (
           <div className="p-2.5 rounded bg-surface border border-border/50">
@@ -206,10 +216,10 @@ export default function ZoneDetails({
           </div>
         )}
 
-        {/* Uncertainty Rank Range (P10 - P90) */}
+        {/* Uncertainty Rank Range (P10 to P90) */}
         {(zone.rank_p10 !== null && zone.rank_p10 !== undefined || zone.rank_p90 !== null && zone.rank_p90 !== undefined) && (
           <div className="p-2.5 rounded bg-surface border border-border/50">
-            <span className="text-[11px] text-text-muted block">Rank Range (P10 - P90)</span>
+            <span className="text-[11px] text-text-muted block">Rank Range (P10 to P90)</span>
             <span className="text-sm font-bold text-navy-900 mt-0.5 block">
               P10: {zone.rank_p10 ?? 'N/A'} • P90: {zone.rank_p90 ?? 'N/A'}
             </span>
