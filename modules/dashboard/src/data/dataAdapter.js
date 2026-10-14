@@ -101,16 +101,28 @@ export function adaptZones(rawZonesPayload) {
     throw new Error('Invalid zones payload: expected a top-level object.');
   }
 
-  const rawZones = rawZonesPayload.zones;
+  const rawZones = rawZonesPayload.zones || rawZonesPayload.ranked_zones;
   if (!Array.isArray(rawZones)) {
     throw new Error('Invalid zones payload: missing "zones" array.');
+  }
+
+  let studyArea = rawZonesPayload.study_area;
+  if (!studyArea) {
+    const src = typeof rawZonesPayload.source === 'string' ? rawZonesPayload.source : '';
+    if (src.includes('Dernau') || src.includes('SpaceNet') || src.includes('Germany')) {
+      studyArea = 'Dernau (Ahr valley), Germany';
+    } else if (rawZonesPayload.source) {
+      studyArea = rawZonesPayload.source;
+    } else {
+      studyArea = 'Unverified Study Area';
+    }
   }
 
   const metadata = {
     schemaVersion: rawZonesPayload.schema_version || '1.0',
     generatedAt: rawZonesPayload.generated_at || null,
     dataMode: (rawZonesPayload.data_mode || 'demo').toLowerCase(),
-    studyArea: rawZonesPayload.study_area || 'Bengaluru, Karnataka',
+    studyArea,
     riskMethod: rawZonesPayload.risk_method || null,
     source: rawZonesPayload.source || null,
     dataSource: rawZonesPayload.data_source || null,
@@ -120,14 +132,16 @@ export function adaptZones(rawZonesPayload) {
     const zoneId = z.zone_id || `zone-${idx + 1}`;
     const name = z.name || `Zone ${zoneId}`;
     const floodedPercent = normalizeNumber(z.flooded_percent);
-    const floodedAreaKm2 = normalizeNumber(z.flooded_area_km2);
+    const floodedAreaKm2 = normalizeNumber(
+      z.flooded_area_km2 ?? (z.flooded_area_m2 ? z.flooded_area_m2 / 1000000 : null)
+    );
     const exposedBuildings = normalizeNumber(z.exposed_buildings);
-    const scoreResult = normalizeRiskScore(z.risk_score);
+    const scoreResult = normalizeRiskScore(z.risk_score ?? z.score);
 
     // Rule:
     // Only force UNKNOWN when risk_level or risk_score is missing or invalid.
     // If risk_level is supplied but other numeric fields are null, keep the risk level and add a partialData flag.
-    const normalizedRisk = normalizeRiskLevel(z.risk_level);
+    const normalizedRisk = normalizeRiskLevel(z.risk_level || z.priority);
     const isRiskMissingOrInvalid =
       normalizedRisk === 'UNKNOWN' ||
       scoreResult.score === null;
@@ -143,13 +157,35 @@ export function adaptZones(rawZonesPayload) {
     let accessibility = 'UNKNOWN';
     if (typeof z.accessibility === 'string') {
       const acc = z.accessibility.toUpperCase();
-      if (['OPEN', 'LIMITED', 'BLOCKED', 'CUT_OFF', 'UNKNOWN'].includes(acc)) {
-        accessibility = acc;
+      if (['OPEN', 'LIMITED', 'BLOCKED', 'CUT_OFF', 'UNKNOWN', 'ACCESSIBLE', 'PARTIAL'].includes(acc)) {
+        // Map backend Module 2/3 accessibility terms to UI terms if needed
+        if (acc === 'ACCESSIBLE') accessibility = 'OPEN';
+        else if (acc === 'PARTIAL') accessibility = 'LIMITED';
+        else accessibility = acc;
       }
     }
 
-    const reasons = Array.isArray(z.reasons) ? z.reasons : [];
-    const geometry = z.geometry && z.geometry.coordinates ? z.geometry : null;
+    const reasons = Array.isArray(z.reasons) ? z.reasons : z.explanation ? [z.explanation] : [];
+    
+    // Check geometry or synthesize polygon from bbox [minLon, minLat, maxLon, maxLat]
+    let geometry = z.geometry && z.geometry.coordinates ? z.geometry : null;
+    if (!geometry && Array.isArray(z.bbox) && z.bbox.length === 4) {
+      const [minLon, minLat, maxLon, maxLat] = z.bbox;
+      if (isValidLngLat([minLon, minLat]) && isValidLngLat([maxLon, maxLat])) {
+        geometry = {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [minLon, minLat],
+              [maxLon, minLat],
+              [maxLon, maxLat],
+              [minLon, maxLat],
+              [minLon, minLat],
+            ],
+          ],
+        };
+      }
+    }
     const hasGeometry = Boolean(geometry);
 
     return {
@@ -164,12 +200,14 @@ export function adaptZones(rawZonesPayload) {
       reasons,
       geometry,
       hasGeometry,
+      bbox: Array.isArray(z.bbox) ? z.bbox : null,
+      centroid: Array.isArray(z.centroid) ? z.centroid : null,
       provenance: z.provenance !== undefined ? z.provenance : null,
       source: z.source !== undefined ? z.source : null,
       confidence: z.confidence !== undefined ? z.confidence : null,
       rank_p10: z.rank_p10 !== undefined ? z.rank_p10 : null,
       rank_p90: z.rank_p90 !== undefined ? z.rank_p90 : null,
-      needsSurvey: z.needs_survey === true,
+      needsSurvey: z.needs_survey === true || z.needs_verification === true,
       partialData,
     };
   });
@@ -297,6 +335,38 @@ export function adaptDashboardData(raw) {
     buildingsExposed = { type: 'FeatureCollection', features: [] };
   } else {
     buildingsExposed = raw.rawBuildingsExposed;
+  }
+
+  // Merge rawRiskScores if provided (e.g. from Module 3 risk_scores.json)
+  if (raw.rawRiskScores && typeof raw.rawRiskScores === 'object') {
+    const scoreItems = raw.rawRiskScores.ranked_zones || raw.rawRiskScores.zones || [];
+    if (Array.isArray(scoreItems)) {
+      const scoreMap = new Map();
+      for (const item of scoreItems) {
+        if (item.zone_id) scoreMap.set(item.zone_id, item);
+      }
+      for (const zone of zones) {
+        const match = scoreMap.get(zone.zoneId);
+        if (match) {
+          if (match.score !== undefined && (zone.riskScore === null || zone.riskScore === undefined)) {
+            const norm = normalizeRiskScore(match.score);
+            zone.riskScore = norm.score;
+          }
+          if (match.priority && (zone.riskLevel === 'UNKNOWN' || !zone.riskLevel)) {
+            zone.riskLevel = normalizeRiskLevel(match.priority);
+          }
+          if (match.confidence && !zone.confidence) {
+            zone.confidence = match.confidence;
+          }
+          if (match.needs_verification !== undefined) {
+            zone.needsSurvey = Boolean(match.needs_verification);
+          }
+          if (match.explanation && (!zone.reasons || zone.reasons.length === 0)) {
+            zone.reasons = [match.explanation];
+          }
+        }
+      }
+    }
   }
 
   return {

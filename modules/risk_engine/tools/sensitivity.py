@@ -184,6 +184,25 @@ def run_sensitivity_analysis(
     return baseline_self_metrics, results
 
 
+from risk_engine.sensitivity import (
+    DEFAULT_SENSITIVITY_SCENARIOS,
+    ScenarioComparison,
+    SensitivityAnalysisResult,
+    SensitivityScenario,
+    ZoneSensitivityRecord,
+    analyze_ranking_sensitivity,
+)
+
+
+def run_scenario_sensitivity_analysis(
+    zones_path: Path,
+    config_path: Path | None = None,
+    scenarios: list[SensitivityScenario | dict[str, Any]] | None = None,
+) -> SensitivityAnalysisResult:
+    """Run standalone scenario-based sensitivity analysis on zones.json."""
+    return analyze_ranking_sensitivity(zones_path, config=config_path, scenarios=scenarios)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="HighWater Module 3 Sensitivity Analysis"
@@ -200,6 +219,18 @@ def main() -> None:
         default=None,
         help="Optional path to custom configuration file",
     )
+    parser.add_argument(
+        "--mode",
+        choices=["perturbation", "scenarios"],
+        default="scenarios",
+        help="Analysis mode: 'scenarios' evaluates plausible weight configurations, 'perturbation' tests ±10/20% shifts",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="Optional path to save sensitivity analysis JSON report",
+    )
     args = parser.parse_args()
 
     zones_p = args.zones
@@ -208,28 +239,63 @@ def main() -> None:
         if alt.exists():
             zones_p = alt
 
-    self_metrics, results = run_sensitivity_analysis(zones_p, args.config)
+    if args.mode == "scenarios":
+        result = analyze_ranking_sensitivity(zones_p, config=args.config)
+        res_dict = result.to_dict()
 
-    print("=== HighWater Module 3 Sensitivity Analysis ===")
-    print(
-        f"Baseline self-comparison: Tau={self_metrics['kendall_tau']:.4f}, "
-        f"Top-5 overlap={self_metrics['top5_overlap']}/5, "
-        f"Priority changes={self_metrics['priority_changes']}\n"
-    )
+        print("=== HighWater Module 3: Risk-Ranking Sensitivity Analysis ===")
+        print(f"Total zones evaluated: {result.summary['total_zones']}")
+        print(f"Scenarios tested: {result.summary['scenarios_tested_count']}")
+        print(f"Average Kendall's Tau: {result.summary['average_kendall_tau']:.4f}\n")
 
-    headers = (
-        f"{'Category':<12} {'Parameter':<22} {'Delta':>8} "
-        f"{'Kendall Tau':>12} {'Top-5 Overlap':>14} {'Priority Shifts':>16}"
-    )
-    print(headers)
-    print("-" * len(headers))
-    for r in results:
+        print("Scenario Comparisons against Baseline:")
+        sc_headers = f"{'Scenario':<22} {'Tau':>8} {'MaxD-Rank':>10} {'MeanD-Rank':>11} {'MaxD-Score':>11} {'PrioShifts':>12} {'Top5Overlap':>13}"
+        print(sc_headers)
+        print("-" * len(sc_headers))
+        for sc in result.scenarios:
+            print(
+                f"{sc['scenario_name']:<22} {sc['kendall_tau']:8.4f} {sc['max_rank_change']:10d} "
+                f"{sc['mean_rank_change']:11.2f} {sc['max_score_change']:11.1f} "
+                f"{sc['priority_changes_count']:12d} {sc['top_k_overlap_count']:13d}/5"
+            )
+
+        print(f"\nRobust High-Priority Zones ({len(result.robust_high_priority_zones)} zones remain CRITICAL/HIGH across all scenarios):")
+        for z in result.robust_high_priority_zones[:5]:
+            print(f"  {z['zone_id']}: baseline rank #{z['baseline_rank']} ({z['baseline_priority']}, score {z['baseline_score']:.1f}), score range [{z['min_score']:.1f}, {z['max_score']:.1f}]")
+
+        print(f"\nVolatile Zones ({len(result.volatile_zones)} zones with rank shift >= {result.summary['volatile_rank_threshold']}):")
+        for z in result.volatile_zones[:5]:
+            print(f"  {z['zone_id']}: baseline rank #{z['baseline_rank']} -> max shift {z['max_rank_delta']} ranks (range #{z['best_rank']} to #{z['worst_rank']})")
+
+        if args.out:
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            args.out.write_text(json.dumps(res_dict, indent=2), encoding="utf-8")
+            print(f"\nReport written to: {args.out}")
+
+    else:
+        self_metrics, results = run_sensitivity_analysis(zones_p, args.config)
+
+        print("=== HighWater Module 3 Parameter Perturbation Analysis ===")
         print(
-            f"{r['category']:<12} {r['parameter']:<22} {r['perturbation']:>8} "
-            f"{r['kendall_tau']:12.4f} {r['top5_overlap']:>14d}/5 "
-            f"{r['priority_changes']:>16d}"
+            f"Baseline self-comparison: Tau={self_metrics['kendall_tau']:.4f}, "
+            f"Top-5 overlap={self_metrics['top5_overlap']}/5, "
+            f"Priority changes={self_metrics['priority_changes']}\n"
         )
+
+        headers = (
+            f"{'Category':<12} {'Parameter':<22} {'Delta':>8} "
+            f"{'Kendall Tau':>12} {'Top-5 Overlap':>14} {'Priority Shifts':>16}"
+        )
+        print(headers)
+        print("-" * len(headers))
+        for r in results:
+            print(
+                f"{r['category']:<12} {r['parameter']:<22} {r['perturbation']:>8} "
+                f"{r['kendall_tau']:12.4f} {r['top5_overlap']:>14d}/5 "
+                f"{r['priority_changes']:>16d}"
+            )
 
 
 if __name__ == "__main__":
     main()
+

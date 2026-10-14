@@ -45,7 +45,7 @@ export const API_RESOURCE_PATHS = {
  * @returns {Promise<{rawZones: Object, rawFloodExtent: Object, rawBlockedRoads: Object, rawFacilities: Object, rawRoutes: Object, rawBuildingsExposed?: Object}>}
  */
 export async function getDashboardData(options = {}) {
-  const dataSource = options.dataSource || import.meta.env?.VITE_DATA_SOURCE || 'mock';
+  const dataSource = options.dataSource || import.meta.env?.VITE_DATA_SOURCE || 'mock-dernau';
   const baseUrl = options.baseUrl ?? (import.meta.env?.VITE_API_BASE_URL || '');
   const isApi = dataSource === 'api';
   const isDernau = dataSource === 'mock-dernau';

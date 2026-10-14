@@ -24,9 +24,12 @@ from risk_engine.scorer import (
     export_dashboard,
     load_config,
     load_zones,
+    parse_weights_arg,
     records_to_dict,
     score_zones,
+    validate_config,
 )
+from risk_engine.sensitivity import analyze_ranking_sensitivity
 
 logger = logging.getLogger("risk_engine")
 
@@ -35,8 +38,10 @@ def run(
     zones_path: Path,
     out_dir: Path,
     config_path: Path | None = None,
+    weights: dict[str, float] | str | None = None,
     output_format: str = "standard",
     data_mode: str = "historical",
+    sensitivity: bool = False,
 ) -> dict:
     """Core pipeline execution without direct stdout prints.
 
@@ -50,6 +55,11 @@ def run(
 
     # 1. Validate config and inputs before creating output directories
     config = load_config(cfg_p)
+    if weights is not None:
+        parsed_weights = parse_weights_arg(weights)
+        config["scoring"]["weights"] = parsed_weights
+        validate_config(config)
+
     zones_doc, warnings = load_zones(zones_p, config=config)
 
     for w in warnings:
@@ -83,7 +93,6 @@ def run(
 
     tmp_name = f".tmp_{os.getpid()}_{uuid.uuid4().hex}.json"
     tmp_path = out_p / tmp_name
-
     try:
         with open(tmp_path, "w", encoding="utf-8") as fh:
             json.dump(final_dict, fh, indent=2, allow_nan=False)
@@ -95,6 +104,24 @@ def run(
             except OSError:
                 pass
         raise
+
+    # 4. Optional sensitivity analysis output
+    if sensitivity:
+        sens_res = analyze_ranking_sensitivity(zones_p, config=config)
+        sens_path = out_p / "sensitivity_analysis.json"
+        tmp_sens = out_p / f".tmp_{os.getpid()}_{uuid.uuid4().hex}_sens.json"
+        try:
+            with open(tmp_sens, "w", encoding="utf-8") as fh:
+                json.dump(sens_res.to_dict(), fh, indent=2, allow_nan=False)
+            os.replace(tmp_sens, sens_path)
+        except Exception:
+            if tmp_sens.exists():
+                try:
+                    tmp_sens.unlink()
+                except OSError:
+                    pass
+            raise
+        final_dict["_sensitivity_analysis"] = sens_res.to_dict()
 
     return final_dict
 
@@ -122,6 +149,12 @@ def main() -> None:
         help="Optional path to custom configuration file (defaults to bundled package config or config/weights.json)",
     )
     parser.add_argument(
+        "--weights",
+        type=str,
+        default=None,
+        help="Optional custom scoring weights as JSON string or key=val pairs (e.g. '{\"flood_percent\": 0.4, ...}' or 'flood_percent=0.4,exposure=0.35,isolation=0.15,flood_area_density=0.1')",
+    )
+    parser.add_argument(
         "--format",
         choices=["standard", "dashboard"],
         default="standard",
@@ -131,6 +164,11 @@ def main() -> None:
         "--data-mode",
         default="historical",
         help="Data mode tag for dashboard export (defaults to 'historical')",
+    )
+    parser.add_argument(
+        "--sensitivity",
+        action="store_true",
+        help="Run standalone sensitivity analysis across plausible scenarios and save sensitivity_analysis.json",
     )
     parser.add_argument(
         "--debug",
@@ -150,8 +188,10 @@ def main() -> None:
             args.zones,
             args.out,
             args.config,
+            weights=args.weights,
             output_format=args.format,
             data_mode=args.data_mode,
+            sensitivity=args.sensitivity,
         )
     except InputValidationError as exc:
         print(f"ERROR: Input validation failed — {exc}", file=sys.stderr)
@@ -185,6 +225,14 @@ def main() -> None:
             f"CRITICAL={counts['CRITICAL']} HIGH={counts['HIGH']} "
             f"MEDIUM={counts['MEDIUM']} LOW={counts['LOW']}"
         )
+        acc_counts = summary.get("accessibility_counts")
+        if acc_counts:
+            print(
+                f"Accessibility: ACCESSIBLE={acc_counts.get('ACCESSIBLE', 0)} "
+                f"PARTIAL={acc_counts.get('PARTIAL', 0)} "
+                f"BLOCKED={acc_counts.get('BLOCKED', 0)} "
+                f"UNKNOWN={acc_counts.get('UNKNOWN', 0)}"
+            )
         if dq_count:
             print(f"Data-quality warnings: {dq_count}")
 
@@ -196,6 +244,14 @@ def main() -> None:
                 f"  #{z['rank']:2d}  {z['zone_id']}  score={z['score']:5.1f}"
                 f"  {z['priority']}{warn_flag}{basis_flag}"
             )
+
+        if args.sensitivity and "_sensitivity_analysis" in output:
+            sens = output["_sensitivity_analysis"]
+            print(f"\nSensitivity Analysis (Tested {sens['summary']['scenarios_tested_count']} scenarios):")
+            print(f"  Average Kendall's Tau: {sens['summary']['average_kendall_tau']:.4f}")
+            print(f"  Robust high-priority zones: {sens['summary']['robust_high_priority_count']}")
+            print(f"  Volatile zones: {sens['summary']['volatile_zones_count']}")
+            print(f"  Sensitivity report written to: {args.out / 'sensitivity_analysis.json'}")
 
         out_file = args.out / "risk_scores.json"
         print(f"\nOutput written to: {out_file}")

@@ -11,7 +11,7 @@ export function getActiveCacheKey(customSource) {
   const activeSource =
     customSource ||
     (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_DATA_SOURCE : null) ||
-    'mock';
+    'mock-dernau';
   return `highwater_cache_${activeSource}`;
 }
 

@@ -27,14 +27,27 @@ export default function FloodLayer({ data }) {
     <>
       {validFeatures.map((feature, idx) => {
         const key = feature.properties?.feature_id || `flood-${idx}`;
-        const rawRing = feature.geometry.coordinates[0];
-        const latLngs = rawRing.map(toLatLng);
+        const geom = feature.geometry;
+        let positions;
+        try {
+          if (geom?.type === 'Polygon') {
+            positions = geom.coordinates[0].map(toLatLng);
+          } else if (geom?.type === 'MultiPolygon') {
+            positions = geom.coordinates.map((poly) => poly[0].map(toLatLng));
+          } else {
+            return null;
+          }
+        } catch {
+          return null;
+        }
+
+        if (!positions || positions.length === 0) return null;
         const props = feature.properties || {};
 
         return (
           <Polygon
             key={key}
-            positions={latLngs}
+            positions={positions}
             pathOptions={floodStyle}
           >
             <Tooltip sticky>

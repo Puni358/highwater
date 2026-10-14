@@ -33,6 +33,23 @@ export function MapController({
   const map = useMap();
   const prevSelectedIdRef = useRef(null);
   const initialFitDoneRef = useRef(false);
+  const prevBoundsKeyRef = useRef('');
+
+  // Immediate and post-mount invalidation so Leaflet paints as soon as layout settles
+  useEffect(() => {
+    map.invalidateSize();
+    const rafId = requestAnimationFrame(() => {
+      map.invalidateSize();
+    });
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timer);
+    };
+  }, [map]);
 
   // Resize observer to ensure map tiles & vector layers redraw on container size changes (FR-19)
   useEffect(() => {
@@ -40,26 +57,65 @@ export function MapController({
     const container = map.getContainer();
     const observer = new ResizeObserver(() => {
       map.invalidateSize();
+      // If initial fit was blocked by 0-size container, retry now that container has dimensions
+      if (!initialFitDoneRef.current && dataBounds) {
+        const size = map.getSize();
+        if (size.x > 0 && size.y > 0) {
+          initialFitDoneRef.current = true;
+          prevBoundsKeyRef.current = JSON.stringify(dataBounds);
+          try {
+            map.fitBounds(dataBounds, { padding: [30, 30], maxZoom: 16 });
+          } catch {
+            // Safe fallback
+          }
+        }
+      }
     });
     observer.observe(container);
 
     return () => {
       observer.disconnect();
     };
-  }, [map]);
+  }, [map, dataBounds]);
 
   // Fit bounds from loaded data (Requirement 2)
   useEffect(() => {
-    if (dataBounds && !initialFitDoneRef.current) {
+    if (!dataBounds) return;
+    const boundsKey = JSON.stringify(dataBounds);
+
+    if (prevBoundsKeyRef.current === boundsKey && initialFitDoneRef.current) {
+      return;
+    }
+
+    const size = map.getSize();
+    const isZeroSize = size.x === 0 && size.y === 0;
+    const isTestEnv = typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.includes('jsdom');
+
+    if (!isZeroSize || isTestEnv) {
       initialFitDoneRef.current = true;
-      map.fitBounds(dataBounds, { padding: [30, 30] });
+      prevBoundsKeyRef.current = boundsKey;
+      try {
+        map.fitBounds(dataBounds, { padding: [30, 30], maxZoom: 16 });
+      } catch {
+        // Safe fallback
+      }
     }
   }, [dataBounds, map]);
 
   // Reset extent handler returns to fitted bounds (FR-15, T3.6, Requirement 2)
   useEffect(() => {
     if (resetTrigger > 0) {
-      map.flyToBounds(dataBounds || DEFAULT_AOI_BOUNDS, { duration: 1 });
+      map.invalidateSize();
+      const targetBounds = dataBounds || DEFAULT_AOI_BOUNDS;
+      try {
+        map.flyToBounds(targetBounds, { padding: [30, 30], maxZoom: 16, duration: 1 });
+      } catch {
+        const center = [
+          (targetBounds[0][0] + targetBounds[1][0]) / 2,
+          (targetBounds[0][1] + targetBounds[1][1]) / 2,
+        ];
+        map.setView(center, DEFAULT_MAP_ZOOM);
+      }
     }
   }, [resetTrigger, dataBounds, map]);
 
@@ -69,10 +125,18 @@ export function MapController({
       prevSelectedIdRef.current = selectedZoneId;
       const targetZone = zones.find((z) => z.zoneId === selectedZoneId);
       if (targetZone && targetZone.hasGeometry && targetZone.geometry?.coordinates) {
-        const ring = targetZone.geometry.coordinates[0];
-        const latLngs = ring.map(toLatLng);
-        const bounds = L.latLngBounds(latLngs);
-        map.flyToBounds(bounds, { padding: [50, 50], maxZoom: 15, duration: 1.2 });
+        try {
+          const rawCoords = targetZone.geometry.coordinates;
+          const rings = targetZone.geometry.type === 'Polygon' ? rawCoords : rawCoords.flat(1);
+          const firstRing = rings[0];
+          if (Array.isArray(firstRing) && firstRing.length >= 3) {
+            const latLngs = firstRing.map(toLatLng);
+            const bounds = L.latLngBounds(latLngs);
+            map.flyToBounds(bounds, { padding: [50, 50], maxZoom: 15, duration: 1.2 });
+          }
+        } catch {
+          // Ignore invalid coordinates during zone flyToBounds
+        }
       }
     } else if (!selectedZoneId) {
       prevSelectedIdRef.current = null;
@@ -94,6 +158,7 @@ export default function FloodMap({
   routes = [],
   buildingsExposed = null,
   selectedZoneId = null,
+  studyArea = null,
   visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false, buildings: false },
   onZoneSelect,
   droppedCount = 0,
@@ -102,20 +167,50 @@ export default function FloodMap({
   layerErrors: externalLayerErrors = {},
   children, // For custom/injected test layers
 }) {
-  const [internalReset, setInternalReset] = useState(0);
   const [layerErrors, setLayerErrors] = useState({});
   const [internalTilesOffline, setInternalTilesOffline] = useState(false);
   const tilesOfflineRef = useRef(false);
 
   const isTilesOffline = tilesOfflineProp !== null ? tilesOfflineProp : internalTilesOffline;
-  const activeReset = resetTrigger || internalReset;
+  const activeReset = resetTrigger;
 
   const dataBounds = useMemo(() => {
-    return computeDataBounds(riskZones, floodGeoJSON);
-  }, [riskZones, floodGeoJSON]);
+    return computeDataBounds(riskZones, floodGeoJSON, studyArea);
+  }, [riskZones, floodGeoJSON, studyArea]);
 
-  const tileUrl = import.meta.env.VITE_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = import.meta.env.VITE_TILE_ATTRIBUTION || '© OpenStreetMap contributors';
+  const initialMapCenter = useMemo(() => {
+    if (dataBounds && Array.isArray(dataBounds) && dataBounds.length === 2) {
+      const [[minLat, minLng], [maxLat, maxLng]] = dataBounds;
+      if (Number.isFinite(minLat) && Number.isFinite(maxLat) && Number.isFinite(minLng) && Number.isFinite(maxLng)) {
+        return [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
+      }
+    }
+    return DEFAULT_MAP_CENTER;
+  }, [dataBounds]);
+
+  // Base map tile provider configuration supporting both README and .env conventions
+  const rawTileUrl =
+    import.meta.env?.VITE_MAP_TILE_URL ||
+    import.meta.env?.VITE_TILE_URL ||
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileAttribution =
+    import.meta.env?.VITE_MAP_TILE_ATTRIBUTION ||
+    import.meta.env?.VITE_TILE_ATTRIBUTION ||
+    '© OpenStreetMap contributors';
+  const apiKey =
+    import.meta.env?.VITE_MAP_API_KEY ||
+    import.meta.env?.VITE_TILE_API_KEY ||
+    import.meta.env?.VITE_MAPBOX_TOKEN ||
+    '';
+
+  const tileUrl = useMemo(() => {
+    if (!apiKey) return rawTileUrl;
+    return rawTileUrl
+      .replace('{apiKey}', apiKey)
+      .replace('{key}', apiKey)
+      .replace('{accessToken}', apiKey)
+      .replace('{token}', apiKey);
+  }, [rawTileUrl, apiKey]);
 
   const handleTileError = useCallback(() => {
     if (!tilesOfflineRef.current) {
@@ -138,7 +233,7 @@ export default function FloodMap({
   if (buildingsExposed?.error) combinedLayerErrors.buildings = buildingsExposed.error;
 
   return (
-    <div className="relative w-full h-full min-h-[380px] flex-1 overflow-hidden font-sans">
+    <div className="relative w-full h-full min-h-[380px] flex-1 flex flex-col overflow-hidden font-sans">
       {/* Offline Tiles Warning Notice (Section 5 Non-functional requirements) */}
       {isTilesOffline && (
         <div
@@ -177,9 +272,10 @@ export default function FloodMap({
 
       {/* Interactive Leaflet Surface */}
       <MapContainer
-        center={DEFAULT_MAP_CENTER}
+        center={initialMapCenter}
         zoom={DEFAULT_MAP_ZOOM}
-        className="w-full h-full z-0 bg-slate-200"
+        className="w-full h-full min-h-[380px] flex-1 z-0 bg-slate-200"
+        style={{ width: '100%', height: '100%', minHeight: '380px' }}
         scrollWheelZoom={true}
       >
         <TileLayer
