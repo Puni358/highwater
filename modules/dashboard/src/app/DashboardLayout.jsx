@@ -158,7 +158,7 @@ export default function DashboardLayout({
                 ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
                 : stats.floodedAreaIsPartial
                 ? `Partial (${stats.floodedMissingCount} zone unassessed)`
-                : 'Measured flood extent'
+                : 'Derived from labelled flooded buildings/roads, not a measured water boundary'
             }
           />
           <StatCard
@@ -183,7 +183,7 @@ export default function DashboardLayout({
               stats.isFiltered
                 ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
                 : stats.exposedBuildingsIsPartial
-                ? `Partial (${stats.bldgsMissingCount} zone unassessed)`
+                ? 'Partial: one zone is a designated test case with the value withheld'
                 : 'Structures within flood zone'
             }
           />
@@ -193,7 +193,7 @@ export default function DashboardLayout({
             isDemo={stats.isDemo}
             icon={Ban}
             variant="highRisk"
-            caption="Study area total (infrastructure layer)"
+            caption="Roads labelled flooded in ground-truth data"
           />
         </section>
 

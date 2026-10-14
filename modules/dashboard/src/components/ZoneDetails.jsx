@@ -77,6 +77,12 @@ export default function ZoneDetails({
   const access = getAccessibilityDisplay(zone.accessibility);
   const AccessIcon = access.icon;
 
+  const hasNullNumeric =
+    zone.riskScore !== null &&
+    (zone.floodedAreaKm2 === null ||
+      zone.floodedPercent === null ||
+      zone.exposedBuildings === null);
+
   const scoreDisplay = zone.riskScore !== null ? `${zone.riskScore} / 100` : 'Not available';
   const floodAreaDisplay = zone.floodedAreaKm2 !== null ? `${zone.floodedAreaKm2} km²` : 'Not available';
   const floodPctDisplay = zone.floodedPercent !== null ? `${zone.floodedPercent}%` : 'Not available';
@@ -136,9 +142,16 @@ export default function ZoneDetails({
         {/* Risk Score */}
         <div className="p-2.5 rounded bg-surface border border-border/50">
           <span className="text-[11px] text-text-muted block">Priority Score</span>
-          <span className="text-sm font-bold text-navy-900 mt-0.5 block">
-            {scoreDisplay}
-          </span>
+          <div className="flex items-baseline space-x-1 mt-0.5">
+            <span className="text-sm font-bold text-navy-900 block">
+              {scoreDisplay}
+            </span>
+            {hasNullNumeric && (
+              <span className="text-[11px] font-normal text-text-muted">
+                (demo-derived)
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Accessibility Status */}

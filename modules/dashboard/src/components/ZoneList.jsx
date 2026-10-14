@@ -25,6 +25,12 @@ function ZoneListRow({
     }
   }, [isSelected]);
 
+  const hasNullNumeric =
+    zone.riskScore !== null &&
+    (zone.exposedBuildings === null ||
+      zone.floodedAreaKm2 === null ||
+      zone.floodedPercent === null);
+
   const scoreText = zone.riskScore !== null ? zone.riskScore : 'Not available';
   const bldgText = zone.exposedBuildings !== null ? `${zone.exposedBuildings} bldgs` : 'Bldgs: Not available';
 
@@ -75,6 +81,9 @@ function ZoneListRow({
           <span className={zone.riskScore === null ? 'text-text-muted font-normal' : ''}>
             Score: {scoreText}
           </span>
+          {hasNullNumeric && (
+            <span className="text-[10px] font-normal text-text-muted ml-1">(demo-derived)</span>
+          )}
         </div>
         <div className="text-[11px] text-text-muted flex items-center justify-end space-x-1">
           <Building2 className="w-3 h-3 text-text-muted" aria-hidden="true" />

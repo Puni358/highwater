@@ -264,4 +264,108 @@ describe('Dernau Wiring & 6th Overlay Suite', () => {
     rerender(<ProvenanceBadge value="observed" />);
     expect(screen.getByText('Observed')).toBeInTheDocument();
   });
+
+  // --------------------------------------------------------------------------
+  // 5. Stat Card Honesty Captions & Zone-005 Demo-Derived Notice
+  // --------------------------------------------------------------------------
+  it('renders the three honesty captions on StatCards when data has partial/ground-truth values', () => {
+    const dataWithPartial = {
+      metadata: {
+        generatedAt: '2026-10-14T10:00:00Z',
+        dataMode: 'demo',
+        studyArea: 'Dernau (Ahr valley), Germany',
+      },
+      zones: [
+        {
+          zoneId: 'zone-001',
+          name: 'Zone 001',
+          riskLevel: 'LOW',
+          riskScore: 10,
+          floodedPercent: 1.0,
+          floodedAreaKm2: 0.1,
+          exposedBuildings: 224,
+          accessibility: 'OPEN',
+          reasons: [],
+          hasGeometry: true,
+        },
+        {
+          zoneId: 'zone-005',
+          name: 'Zone 005',
+          riskLevel: 'LOW',
+          riskScore: 0,
+          floodedPercent: 0,
+          floodedAreaKm2: 0,
+          exposedBuildings: null, // designated test case with withheld value
+          accessibility: 'OPEN',
+          reasons: [],
+          hasGeometry: true,
+        },
+      ],
+      floodExtent: { type: 'FeatureCollection', features: [] },
+      blockedRoads: {
+        type: 'FeatureCollection',
+        features: [{ type: 'Feature', properties: {}, geometry: null }],
+      },
+      facilities: { type: 'FeatureCollection', features: [] },
+      routes: [],
+      buildingsExposed: { type: 'FeatureCollection', features: [] },
+    };
+
+    render(<DashboardLayout data={dataWithPartial} onRefresh={vi.fn()} />);
+
+    // 1. Flooded area caption
+    expect(
+      screen.getByText('Derived from labelled flooded buildings/roads, not a measured water boundary')
+    ).toBeInTheDocument();
+
+    // 2. Blocked roadways caption
+    expect(
+      screen.getByText('Roads labelled flooded in ground-truth data')
+    ).toBeInTheDocument();
+
+    // 3. Exposed buildings partial note
+    expect(
+      screen.getByText('Partial: one zone is a designated test case with the value withheld')
+    ).toBeInTheDocument();
+  });
+
+  it('displays "(demo-derived)" beside Priority Score in ZoneDetails and ZoneList for zone with null numeric field', () => {
+    const zoneWithNullNumeric = {
+      zoneId: 'zone-005',
+      name: 'Zone 005 (grid cell)',
+      riskLevel: 'LOW',
+      riskScore: 0,
+      floodedAreaKm2: 0,
+      floodedPercent: 0,
+      exposedBuildings: null,
+      accessibility: 'OPEN',
+      reasons: ['Designated test cases, not measured data: missing exposed_buildings numeric field'],
+      hasGeometry: true,
+    };
+
+    const data = {
+      metadata: { generatedAt: '2026-10-14T10:00:00Z', dataMode: 'demo' },
+      zones: [zoneWithNullNumeric],
+      floodExtent: { type: 'FeatureCollection', features: [] },
+      blockedRoads: { type: 'FeatureCollection', features: [] },
+      facilities: { type: 'FeatureCollection', features: [] },
+      routes: [],
+      buildingsExposed: { type: 'FeatureCollection', features: [] },
+    };
+
+    render(<DashboardLayout data={data} onRefresh={vi.fn()} />);
+
+    // In ZoneList: row shows Score: 0 and (demo-derived)
+    expect(screen.getByText('Score: 0')).toBeInTheDocument();
+    expect(screen.getAllByText('(demo-derived)').length).toBeGreaterThanOrEqual(1);
+
+    // Click row to open ZoneDetails
+    fireEvent.click(screen.getByRole('button', { name: /Zone 005/i }));
+
+    // In ZoneDetails: Priority Score shows 0 / 100 with (demo-derived) and Exposed Buildings shows Not available
+    const detailsRegion = screen.getByRole('region', { name: /Zone Inspection Details/i });
+    expect(detailsRegion).toHaveTextContent('0 / 100');
+    expect(detailsRegion).toHaveTextContent('(demo-derived)');
+    expect(detailsRegion).toHaveTextContent('Not available');
+  });
 });

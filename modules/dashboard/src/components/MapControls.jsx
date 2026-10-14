@@ -18,7 +18,7 @@ export default function MapControls({
     { key: 'roads', label: 'Blocked Roads', icon: Ban, color: 'text-risk-high', provenance: 'derived' },
     { key: 'facilities', label: 'Rescue Facilities', icon: Building2, color: 'text-navy-900', provenance: 'simulated' },
     { key: 'routes', label: 'Evacuation Routes', icon: Route, color: 'text-route', provenance: 'simulated' },
-    { key: 'buildings', label: 'Exposed Buildings', icon: Home, color: 'text-amber-600', provenance: 'observed' },
+    { key: 'buildings', label: 'Exposed Buildings', icon: Home, color: 'text-amber-700', provenance: 'observed' },
   ];
 
   const enabledCount = Object.values(visibleLayers).filter(Boolean).length;
