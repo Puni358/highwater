@@ -8,6 +8,19 @@
  * stats and charts update in real-time to reflect that filtered scope, and the UI
  * displays "Showing N of M zones". If filters are cleared, metrics represent the full dataset.
  * 
+ * FILTER POLICY SPECIFICATION TABLE:
+ * | Component / Metric           | Follows Filter? | Source & Operational Behavior                                                      |
+ * |------------------------------|-----------------|------------------------------------------------------------------------------------|
+ * | Flooded area (StatCard)      | Yes             | Sums floodedAreaKm2 over active filtered zones. Shows partial note if unassessed.  |
+ * | High-priority zones (StatCard)| Yes            | Counts HIGH risk zones in active filtered subset.                                  |
+ * | Exposed buildings (StatCard) | Yes             | Sums exposedBuildings over active filtered zones. Shows partial note if unassessed.|
+ * | Blocked roadways (StatCard)  | No              | Derived from blockedRoads layer. Infrastructure-wide study total (not zone-linked).|
+ * | Risk Distribution Chart      | Yes             | Shows distribution counts across HIGH, MEDIUM, LOW, UNKNOWN for filtered zones.    |
+ * | Top Impacted Zones Chart     | Yes             | Displays top zones by exposed buildings among filtered subset (excluding nulls).   |
+ * 
+ * When a filter is active, zone-linked stat cards are labeled visibly with
+ * "Filtered view: N of M zones" so they are never mistaken for the whole study area.
+ * 
  * POLICY ON MISSING AND NULL NUMERIC DATA:
  * - Missing is never zero: Missing or null numeric data is never coerced to 0.
  * - If NO zones contain valid numeric data, selector returns null (rendered as "Not available").

@@ -118,8 +118,8 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
 | # | Scenario | Expected behaviour | Type | Status |
 |---|---|---|---|---|
 | 1 | Normal dataset | Map, cards, charts, list render | Manual | [x] |
-| 2 | Click polygon | Correct zone details appear; row highlighted | Component + manual | [x] |
-| 3 | Click list row | Matching polygon selected; map pans | Component + manual | [x] |
+| 2 | Click polygon | Correct zone details appear; row highlighted | Component + manual | [headless verified, manual pending] |
+| 3 | Click list row | Matching polygon selected; map pans | Component + manual | [headless verified, manual pending] |
 | 4 | Filter by HIGH | Only HIGH zones in list; charts follow documented rule | Unit | [x] |
 | 5 | Search by ID or name | List narrows correctly | Unit | [x] |
 | 6 | Sort by score | Order correct; null scores sort last | Unit | [x] |
@@ -131,8 +131,8 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
 | 12 | Swapped lat/lon | Warning; feature dropped or flagged | Unit | [x] |
 | 13 | Unclosed polygon ring | Feature skipped and counted | Unit | [x] |
 | 14 | Route unavailable | No line; clear message | Component | [x] |
-| 15 | All overlays off | Base map still usable | Manual | [x] |
-| 16 | Narrow mobile viewport | No horizontal overflow | Manual | [x] |
+| 15 | All overlays off | Base map still usable | Manual | [headless verified, manual pending] |
+| 16 | Narrow mobile viewport | No horizontal overflow | Manual | [headless verified, manual pending] |
 | 17 | API request fails | Error visible; retry works | Component | [ ] |
 | 18 | Refresh clicked repeatedly | One in-flight request only | Unit | [x] |
 | 19 | Tiles unreachable | Fallback notice; overlays still render | Manual | [ ] |

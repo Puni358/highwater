@@ -123,7 +123,9 @@ export default function DashboardLayout({
             icon={Droplets}
             variant="flood"
             caption={
-              stats.floodedAreaIsPartial
+              stats.isFiltered
+                ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
+                : stats.floodedAreaIsPartial
                 ? `Partial (${stats.floodedMissingCount} zone unassessed)`
                 : 'Measured flood extent'
             }
@@ -134,7 +136,11 @@ export default function DashboardLayout({
             isDemo={stats.isDemo}
             icon={AlertOctagon}
             variant="highRisk"
-            caption="Requiring immediate action"
+            caption={
+              stats.isFiltered
+                ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
+                : 'Requiring immediate action'
+            }
           />
           <StatCard
             title="Exposed buildings"
@@ -143,7 +149,9 @@ export default function DashboardLayout({
             icon={Home}
             variant="warning"
             caption={
-              stats.exposedBuildingsIsPartial
+              stats.isFiltered
+                ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
+                : stats.exposedBuildingsIsPartial
                 ? `Partial (${stats.bldgsMissingCount} zone unassessed)`
                 : 'Structures within flood zone'
             }
@@ -154,7 +162,7 @@ export default function DashboardLayout({
             isDemo={stats.isDemo}
             icon={Ban}
             variant="highRisk"
-            caption="Severed transit corridors"
+            caption="Study area total (infrastructure layer)"
           />
         </section>
 
