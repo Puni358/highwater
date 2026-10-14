@@ -40,7 +40,7 @@ EXPORTS_DIR = os.path.join(REPO_ROOT, "exports")
 DATA_DIR = os.path.join(REPO_ROOT, "data")
 
 # Named constants
-MIN_PIXEL_AREA: int = 10
+MIN_AREA_M2: float = 9.0  # Minimum polygon area threshold in square meters (~50-80 px)
 SIMPLIFY_TOLERANCE_METERS: float = 1.0
 CRS_WGS84: str = "EPSG:4326"
 CRS_UTM32N: str = "EPSG:32632"
@@ -129,12 +129,12 @@ def get_tile_transform_and_pixel_area(tile_id: str) -> Tuple[rasterio.Affine, fl
 def vectorize_mask(
     mask_np: np.ndarray,
     transform: rasterio.Affine,
-    min_pixel_area: int = MIN_PIXEL_AREA,
+    min_area_m2: float = MIN_AREA_M2,
     simplify_tolerance_meters: float = SIMPLIFY_TOLERANCE_METERS,
 ) -> Tuple[List[Dict[str, Any]], int, int, float]:
     """
     Vectorises a binary mask (H, W) using transform.
-    Drops polygons with pixel count < min_pixel_area.
+    Drops polygons with UTM area < min_area_m2 (9.0 m^2).
     Simplifies remaining polygons in UTM Zone 32N.
     Returns:
         features_data: list of dicts with 'geometry' (RFC 7946 GeoJSON dict), 'mask_pixels', 'utm_area'
@@ -154,14 +154,15 @@ def vectorize_mask(
         if poly_geo.is_empty:
             continue
         mask_pixels = int(round(poly_geo.area / det))
-        if mask_pixels < min_pixel_area:
-            dropped_count += 1
-            continue
 
         # Metric simplification in UTM Zone 32N
         try:
             geom_utm = transform_geom(CRS_WGS84, CRS_UTM32N, mapping(poly_geo))
             poly_utm = shape(geom_utm)
+            if poly_utm.is_empty or poly_utm.area < min_area_m2:
+                dropped_count += 1
+                continue
+
             poly_utm_simp = poly_utm.simplify(simplify_tolerance_meters, preserve_topology=True)
             if poly_utm_simp.is_empty or not poly_utm_simp.is_valid:
                 poly_utm_simp = poly_utm
@@ -234,7 +235,7 @@ def export_predicted_extent(
         feat_data, kept_cnt, dropped_cnt, utm_area = vectorize_mask(
             mask_np=mask_np,
             transform=transform,
-            min_pixel_area=MIN_PIXEL_AREA,
+            min_area_m2=MIN_AREA_M2,
             simplify_tolerance_meters=SIMPLIFY_TOLERANCE_METERS,
         )
 
@@ -448,10 +449,16 @@ Each feature represents a human-annotated flooded asset:
 
 ## 4. Minimum Area & Simplification Settings
 
-- **Minimum Pixel Area (`MIN_PIXEL_AREA`)**: `{MIN_PIXEL_AREA}` pixels. Components with fewer than {MIN_PIXEL_AREA} pixels (approx. 3.0 m²) are filtered out to eliminate isolated single-pixel raster artifacts.
-  - In `fast` mode, {fast_stats['total_dropped']} small components were dropped across the 14 demo tiles.
-  - In `accurate` mode, {acc_stats['total_dropped']} small components were dropped across the 14 demo tiles.
-- **Simplification Tolerance (`SIMPLIFY_TOLERANCE_METERS`)**: `{SIMPLIFY_TOLERANCE_METERS:.1f}` meters. Douglas-Peucker topology-preserving simplification (`preserve_topology=True`) is performed in UTM Zone 32N coordinates. This reduces redundant staircase vertices along grid pixel boundaries by ~89% while preserving total surface area to within < 0.1% of unsimplified UTM area.
+- **Minimum Area Filter (`MIN_AREA_M2`)**: `{MIN_AREA_M2:.1f}` m² (~50–80 pixels depending on resolution). Polygons smaller than {MIN_AREA_M2:.1f} m² are filtered out to eliminate tiny noise slivers and isolated single-pixel raster artifacts.
+  - In `fast` mode, {fast_stats['total_dropped']} small slivers were dropped across the 14 demo tiles ({fast_stats['total_polygons']} polygons kept).
+  - In `accurate` mode, {acc_stats['total_dropped']} small slivers were dropped across the 14 demo tiles ({acc_stats['total_polygons']} polygons kept).
+- **Simplification Tolerance (`SIMPLIFY_TOLERANCE_METERS`)**: `{SIMPLIFY_TOLERANCE_METERS:.1f}` meters in UTM Zone 32N (EPSG:32632) using Douglas-Peucker topology-preserving simplification (`preserve_topology=True`). This reduces redundant staircase vertices along grid pixel boundaries by ~89%.
+
+### Simplification Effect on Small Polygons
+- For large contiguous flood extents (such as `0_41_58` and `0_41_59`), vertex reduction alters total surface area by less than 0.05% relative to the raw pixel count.
+- **Small-Polygon Area Contraction**: When polygon dimensions are narrow or comparable to the 1.0 m tolerance (e.g., small fragmented patches of 10–150 pixels, or ~2–16 m²), simplifying the perimeter collapses narrow corners and protrusions. Individual small polygons can experience 20% to 50% area reduction.
+- In aggregate, tiles dominated by small fragmented detections (such as `0_23_62` with 16 kept polygons, and `0_20_66` with 13 kept polygons in Accurate mode) exhibit measured area differences of 5.36% and 5.30%, respectively (improved from 6.13% and 5.77% before applying the 9.0 m² filter).
+- The area-agreement unit test enforces a tightened tolerance of **≤ 6.0%** (tightened from 6.5%, originally 7.0%) to reflect this measured upper bound while providing headroom above the < 2% typical difference on contiguous tiles.
 
 ---
 
@@ -477,7 +484,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     print(f"=======================================================")
     print(f"FLOODWATCH GEOJSON EXPORT UTILITY (v1.1)")
     print(f"Tiles: {len(tile_ids)} tiles")
-    print(f"MIN_PIXEL_AREA: {MIN_PIXEL_AREA} px")
+    print(f"MIN_AREA_M2: {MIN_AREA_M2} m^2")
     print(f"SIMPLIFY_TOLERANCE_METERS: {SIMPLIFY_TOLERANCE_METERS} m")
     print(f"=======================================================\n")
 

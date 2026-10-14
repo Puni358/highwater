@@ -83,47 +83,6 @@
         "provenance": "derived",
         "source": "FloodWatch SegFormer-B0 checkpoints_joint",
         "model_class": 1,
-        "mask_pixels": 32,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.040588907357928,
-              50.53474713563169
-            ],
-            [
-              7.040588907357927,
-              50.53473590669064
-            ],
-            [
-              7.040648795043536,
-              50.53473964967099
-            ],
-            [
-              7.040648795043537,
-              50.53474339265134
-            ],
-            [
-              7.040588907357928,
-              50.53474713563169
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_58_2",
-      "properties": {
-        "feature_id": "pred_fast_0_41_58_2",
-        "tile_id": "0_41_58",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
         "mask_pixels": 2887,
         "in_training_pool": true
       },
@@ -197,9 +156,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_3",
+      "id": "pred_fast_0_41_58_2",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_3",
+        "feature_id": "pred_fast_0_41_58_2",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -338,9 +297,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_4",
+      "id": "pred_fast_0_41_58_3",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_4",
+        "feature_id": "pred_fast_0_41_58_3",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -415,9 +374,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_5",
+      "id": "pred_fast_0_41_58_4",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_5",
+        "feature_id": "pred_fast_0_41_58_4",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -456,91 +415,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_6",
+      "id": "pred_fast_0_41_58_5",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_6",
-        "tile_id": "0_41_58",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 33,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.040061147128507,
-              50.534193174539816
-            ],
-            [
-              7.040057404148157,
-              50.53417820261841
-            ],
-            [
-              7.040091090971312,
-              50.5341782026184
-            ],
-            [
-              7.040091090971313,
-              50.534189431559454
-            ],
-            [
-              7.040061147128507,
-              50.534193174539816
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_58_7",
-      "properties": {
-        "feature_id": "pred_fast_0_41_58_7",
-        "tile_id": "0_41_58",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 23,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.041708058482729,
-              50.533871278229675
-            ],
-            [
-              7.041704315502377,
-              50.533848820347565
-            ],
-            [
-              7.0417118014630775,
-              50.53384507736723
-            ],
-            [
-              7.04172303040413,
-              50.53386004928861
-            ],
-            [
-              7.041708058482729,
-              50.533871278229675
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_58_8",
-      "properties": {
-        "feature_id": "pred_fast_0_41_58_8",
+        "feature_id": "pred_fast_0_41_58_5",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -599,9 +476,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_9",
+      "id": "pred_fast_0_41_58_6",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_9",
+        "feature_id": "pred_fast_0_41_58_6",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -656,9 +533,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_10",
+      "id": "pred_fast_0_41_58_7",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_10",
+        "feature_id": "pred_fast_0_41_58_7",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -761,46 +638,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_11",
+      "id": "pred_fast_0_41_58_8",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_11",
-        "tile_id": "0_41_58",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 14,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.0442008833961625,
-              50.53342960654831
-            ],
-            [
-              7.04418591147476,
-              50.533418377607255
-            ],
-            [
-              7.0442008833961625,
-              50.53341837760726
-            ],
-            [
-              7.0442008833961625,
-              50.53342960654831
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_58_12",
-      "properties": {
-        "feature_id": "pred_fast_0_41_58_12",
+        "feature_id": "pred_fast_0_41_58_8",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -887,87 +727,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_13",
+      "id": "pred_fast_0_41_58_9",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_13",
-        "tile_id": "0_41_58",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 25,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.041124153548051,
-              50.53314888302202
-            ],
-            [
-              7.041124153548051,
-              50.53313391110063
-            ],
-            [
-              7.041154097390855,
-              50.53314139706133
-            ],
-            [
-              7.0411503544105045,
-              50.53314888302202
-            ],
-            [
-              7.041124153548051,
-              50.53314888302202
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_58_14",
-      "properties": {
-        "feature_id": "pred_fast_0_41_58_14",
-        "tile_id": "0_41_58",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 21,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.041258900840668,
-              50.532763356045926
-            ],
-            [
-              7.041247671899617,
-              50.53278955690838
-            ],
-            [
-              7.041247671899616,
-              50.53275961306557
-            ],
-            [
-              7.041258900840668,
-              50.532763356045926
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_58_15",
-      "properties": {
-        "feature_id": "pred_fast_0_41_58_15",
+        "feature_id": "pred_fast_0_41_58_9",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -1002,9 +764,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_16",
+      "id": "pred_fast_0_41_58_10",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_16",
+        "feature_id": "pred_fast_0_41_58_10",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -1471,9 +1233,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_17",
+      "id": "pred_fast_0_41_58_11",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_17",
+        "feature_id": "pred_fast_0_41_58_11",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -1616,9 +1378,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_18",
+      "id": "pred_fast_0_41_58_12",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_18",
+        "feature_id": "pred_fast_0_41_58_12",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -1873,9 +1635,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_19",
+      "id": "pred_fast_0_41_58_13",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_19",
+        "feature_id": "pred_fast_0_41_58_13",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -1918,9 +1680,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_20",
+      "id": "pred_fast_0_41_58_14",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_20",
+        "feature_id": "pred_fast_0_41_58_14",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -1963,9 +1725,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_21",
+      "id": "pred_fast_0_41_58_15",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_21",
+        "feature_id": "pred_fast_0_41_58_15",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -2012,9 +1774,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_22",
+      "id": "pred_fast_0_41_58_16",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_22",
+        "feature_id": "pred_fast_0_41_58_16",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -4351,9 +4113,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_58_23",
+      "id": "pred_fast_0_41_58_17",
       "properties": {
-        "feature_id": "pred_fast_0_41_58_23",
+        "feature_id": "pred_fast_0_41_58_17",
         "tile_id": "0_41_58",
         "mode": "fast",
         "provenance": "derived",
@@ -6271,43 +6033,6 @@
         "provenance": "derived",
         "source": "FloodWatch SegFormer-B0 checkpoints_joint",
         "model_class": 1,
-        "mask_pixels": 15,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              6.97455524801439,
-              50.484594941915326
-            ],
-            [
-              6.974536533112638,
-              50.48458371297428
-            ],
-            [
-              6.9745515050340385,
-              50.48457996999393
-            ],
-            [
-              6.97455524801439,
-              50.484594941915326
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_27_68_24",
-      "properties": {
-        "feature_id": "pred_fast_0_27_68_24",
-        "tile_id": "0_27_68",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
         "mask_pixels": 263,
         "in_training_pool": true
       },
@@ -6353,9 +6078,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_68_25",
+      "id": "pred_fast_0_27_68_24",
       "properties": {
-        "feature_id": "pred_fast_0_27_68_25",
+        "feature_id": "pred_fast_0_27_68_24",
         "tile_id": "0_27_68",
         "mode": "fast",
         "provenance": "derived",
@@ -6418,9 +6143,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_68_26",
+      "id": "pred_fast_0_27_68_25",
       "properties": {
-        "feature_id": "pred_fast_0_27_68_26",
+        "feature_id": "pred_fast_0_27_68_25",
         "tile_id": "0_27_68",
         "mode": "fast",
         "provenance": "derived",
@@ -6479,9 +6204,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_68_27",
+      "id": "pred_fast_0_27_68_26",
       "properties": {
-        "feature_id": "pred_fast_0_27_68_27",
+        "feature_id": "pred_fast_0_27_68_26",
         "tile_id": "0_27_68",
         "mode": "fast",
         "provenance": "derived",
@@ -6536,9 +6261,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_68_28",
+      "id": "pred_fast_0_27_68_27",
       "properties": {
-        "feature_id": "pred_fast_0_27_68_28",
+        "feature_id": "pred_fast_0_27_68_27",
         "tile_id": "0_27_68",
         "mode": "fast",
         "provenance": "derived",
@@ -6597,9 +6322,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_68_29",
+      "id": "pred_fast_0_27_68_28",
       "properties": {
-        "feature_id": "pred_fast_0_27_68_29",
+        "feature_id": "pred_fast_0_27_68_28",
         "tile_id": "0_27_68",
         "mode": "fast",
         "provenance": "derived",
@@ -6818,9 +6543,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_68_30",
+      "id": "pred_fast_0_27_68_29",
       "properties": {
-        "feature_id": "pred_fast_0_27_68_30",
+        "feature_id": "pred_fast_0_27_68_29",
         "tile_id": "0_27_68",
         "mode": "fast",
         "provenance": "derived",
@@ -6875,9 +6600,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_68_31",
+      "id": "pred_fast_0_27_68_30",
       "properties": {
-        "feature_id": "pred_fast_0_27_68_31",
+        "feature_id": "pred_fast_0_27_68_30",
         "tile_id": "0_27_68",
         "mode": "fast",
         "provenance": "derived",
@@ -6936,9 +6661,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_68_32",
+      "id": "pred_fast_0_27_68_31",
       "properties": {
-        "feature_id": "pred_fast_0_27_68_32",
+        "feature_id": "pred_fast_0_27_68_31",
         "tile_id": "0_27_68",
         "mode": "fast",
         "provenance": "derived",
@@ -7225,47 +6950,6 @@
         "provenance": "derived",
         "source": "FloodWatch SegFormer-B0 checkpoints_joint",
         "model_class": 1,
-        "mask_pixels": 35,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.040412987281455,
-              50.530573712540885
-            ],
-            [
-              7.040398015360053,
-              50.530558740619476
-            ],
-            [
-              7.040416730261805,
-              50.530547511678435
-            ],
-            [
-              7.040431702183208,
-              50.53056248359983
-            ],
-            [
-              7.040412987281455,
-              50.530573712540885
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_59_5",
-      "properties": {
-        "feature_id": "pred_fast_0_41_59_5",
-        "tile_id": "0_41_59",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
         "mask_pixels": 7633,
         "in_training_pool": true
       },
@@ -7391,9 +7075,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_6",
+      "id": "pred_fast_0_41_59_5",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_6",
+        "feature_id": "pred_fast_0_41_59_5",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -7460,9 +7144,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_7",
+      "id": "pred_fast_0_41_59_6",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_7",
+        "feature_id": "pred_fast_0_41_59_6",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -7521,9 +7205,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_8",
+      "id": "pred_fast_0_41_59_7",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_8",
+        "feature_id": "pred_fast_0_41_59_7",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -7574,50 +7258,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_9",
+      "id": "pred_fast_0_41_59_8",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_9",
-        "tile_id": "0_41_59",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 40,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.040510304770569,
-              50.53024433027003
-            ],
-            [
-              7.040491589868816,
-              50.530225615368295
-            ],
-            [
-              7.040521533711619,
-              50.53022187238793
-            ],
-            [
-              7.0405252766919695,
-              50.530236844309336
-            ],
-            [
-              7.040510304770569,
-              50.53024433027003
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_59_10",
-      "properties": {
-        "feature_id": "pred_fast_0_41_59_10",
+        "feature_id": "pred_fast_0_41_59_8",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -7858,9 +7501,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_11",
+      "id": "pred_fast_0_41_59_9",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_11",
+        "feature_id": "pred_fast_0_41_59_9",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -7915,9 +7558,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_12",
+      "id": "pred_fast_0_41_59_10",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_12",
+        "feature_id": "pred_fast_0_41_59_10",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -7956,9 +7599,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_13",
+      "id": "pred_fast_0_41_59_11",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_13",
+        "feature_id": "pred_fast_0_41_59_11",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8037,9 +7680,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_14",
+      "id": "pred_fast_0_41_59_12",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_14",
+        "feature_id": "pred_fast_0_41_59_12",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8134,46 +7777,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_15",
+      "id": "pred_fast_0_41_59_13",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_15",
-        "tile_id": "0_41_59",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 11,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.040143492696219,
-              50.52979517262798
-            ],
-            [
-              7.040128520774816,
-              50.529802658588686
-            ],
-            [
-              7.040132263755167,
-              50.52979142964763
-            ],
-            [
-              7.040143492696219,
-              50.52979517262798
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_59_16",
-      "properties": {
-        "feature_id": "pred_fast_0_41_59_16",
+        "feature_id": "pred_fast_0_41_59_13",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8224,50 +7830,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_17",
+      "id": "pred_fast_0_41_59_14",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_17",
-        "tile_id": "0_41_59",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 64,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.04030818383164,
-              50.529750256863785
-            ],
-            [
-              7.04029695489059,
-              50.52971657004062
-            ],
-            [
-              7.040319412772692,
-              50.52970908407992
-            ],
-            [
-              7.040330641713744,
-              50.529724056001335
-            ],
-            [
-              7.04030818383164,
-              50.529750256863785
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_59_18",
-      "properties": {
-        "feature_id": "pred_fast_0_41_59_18",
+        "feature_id": "pred_fast_0_41_59_14",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8306,9 +7871,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_19",
+      "id": "pred_fast_0_41_59_15",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_19",
+        "feature_id": "pred_fast_0_41_59_15",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8351,9 +7916,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_20",
+      "id": "pred_fast_0_41_59_16",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_20",
+        "feature_id": "pred_fast_0_41_59_16",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8420,9 +7985,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_21",
+      "id": "pred_fast_0_41_59_17",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_21",
+        "feature_id": "pred_fast_0_41_59_17",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8477,9 +8042,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_22",
+      "id": "pred_fast_0_41_59_18",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_22",
+        "feature_id": "pred_fast_0_41_59_18",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8562,9 +8127,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_23",
+      "id": "pred_fast_0_41_59_19",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_23",
+        "feature_id": "pred_fast_0_41_59_19",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8627,50 +8192,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_24",
+      "id": "pred_fast_0_41_59_20",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_24",
-        "tile_id": "0_41_59",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 35,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.04104555096069,
-              50.529203781732605
-            ],
-            [
-              7.041041807980339,
-              50.52918506683085
-            ],
-            [
-              7.041053036921389,
-              50.529177580870154
-            ],
-            [
-              7.0410754948034935,
-              50.52919255279155
-            ],
-            [
-              7.04104555096069,
-              50.529203781732605
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_41_59_25",
-      "properties": {
-        "feature_id": "pred_fast_0_41_59_25",
+        "feature_id": "pred_fast_0_41_59_20",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8749,9 +8273,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_26",
+      "id": "pred_fast_0_41_59_21",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_26",
+        "feature_id": "pred_fast_0_41_59_21",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8806,9 +8330,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_27",
+      "id": "pred_fast_0_41_59_22",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_27",
+        "feature_id": "pred_fast_0_41_59_22",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8879,9 +8403,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_28",
+      "id": "pred_fast_0_41_59_23",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_28",
+        "feature_id": "pred_fast_0_41_59_23",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8936,9 +8460,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_29",
+      "id": "pred_fast_0_41_59_24",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_29",
+        "feature_id": "pred_fast_0_41_59_24",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -8989,9 +8513,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_41_59_30",
+      "id": "pred_fast_0_41_59_25",
       "properties": {
-        "feature_id": "pred_fast_0_41_59_30",
+        "feature_id": "pred_fast_0_41_59_25",
         "tile_id": "0_41_59",
         "mode": "fast",
         "provenance": "derived",
@@ -9209,88 +8733,6 @@
         "provenance": "derived",
         "source": "FloodWatch SegFormer-B0 checkpoints_joint",
         "model_class": 1,
-        "mask_pixels": 28,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              6.987371212734506,
-              50.51118881730564
-            ],
-            [
-              6.987367469754155,
-              50.511170102403895
-            ],
-            [
-              6.987378698695207,
-              50.51116261644319
-            ],
-            [
-              6.987393670616608,
-              50.511173845384235
-            ],
-            [
-              6.987371212734506,
-              50.51118881730564
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_30_63_4",
-      "properties": {
-        "feature_id": "pred_fast_0_30_63_4",
-        "tile_id": "0_30_63",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 38,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              6.987494731086073,
-              50.51112892962003
-            ],
-            [
-              6.987483502145021,
-              50.511117700678966
-            ],
-            [
-              6.987502217046773,
-              50.51109898577724
-            ],
-            [
-              6.987513445987824,
-              50.511121443659334
-            ],
-            [
-              6.987494731086073,
-              50.51112892962003
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_30_63_5",
-      "properties": {
-        "feature_id": "pred_fast_0_30_63_5",
-        "tile_id": "0_30_63",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
         "mask_pixels": 296,
         "in_training_pool": true
       },
@@ -9328,9 +8770,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_6",
+      "id": "pred_fast_0_30_63_4",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_6",
+        "feature_id": "pred_fast_0_30_63_4",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9381,9 +8823,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_7",
+      "id": "pred_fast_0_30_63_5",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_7",
+        "feature_id": "pred_fast_0_30_63_5",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9438,9 +8880,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_8",
+      "id": "pred_fast_0_30_63_6",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_8",
+        "feature_id": "pred_fast_0_30_63_6",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9519,9 +8961,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_9",
+      "id": "pred_fast_0_30_63_7",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_9",
+        "feature_id": "pred_fast_0_30_63_7",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9560,9 +9002,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_10",
+      "id": "pred_fast_0_30_63_8",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_10",
+        "feature_id": "pred_fast_0_30_63_8",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9609,9 +9051,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_11",
+      "id": "pred_fast_0_30_63_9",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_11",
+        "feature_id": "pred_fast_0_30_63_9",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9706,9 +9148,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_12",
+      "id": "pred_fast_0_30_63_10",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_12",
+        "feature_id": "pred_fast_0_30_63_10",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9747,9 +9189,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_13",
+      "id": "pred_fast_0_30_63_11",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_13",
+        "feature_id": "pred_fast_0_30_63_11",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9804,9 +9246,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_14",
+      "id": "pred_fast_0_30_63_12",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_14",
+        "feature_id": "pred_fast_0_30_63_12",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9861,9 +9303,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_15",
+      "id": "pred_fast_0_30_63_13",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_15",
+        "feature_id": "pred_fast_0_30_63_13",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9914,9 +9356,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_16",
+      "id": "pred_fast_0_30_63_14",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_16",
+        "feature_id": "pred_fast_0_30_63_14",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -9963,9 +9405,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_17",
+      "id": "pred_fast_0_30_63_15",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_17",
+        "feature_id": "pred_fast_0_30_63_15",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10096,9 +9538,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_18",
+      "id": "pred_fast_0_30_63_16",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_18",
+        "feature_id": "pred_fast_0_30_63_16",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10165,9 +9607,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_19",
+      "id": "pred_fast_0_30_63_17",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_19",
+        "feature_id": "pred_fast_0_30_63_17",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10214,9 +9656,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_20",
+      "id": "pred_fast_0_30_63_18",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_20",
+        "feature_id": "pred_fast_0_30_63_18",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10275,9 +9717,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_21",
+      "id": "pred_fast_0_30_63_19",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_21",
+        "feature_id": "pred_fast_0_30_63_19",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10406,9 +9848,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_22",
+      "id": "pred_fast_0_30_63_20",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_22",
+        "feature_id": "pred_fast_0_30_63_20",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10447,9 +9889,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_23",
+      "id": "pred_fast_0_30_63_21",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_23",
+        "feature_id": "pred_fast_0_30_63_21",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10516,9 +9958,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_24",
+      "id": "pred_fast_0_30_63_22",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_24",
+        "feature_id": "pred_fast_0_30_63_22",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10585,9 +10027,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_25",
+      "id": "pred_fast_0_30_63_23",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_25",
+        "feature_id": "pred_fast_0_30_63_23",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10638,9 +10080,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_26",
+      "id": "pred_fast_0_30_63_24",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_26",
+        "feature_id": "pred_fast_0_30_63_24",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10679,9 +10121,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_27",
+      "id": "pred_fast_0_30_63_25",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_27",
+        "feature_id": "pred_fast_0_30_63_25",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -10756,9 +10198,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_30_63_28",
+      "id": "pred_fast_0_30_63_26",
       "properties": {
-        "feature_id": "pred_fast_0_30_63_28",
+        "feature_id": "pred_fast_0_30_63_26",
         "tile_id": "0_30_63",
         "mode": "fast",
         "provenance": "derived",
@@ -11771,47 +11213,6 @@
         "provenance": "derived",
         "source": "FloodWatch SegFormer-B0 checkpoints_joint",
         "model_class": 1,
-        "mask_pixels": 18,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              6.971785442555019,
-              50.489172606884
-            ],
-            [
-              6.971785442555019,
-              50.48916137794294
-            ],
-            [
-              6.971766727653267,
-              50.48914640602153
-            ],
-            [
-              6.9717891855353695,
-              50.489146406021526
-            ],
-            [
-              6.971785442555019,
-              50.489172606884
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_27_67_15",
-      "properties": {
-        "feature_id": "pred_fast_0_27_67_15",
-        "tile_id": "0_27_67",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
         "mask_pixels": 2003,
         "in_training_pool": true
       },
@@ -11881,9 +11282,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_67_16",
+      "id": "pred_fast_0_27_67_15",
       "properties": {
-        "feature_id": "pred_fast_0_27_67_16",
+        "feature_id": "pred_fast_0_27_67_15",
         "tile_id": "0_27_67",
         "mode": "fast",
         "provenance": "derived",
@@ -11938,9 +11339,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_67_17",
+      "id": "pred_fast_0_27_67_16",
       "properties": {
-        "feature_id": "pred_fast_0_27_67_17",
+        "feature_id": "pred_fast_0_27_67_16",
         "tile_id": "0_27_67",
         "mode": "fast",
         "provenance": "derived",
@@ -11979,46 +11380,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_67_18",
+      "id": "pred_fast_0_27_67_17",
       "properties": {
-        "feature_id": "pred_fast_0_27_67_18",
-        "tile_id": "0_27_67",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
-        "mask_pixels": 27,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              6.972197170393574,
-              50.488569987047555
-            ],
-            [
-              6.972174712511472,
-              50.48855501512615
-            ],
-            [
-              6.972193427413223,
-              50.488551272145806
-            ],
-            [
-              6.972197170393574,
-              50.488569987047555
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_27_67_19",
-      "properties": {
-        "feature_id": "pred_fast_0_27_67_19",
+        "feature_id": "pred_fast_0_27_67_17",
         "tile_id": "0_27_67",
         "mode": "fast",
         "provenance": "derived",
@@ -12065,9 +11429,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_67_20",
+      "id": "pred_fast_0_27_67_18",
       "properties": {
-        "feature_id": "pred_fast_0_27_67_20",
+        "feature_id": "pred_fast_0_27_67_18",
         "tile_id": "0_27_67",
         "mode": "fast",
         "provenance": "derived",
@@ -12122,9 +11486,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_67_21",
+      "id": "pred_fast_0_27_67_19",
       "properties": {
-        "feature_id": "pred_fast_0_27_67_21",
+        "feature_id": "pred_fast_0_27_67_19",
         "tile_id": "0_27_67",
         "mode": "fast",
         "provenance": "derived",
@@ -12179,9 +11543,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_67_22",
+      "id": "pred_fast_0_27_67_20",
       "properties": {
-        "feature_id": "pred_fast_0_27_67_22",
+        "feature_id": "pred_fast_0_27_67_20",
         "tile_id": "0_27_67",
         "mode": "fast",
         "provenance": "derived",
@@ -12236,9 +11600,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_27_67_23",
+      "id": "pred_fast_0_27_67_21",
       "properties": {
-        "feature_id": "pred_fast_0_27_67_23",
+        "feature_id": "pred_fast_0_27_67_21",
         "tile_id": "0_27_67",
         "mode": "fast",
         "provenance": "derived",
@@ -12602,47 +11966,6 @@
         "provenance": "derived",
         "source": "FloodWatch SegFormer-B0 checkpoints_joint",
         "model_class": 1,
-        "mask_pixels": 78,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              6.977590805078647,
-              50.50967291026369
-            ],
-            [
-              6.977564604216194,
-              50.50965419536193
-            ],
-            [
-              6.977583319117945,
-              50.509624251519135
-            ],
-            [
-              6.977605777000049,
-              50.509650452381585
-            ],
-            [
-              6.977590805078647,
-              50.50967291026369
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_28_63_6",
-      "properties": {
-        "feature_id": "pred_fast_0_28_63_6",
-        "tile_id": "0_28_63",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
         "mask_pixels": 235,
         "in_training_pool": true
       },
@@ -12676,9 +11999,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_28_63_7",
+      "id": "pred_fast_0_28_63_6",
       "properties": {
-        "feature_id": "pred_fast_0_28_63_7",
+        "feature_id": "pred_fast_0_28_63_6",
         "tile_id": "0_28_63",
         "mode": "fast",
         "provenance": "derived",
@@ -12761,9 +12084,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_28_63_8",
+      "id": "pred_fast_0_28_63_7",
       "properties": {
-        "feature_id": "pred_fast_0_28_63_8",
+        "feature_id": "pred_fast_0_28_63_7",
         "tile_id": "0_28_63",
         "mode": "fast",
         "provenance": "derived",
@@ -12818,9 +12141,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_28_63_9",
+      "id": "pred_fast_0_28_63_8",
       "properties": {
-        "feature_id": "pred_fast_0_28_63_9",
+        "feature_id": "pred_fast_0_28_63_8",
         "tile_id": "0_28_63",
         "mode": "fast",
         "provenance": "derived",
@@ -12903,9 +12226,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_28_63_10",
+      "id": "pred_fast_0_28_63_9",
       "properties": {
-        "feature_id": "pred_fast_0_28_63_10",
+        "feature_id": "pred_fast_0_28_63_9",
         "tile_id": "0_28_63",
         "mode": "fast",
         "provenance": "derived",
@@ -12980,9 +12303,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_28_63_11",
+      "id": "pred_fast_0_28_63_10",
       "properties": {
-        "feature_id": "pred_fast_0_28_63_11",
+        "feature_id": "pred_fast_0_28_63_10",
         "tile_id": "0_28_63",
         "mode": "fast",
         "provenance": "derived",
@@ -13037,9 +12360,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_28_63_12",
+      "id": "pred_fast_0_28_63_11",
       "properties": {
-        "feature_id": "pred_fast_0_28_63_12",
+        "feature_id": "pred_fast_0_28_63_11",
         "tile_id": "0_28_63",
         "mode": "fast",
         "provenance": "derived",
@@ -13126,9 +12449,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_28_63_13",
+      "id": "pred_fast_0_28_63_12",
       "properties": {
-        "feature_id": "pred_fast_0_28_63_13",
+        "feature_id": "pred_fast_0_28_63_12",
         "tile_id": "0_28_63",
         "mode": "fast",
         "provenance": "derived",
@@ -13179,9 +12502,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_28_63_14",
+      "id": "pred_fast_0_28_63_13",
       "properties": {
-        "feature_id": "pred_fast_0_28_63_14",
+        "feature_id": "pred_fast_0_28_63_13",
         "tile_id": "0_28_63",
         "mode": "fast",
         "provenance": "derived",
@@ -13232,9 +12555,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_28_63_15",
+      "id": "pred_fast_0_28_63_14",
       "properties": {
-        "feature_id": "pred_fast_0_28_63_15",
+        "feature_id": "pred_fast_0_28_63_14",
         "tile_id": "0_28_63",
         "mode": "fast",
         "provenance": "derived",
@@ -13285,9 +12608,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_28_63_16",
+      "id": "pred_fast_0_28_63_15",
       "properties": {
-        "feature_id": "pred_fast_0_28_63_16",
+        "feature_id": "pred_fast_0_28_63_15",
         "tile_id": "0_28_63",
         "mode": "fast",
         "provenance": "derived",
@@ -13432,47 +12755,6 @@
         "provenance": "derived",
         "source": "FloodWatch SegFormer-B0 checkpoints_joint",
         "model_class": 1,
-        "mask_pixels": 12,
-        "in_training_pool": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              6.953639473815791,
-              50.51303036363808
-            ],
-            [
-              6.953639473815791,
-              50.51301539171669
-            ],
-            [
-              6.95364695977649,
-              50.51301539171669
-            ],
-            [
-              6.953654445737192,
-              50.51302287767739
-            ],
-            [
-              6.953639473815791,
-              50.51303036363808
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "pred_fast_0_23_62_3",
-      "properties": {
-        "feature_id": "pred_fast_0_23_62_3",
-        "tile_id": "0_23_62",
-        "mode": "fast",
-        "provenance": "derived",
-        "source": "FloodWatch SegFormer-B0 checkpoints_joint",
-        "model_class": 1,
         "mask_pixels": 188,
         "in_training_pool": true
       },
@@ -13510,9 +12792,9 @@
     },
     {
       "type": "Feature",
-      "id": "pred_fast_0_23_62_4",
+      "id": "pred_fast_0_23_62_3",
       "properties": {
-        "feature_id": "pred_fast_0_23_62_4",
+        "feature_id": "pred_fast_0_23_62_3",
         "tile_id": "0_23_62",
         "mode": "fast",
         "provenance": "derived",

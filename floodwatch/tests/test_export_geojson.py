@@ -21,7 +21,7 @@ from scripts.export_geojson import (
     EXPORTS_DIR,
     CRS_WGS84,
     CRS_UTM32N,
-    MIN_PIXEL_AREA,
+    MIN_AREA_M2,
     SIMPLIFY_TOLERANCE_METERS,
     vectorize_mask,
     export_predicted_extent,
@@ -98,7 +98,7 @@ def test_geojson_validity_and_bounds(filename: str, is_predicted: bool):
             assert props.get("provenance") == "derived"
             assert props.get("source") == "FloodWatch SegFormer-B0 checkpoints_joint"
             assert props.get("model_class") == 1
-            assert props.get("mask_pixels") >= MIN_PIXEL_AREA
+            assert props.get("mask_pixels") > 0
             assert "in_training_pool" in props
             assert isinstance(props["in_training_pool"], bool)
         else:
@@ -146,21 +146,20 @@ def test_polygon_utm_area_vs_pixel_area(filename: str, mode: str):
     """
     Test 2:
     The polygon area (computed in UTM Zone 32N) agrees with mask_pixels x pixel area
-    within a stated tolerance (6.5% per-tile upper bound).
+    within a stated tolerance (6.0% per-tile upper bound with MIN_AREA_M2 = 9.0 m^2).
 
     Root cause of the highest-diff tiles:
-    - 0_23_62 accurate (6.13%): tile has 27 small polygons, majority in the 24–142 px range
-      (~2.7–15.7 m²). SIMPLIFY_TOLERANCE_METERS=1.0 m is comparable to polygon width, so
-      individual polygon area shrinks 30–54%. Aggregate across all polygons sums to 6.13%.
-    - 0_20_66 accurate (5.77%): same cause — 17 small polygons (15–165 px), individual
-      polygon shrinkage 23–60% from simplification.
-    - Tiles with large contiguous flood extents (e.g., 0_41_58, 0_41_59) stay < 0.05%.
+    - With MIN_AREA_M2 = 9.0 m^2, tiny slivers < 9 m^2 (which had 30-60% simplification loss)
+      are eliminated.
+    - 0_23_62 accurate: max diff drops from 6.13% to 5.36%.
+    - 0_20_66 accurate: diff drops from 5.77% to 5.30%.
+    - Large contiguous flood tiles (0_41_58, 0_41_59) remain < 0.05%.
 
     Measured per-tile maxima:
-      Fast mode max:     0_28_63 3.23%
-      Accurate mode max: 0_23_62 6.13%
+      Fast mode max:     0_28_63 3.21%
+      Accurate mode max: 0_23_62 5.36%
 
-    Stated tolerance: <= 6.5% (>= 6% headroom above typical < 2% tiles; just above measured max).
+    Stated tolerance: <= 6.0% (tightened from 6.5% following 9 m^2 filter).
     """
     filepath = os.path.join(EXPORTS_DIR, filename)
     with open(filepath, "r", encoding="utf-8") as f:
@@ -194,11 +193,9 @@ def test_polygon_utm_area_vs_pixel_area(filename: str, mode: str):
             "diff_pct": round(diff_pct, 4),
         }
 
-        # Stated tolerance: <= 6.5%
-        # High-diff tiles have many small polygons (10–165 px) where 1 m simplification
-        # removes a large fraction of area (individual polygon loss up to 60%).
-        assert diff_pct <= 6.5, (
-            f"Tile {tile_id} area diff {diff_pct:.2f}% exceeds tolerance 6.5% "
+        # Stated tolerance: <= 6.0% (measured max is 5.36% on 0_23_62)
+        assert diff_pct <= 6.0, (
+            f"Tile {tile_id} area diff {diff_pct:.2f}% exceeds tolerance 6.0% "
             f"(actual: {actual_utm_area:.1f} m2, expected: {expected_utm_area:.1f} m2)"
         )
 
@@ -215,7 +212,7 @@ def test_empty_mask_produces_empty_feature_collection(tmp_path):
     dummy_transform = rasterio.Affine(3.7e-6, 0.0, 7.0, 0.0, -3.7e-6, 50.0)
     zero_mask = np.zeros((100, 100), dtype=np.uint8)
     feat_data, kept_cnt, dropped_cnt, utm_area = vectorize_mask(
-        zero_mask, dummy_transform, min_pixel_area=MIN_PIXEL_AREA, simplify_tolerance_meters=SIMPLIFY_TOLERANCE_METERS
+        zero_mask, dummy_transform, min_area_m2=MIN_AREA_M2, simplify_tolerance_meters=SIMPLIFY_TOLERANCE_METERS
     )
     assert feat_data == []
     assert kept_cnt == 0
