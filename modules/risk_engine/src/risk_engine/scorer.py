@@ -44,7 +44,7 @@ import importlib.resources as pkg_resources
 import json
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -53,14 +53,30 @@ from typing import Any
 # Data structures & Exceptions
 # ---------------------------------------------------------------------------
 
-ACCESSIBILITY_VALUES = {"ACCESSIBLE", "PARTIAL", "BLOCKED", "UNKNOWN"}
-REQUIRED_BASE_WEIGHT_KEYS = {
-    "flood_percent",
-    "exposure",
-    "isolation",
-    "flood_area_density",
-}
-ALLOWED_WEIGHT_KEYS = REQUIRED_BASE_WEIGHT_KEYS | {"exposure_fraction"}
+from risk_engine.config import (
+    ACCESSIBILITY_VALUES,
+    ALLOWED_WEIGHT_KEYS,
+    DEFAULT_CONFIG_VERSION,
+    DEFAULT_ISOLATION_SCORES,
+    DEFAULT_NORMALIZATION,
+    DEFAULT_PRIORITY_THRESHOLDS,
+    DEFAULT_WEIGHTS,
+    REQUIRED_BASE_WEIGHT_KEYS,
+    ConfigError,
+    DataQualityConfig,
+    IsolationScores,
+    NormalizationCeilings,
+    PriorityThresholds,
+    RiskEngineConfig,
+    ScoringConfig,
+    ScoringWeights,
+    _strip_comments,
+    load_config,
+    load_config_object,
+    parse_weights_arg,
+    validate_config,
+    weights_fingerprint,
+)
 
 ACCESSIBILITY_DASHBOARD_MAP = {
     "ACCESSIBLE": "OPEN",
@@ -75,16 +91,24 @@ class InputValidationError(ValueError):
     pass
 
 
-class ConfigError(ValueError, FileNotFoundError):
-    """Raised when engine configuration fails validation or cannot be loaded."""
-    pass
-
-
 @dataclass
 class DataQualityWarning:
     zone_id: str
     field: str
     issue: str
+
+
+@dataclass
+class ZoneDataQualityAssessment:
+    zone_id: str
+    confidence: str              # "HIGH" | "MEDIUM" | "LOW"
+    needs_verification: bool     # True | False
+    data_quality_status: str     # "VERIFIED" | "INCOMPLETE" | "CONTRADICTORY" | "DEGRADED"
+    issues: list[str]            # Machine-readable issue tags
+    warnings: list[str]          # All warning strings for this zone
+    missing_fields: list[str]    # Fields omitted from input dictionary
+    score_basis: str             # "full" | "partial"
+    omitted_components: list[str]# Components dropped from scoring
 
 
 @dataclass
@@ -114,161 +138,23 @@ class ZoneRiskRecord:
     flooded_area_m2: float
     centroid: list[float]
     bbox: list[float]
+    # Data quality & confidence
+    confidence: str = "HIGH"
+    needs_verification: bool = False
+    data_quality_status: str = "VERIFIED"
+    data_quality_issues: list[str] = field(default_factory=list)
+    score_breakdown: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
-# Config validation & loading
+# Config validation & loading (centralized in risk_engine.config)
 # ---------------------------------------------------------------------------
+# Re-exported from risk_engine.config:
+# ConfigError, ScoringWeights, NormalizationCeilings, IsolationScores,
+# PriorityThresholds, DataQualityConfig, ScoringConfig, RiskEngineConfig,
+# validate_config, load_config, load_config_object, parse_weights_arg,
+# weights_fingerprint, _strip_comments.
 
-def _strip_comments(d: dict[str, Any]) -> dict[str, Any]:
-    """Return dictionary with all keys starting with '_' removed."""
-    return {k: v for k, v in d.items() if not k.startswith("_")}
-
-
-def validate_config(cfg: dict[str, Any]) -> dict[str, Any]:
-    """Validate full configuration structure and value constraints.
-
-    Fails fast before zone data is read.
-    """
-    if not isinstance(cfg, dict):
-        raise ConfigError("Configuration must be a JSON object")
-
-    if "scoring" not in cfg or not isinstance(cfg["scoring"], dict):
-        raise ConfigError("Configuration missing 'scoring' section")
-
-    scoring = cfg["scoring"]
-
-    # 1. Weights validation
-    if "weights" not in scoring or not isinstance(scoring["weights"], dict):
-        raise ConfigError("Configuration missing 'scoring.weights' section")
-
-    raw_weights = scoring["weights"]
-    weights = _strip_comments(raw_weights)
-    weight_keys = set(weights.keys())
-
-    # Check required base weights and disallowed extra keys
-    missing_base = REQUIRED_BASE_WEIGHT_KEYS - weight_keys
-    if missing_base:
-        raise ConfigError(f"scoring.weights missing required keys: {sorted(missing_base)}")
-
-    extra_keys = weight_keys - ALLOWED_WEIGHT_KEYS
-    if extra_keys:
-        raise ConfigError(f"scoring.weights contains unexpected extra keys: {sorted(extra_keys)}")
-
-    for k, v in weights.items():
-        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
-            raise ConfigError(f"scoring.weights['{k}'] must be a finite number; got {v!r}")
-        if v < 0.0:
-            raise ConfigError(f"scoring.weights['{k}'] must be non-negative; got {v}")
-
-    total_w = sum(weights.values())
-    if not math.isclose(total_w, 1.0, rel_tol=1e-6):
-        raise ConfigError(f"scoring.weights must sum to 1.0; got {total_w:.6f}")
-
-    # 2. Normalization ceilings validation
-    if "normalization" not in scoring or not isinstance(scoring["normalization"], dict):
-        raise ConfigError("Configuration missing 'scoring.normalization' section")
-
-    norms = _strip_comments(scoring["normalization"])
-    required_norms = {"flood_percent_max", "exposed_buildings_max", "flood_area_m2_max"}
-    for k in required_norms:
-        if k not in norms:
-            raise ConfigError(f"scoring.normalization missing required ceiling '{k}'")
-        v = norms[k]
-        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or v <= 0:
-            raise ConfigError(f"scoring.normalization['{k}'] must be a positive finite number; got {v!r}")
-
-    # 3. Isolation scores validation
-    if "isolation_score" not in scoring or not isinstance(scoring["isolation_score"], dict):
-        raise ConfigError("Configuration missing 'scoring.isolation_score' section")
-
-    iso = _strip_comments(scoring["isolation_score"])
-    for cat in ACCESSIBILITY_VALUES:
-        if cat not in iso:
-            raise ConfigError(f"scoring.isolation_score missing required entry for '{cat}'")
-        v = iso[cat]
-        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or not (0.0 <= v <= 1.0):
-            raise ConfigError(f"scoring.isolation_score['{cat}'] must be a number in [0.0, 1.0]; got {v!r}")
-
-    if not (iso["ACCESSIBLE"] <= iso["PARTIAL"] <= iso["BLOCKED"]):
-        raise ConfigError(
-            f"Isolation ordering constraint violated: expected ACCESSIBLE ({iso['ACCESSIBLE']}) <= "
-            f"PARTIAL ({iso['PARTIAL']}) <= BLOCKED ({iso['BLOCKED']})"
-        )
-    if not (iso["UNKNOWN"] >= iso["PARTIAL"]):
-        raise ConfigError(
-            f"Isolation ordering constraint violated: expected UNKNOWN ({iso['UNKNOWN']}) >= "
-            f"PARTIAL ({iso['PARTIAL']})"
-        )
-
-    # 4. Priority thresholds validation
-    if "priority_thresholds" not in cfg or not isinstance(cfg["priority_thresholds"], dict):
-        raise ConfigError("Configuration missing 'priority_thresholds' section")
-
-    thresholds = _strip_comments(cfg["priority_thresholds"])
-    for level in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
-        if level not in thresholds:
-            raise ConfigError(f"priority_thresholds missing '{level}'")
-        v = thresholds[level]
-        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
-            raise ConfigError(f"priority_thresholds['{level}'] must be a finite number; got {v!r}")
-
-    if not (thresholds["CRITICAL"] > thresholds["HIGH"] > thresholds["MEDIUM"] > thresholds["LOW"] >= 0):
-        raise ConfigError(
-            f"Priority thresholds ordering violated: expected CRITICAL ({thresholds['CRITICAL']}) > "
-            f"HIGH ({thresholds['HIGH']}) > MEDIUM ({thresholds['MEDIUM']}) > LOW ({thresholds['LOW']}) >= 0"
-        )
-
-    scoring["weights"] = weights
-    scoring["normalization"] = norms
-    scoring["isolation_score"] = iso
-    cfg["priority_thresholds"] = thresholds
-
-    return cfg
-
-
-def load_config(config_path: Path | None = None) -> dict[str, Any]:
-    """Load and validate scoring config from path or package defaults.
-
-    First checks explicit config_path, then importlib.resources, then repository-relative fallbacks.
-    """
-    if config_path is not None:
-        path = Path(config_path)
-        if not path.is_file():
-            raise ConfigError(f"Configuration file not found: {path}")
-        with open(path, encoding="utf-8") as fh:
-            try:
-                raw_cfg = json.load(fh)
-            except json.JSONDecodeError as exc:
-                raise ConfigError(f"Configuration file {path} contains invalid JSON: {exc}") from exc
-        return validate_config(raw_cfg)
-
-    # Try importlib.resources
-    raw_cfg = None
-    try:
-        ref = pkg_resources.files("risk_engine") / "weights.json"
-        if ref.is_file():
-            raw_cfg = json.loads(ref.read_text(encoding="utf-8"))
-    except Exception:
-        raw_cfg = None
-
-    if raw_cfg is None:
-        candidates = [
-            Path(__file__).resolve().parent.parent.parent / "config" / "weights.json",
-            Path(__file__).resolve().parent / "weights.json",
-            Path("config/weights.json"),
-            Path("modules/risk_engine/config/weights.json"),
-        ]
-        for c in candidates:
-            if c.is_file():
-                with open(c, encoding="utf-8") as fh:
-                    raw_cfg = json.load(fh)
-                break
-
-    if raw_cfg is None:
-        raise ConfigError("Default weights.json configuration could not be located")
-
-    return validate_config(raw_cfg)
 
 
 # ---------------------------------------------------------------------------
@@ -438,6 +324,21 @@ def load_zones(
         else:
             fam_val = float(fam)
 
+        # Track omitted fields (distinguishing missing data from legitimate 0 values)
+        missing_fields: list[str] = []
+        if "total_buildings" not in zone or zone["total_buildings"] is None:
+            missing_fields.append("total_buildings")
+        if "road_length_m" not in zone or zone["road_length_m"] is None:
+            missing_fields.append("road_length_m")
+        if "flooded_road_length_m" not in zone or zone["flooded_road_length_m"] is None:
+            missing_fields.append("flooded_road_length_m")
+        if "flooded_area_m2" not in zone or zone["flooded_area_m2"] is None:
+            missing_fields.append("flooded_area_m2")
+        if "centroid" not in zone or zone["centroid"] is None:
+            missing_fields.append("centroid")
+        if "bbox" not in zone or zone["bbox"] is None:
+            missing_fields.append("bbox")
+
         # 6. Optional numeric fields validation
         tb_raw = zone.get("total_buildings", 0)
         if tb_raw is None:
@@ -487,19 +388,48 @@ def load_zones(
             ))
             frl_float = 0.0
 
-        # Cross-field checks
-        if rl_float > 0 and frl_float > rl_float:
+        # Cross-field checks & physical contradictions
+        if frl_float > rl_float:
             warnings.append(DataQualityWarning(
                 zone_id=zone_id,
                 field="flooded_road_length_m",
                 issue=f"flooded_road_length_m ({frl_float}) exceeds total road_length_m ({rl_float}); clamped ratio to 100%",
             ))
 
-        if tb_int > 0 and eb_int > tb_int:
+        if eb_int > tb_int:
             warnings.append(DataQualityWarning(
                 zone_id=zone_id,
                 field="exposed_buildings",
                 issue=f"exposed_buildings ({eb_int}) exceeds total_buildings ({tb_int}); clamped ratio to 100%",
+            ))
+
+        # Contradictory flood measurement checks
+        if fp_float == 0.0 and fam_val is not None and fam_val > 0.0:
+            warnings.append(DataQualityWarning(
+                zone_id=zone_id,
+                field="flooded_area_m2",
+                issue=f"flooded_percent is 0.0% but flooded_area_m2 is {fam_val:.1f} m²: contradictory flood extent measurements",
+            ))
+
+        if fp_float == 0.0 and eb_int > 0:
+            warnings.append(DataQualityWarning(
+                zone_id=zone_id,
+                field="exposed_buildings",
+                issue=f"flooded_percent is 0.0% but exposed_buildings={eb_int}: buildings marked flooded with zero zone flood coverage",
+            ))
+
+        if fp_float == 0.0 and frl_float > 0.0:
+            warnings.append(DataQualityWarning(
+                zone_id=zone_id,
+                field="flooded_road_length_m",
+                issue=f"flooded_percent is 0.0% but flooded_road_length_m is {frl_float:.1f}m: roads marked flooded with zero zone flood coverage",
+            ))
+
+        if fp_float > 0.0 and fam_val == 0.0 and "flooded_area_m2" not in missing_fields:
+            warnings.append(DataQualityWarning(
+                zone_id=zone_id,
+                field="flooded_area_m2",
+                issue=f"flooded_percent is {fp_float:.1f}% but flooded_area_m2 is 0.0 m²: positive flood percent with zero flooded area",
             ))
 
         # Geometry validation
@@ -517,6 +447,7 @@ def load_zones(
         coerced["flooded_road_length_m"] = frl_float
         coerced["centroid"] = centroid_clean
         coerced["bbox"] = bbox_clean
+        coerced["_missing_fields"] = missing_fields
         coerced_zones.append(coerced)
 
     result_doc = dict(doc)
@@ -543,22 +474,219 @@ def _priority_label(score: float, thresholds: dict[str, Any]) -> str:
     return "LOW"
 
 
+def compute_score_breakdown(
+    zone: dict[str, Any],
+    active_weights: dict[str, float],
+    raw_components: dict[str, float],
+    raw_score: float,
+    display_score: float,
+    score_basis: str,
+    omitted_components: list[str],
+) -> dict[str, Any]:
+    """Compute auditable, mathematically reconciled score breakdown and explanations."""
+    fp = float(zone.get("flooded_percent", 0.0))
+    eb = int(zone.get("exposed_buildings", 0))
+    tb_raw = zone.get("total_buildings")
+    tb = int(tb_raw) if tb_raw is not None else 0
+    acc = str(zone.get("accessibility", "UNKNOWN"))
+    fam = zone.get("flooded_area_m2")
+
+    unit_map = {
+        "flood_percent": "%",
+        "exposure": "buildings",
+        "isolation": "status",
+        "flood_area_density": "m²",
+        "exposure_fraction": "ratio",
+    }
+
+    fam_input = (
+        float(fam)
+        if (fam is not None and "flood_area_density" not in omitted_components)
+        else None
+    )
+    exp_frac_input = round(eb / tb, 4) if tb > 0 else 0.0
+
+    raw_input_map = {
+        "flood_percent": fp,
+        "exposure": eb,
+        "isolation": acc,
+        "flood_area_density": fam_input,
+        "exposure_fraction": exp_frac_input,
+    }
+
+    components: dict[str, dict[str, Any]] = {}
+    for key in ("flood_percent", "exposure", "isolation", "flood_area_density", "exposure_fraction"):
+        is_omitted = key in omitted_components
+        norm_val = raw_components.get(key, 0.0)
+        weight = 0.0 if is_omitted else active_weights.get(key, 0.0)
+        weighted_contrib = weight * norm_val
+        points = round(weighted_contrib * 100.0, 2)
+        pct_of_score = (
+            round((weighted_contrib / raw_score * 100.0), 1)
+            if raw_score > 0.0
+            else 0.0
+        )
+
+        components[key] = {
+            "raw_input": raw_input_map[key],
+            "unit": unit_map[key],
+            "normalized_value": round(norm_val, 4),
+            "weight": round(weight, 4),
+            "weighted_contribution": round(weighted_contrib, 6),
+            "points": points,
+            "percentage_of_score": pct_of_score,
+            "omitted": is_omitted,
+        }
+
+    sum_weighted = sum(c["weighted_contribution"] for c in components.values())
+    sum_points = round(sum(c["points"] for c in components.values()), 2)
+    computed_score = raw_score * 100.0
+    rounding_diff = round(display_score - sum_points, 2)
+
+    weights_reconciled = abs(sum_weighted - raw_score) < 1e-5
+    points_reconciled = abs(display_score - sum_points) <= 0.08
+    reconciled = weights_reconciled and points_reconciled
+
+    reconciliation = {
+        "sum_weighted_contributions": round(sum_weighted, 6),
+        "sum_points": sum_points,
+        "computed_score": round(computed_score, 4),
+        "final_score": display_score,
+        "rounding_difference": rounding_diff,
+        "reconciled": reconciled,
+        "tolerance": 0.08,
+    }
+
+    contributing = [
+        (k, components[k])
+        for k in components
+        if components[k]["weighted_contribution"] > 0.0
+    ]
+    priority_order = {
+        "exposure": 1,
+        "flood_percent": 2,
+        "isolation": 3,
+        "flood_area_density": 4,
+        "exposure_fraction": 5,
+    }
+    sorted_contribs = sorted(
+        contributing,
+        key=lambda item: (-item[1]["weighted_contribution"], priority_order.get(item[0], 99)),
+    )
+
+    if not sorted_contribs:
+        primary_driver = None
+        primary_driver_summary = "No flood impact or isolation factors contributing to risk score"
+        influential_factors: list[str] = []
+        ranking_factors: list[str] = []
+    else:
+        primary_driver = sorted_contribs[0][0]
+        friendly_names = {
+            "exposure": "Building exposure",
+            "flood_percent": "Flood coverage",
+            "isolation": "Road isolation",
+            "flood_area_density": "Flood extent area",
+            "exposure_fraction": "Building exposure fraction",
+        }
+        top_name = friendly_names.get(primary_driver, primary_driver)
+        top_pts = components[primary_driver]["points"]
+        top_pct = components[primary_driver]["percentage_of_score"]
+        primary_driver_summary = (
+            f"{top_name} is the primary score driver ({top_pts:.1f} pts, {top_pct:.0f}% of score)"
+        )
+
+        influential_factors = []
+        for k, c in sorted_contribs:
+            pts = c["points"]
+            pct = c["percentage_of_score"]
+            if k == "exposure":
+                influential_factors.append(
+                    f"Building exposure: {eb} exposed buildings contribute {pts:.1f} pts ({pct:.0f}% of score)"
+                )
+            elif k == "flood_percent":
+                influential_factors.append(
+                    f"Flood coverage: {fp:.1f}% inundated area contributes {pts:.1f} pts ({pct:.0f}% of score)"
+                )
+            elif k == "isolation":
+                influential_factors.append(
+                    f"Road isolation: {acc} accessibility contributes {pts:.1f} pts ({pct:.0f}% of score)"
+                )
+            elif k == "flood_area_density":
+                fam_val = float(fam) if fam is not None else 0.0
+                influential_factors.append(
+                    f"Flood extent area: {fam_val:,.0f} m² footprint contributes {pts:.1f} pts ({pct:.0f}% of score)"
+                )
+            elif k == "exposure_fraction":
+                exp_f = raw_components.get("exposure_fraction", 0.0)
+                influential_factors.append(
+                    f"Building exposure fraction: {eb}/{tb} ({exp_f:.1%}) contributes {pts:.1f} pts ({pct:.0f}% of score)"
+                )
+
+        ranking_factors = []
+        if acc == "BLOCKED" and components["isolation"]["weighted_contribution"] > 0.0:
+            iso_pts = components["isolation"]["points"]
+            ranking_factors.append(
+                f"Blocked road access imposes maximum isolation penalty (+{iso_pts:.1f} pts), elevating zone priority"
+            )
+        elif acc == "PARTIAL" and components["isolation"]["weighted_contribution"] > 0.0:
+            iso_pts = components["isolation"]["points"]
+            ranking_factors.append(
+                f"Partial road access imposes intermediate isolation penalty (+{iso_pts:.1f} pts), elevating zone priority"
+            )
+        elif acc == "UNKNOWN" and components["isolation"]["weighted_contribution"] > 0.0:
+            iso_pts = components["isolation"]["points"]
+            ranking_factors.append(
+                f"Unknown road accessibility applies provisional intermediate isolation penalty (+{iso_pts:.1f} pts) pending field verification"
+            )
+        if (eb >= 15 or components["exposure"]["normalized_value"] >= 0.4) and components["exposure"]["weighted_contribution"] > 0.0:
+            exp_pts = components["exposure"]["points"]
+            ranking_factors.append(
+                f"Substantial building exposure ({eb} exposed buildings, +{exp_pts:.1f} pts) strongly elevates priority and serves as primary tiebreaker"
+            )
+        if (fp >= 50.0 or components["flood_percent"]["normalized_value"] >= 0.5) and components["flood_percent"]["weighted_contribution"] > 0.0:
+            fp_pts = components["flood_percent"]["points"]
+            ranking_factors.append(
+                f"High flood extent ({fp:.1f}% flooded, +{fp_pts:.1f} pts) strongly elevates priority and serves as secondary tiebreaker"
+            )
+
+    return {
+        "score": display_score,
+        "raw_score": round(raw_score, 6),
+        "score_basis": score_basis,
+        "omitted_components": list(omitted_components),
+        "components": components,
+        "reconciliation": reconciliation,
+        "primary_driver": primary_driver,
+        "primary_driver_summary": primary_driver_summary,
+        "influential_factors": influential_factors,
+        "ranking_factors": ranking_factors,
+    }
+
+
 def _build_reasons(
     zone: dict[str, Any],
     flood_c: float,
     has_flood_area: bool,
     cfg_dq: dict[str, Any],
+    assessment: ZoneDataQualityAssessment | None = None,
+    score: float | None = None,
+    priority: str | None = None,
+    breakdown: dict[str, Any] | None = None,
 ) -> list[str]:
-    """Generate human-readable explanations for score components."""
+    """Generate human-readable explanations for score components and data quality."""
     reasons: list[str] = []
 
     fp = zone["flooded_percent"]
     eb = zone["exposed_buildings"]
-    tb = zone["total_buildings"]
-    acc = zone["accessibility"]
+    tb_raw = zone.get("total_buildings")
+    tb = int(tb_raw) if tb_raw is not None else 0
+    acc_raw = zone.get("accessibility")
+    acc = acc_raw if isinstance(acc_raw, str) and acc_raw in ACCESSIBILITY_VALUES else "UNKNOWN"
     fam = zone.get("flooded_area_m2")
-    rl = zone.get("road_length_m", 0.0)
-    frl = zone.get("flooded_road_length_m", 0.0)
+    rl_raw = zone.get("road_length_m")
+    rl = float(rl_raw) if rl_raw is not None else 0.0
+    frl_raw = zone.get("flooded_road_length_m")
+    frl = float(frl_raw) if frl_raw is not None else 0.0
 
     if flood_c > 0:
         reasons.append(
@@ -575,33 +703,72 @@ def _build_reasons(
     else:
         reasons.append("No buildings recorded in this zone")
 
+    iso_w = 1.0
+    if breakdown and "components" in breakdown and "isolation" in breakdown["components"]:
+        iso_w = breakdown["components"]["isolation"]["weight"]
+
     if acc == "BLOCKED":
         if rl <= 0:
-            reasons.append(
-                "Zone roads are BLOCKED (No road length recorded; cannot compute % flooded) "
-                "— reaching this zone is severely restricted (road isolation penalty applied)"
-            )
+            if iso_w > 0:
+                reasons.append(
+                    "Zone roads are BLOCKED (No road length recorded; cannot compute % flooded) "
+                    "— reaching this zone is severely restricted (road isolation penalty applied)"
+                )
+            else:
+                reasons.append(
+                    "Zone roads are BLOCKED (No road length recorded; cannot compute % flooded) "
+                    "— reaching this zone is severely restricted (isolation weight is 0.0; no penalty applied to score)"
+                )
         else:
             frl_pct = min(100.0, (frl / rl * 100))
-            reasons.append(
-                f"Zone roads are {frl_pct:.0f}% flooded — reaching this zone "
-                f"is severely restricted (road isolation penalty applied)"
-            )
+            if iso_w > 0:
+                reasons.append(
+                    f"Zone roads are {frl_pct:.0f}% flooded — reaching this zone "
+                    f"is severely restricted (road isolation penalty applied)"
+                )
+            else:
+                reasons.append(
+                    f"Zone roads are {frl_pct:.0f}% flooded — reaching this zone "
+                    f"is severely restricted (isolation weight is 0.0; no penalty applied to score)"
+                )
     elif acc == "PARTIAL":
         if rl <= 0:
-            reasons.append(
-                "Zone roads are PARTIAL (No road length recorded; cannot compute % flooded) "
-                "— partial road isolation penalty applied"
-            )
+            if iso_w > 0:
+                reasons.append(
+                    "Zone roads are PARTIAL (No road length recorded; cannot compute % flooded) "
+                    "— partial road isolation penalty applied"
+                )
+            else:
+                reasons.append(
+                    "Zone roads are PARTIAL (No road length recorded; cannot compute % flooded) "
+                    "— partial road isolation (isolation weight is 0.0; no penalty applied to score)"
+                )
         else:
             frl_pct = min(100.0, (frl / rl * 100))
-            reasons.append(
-                f"Zone roads are {frl_pct:.0f}% flooded — partial road isolation penalty applied"
-            )
+            if iso_w > 0:
+                reasons.append(
+                    f"Zone roads are {frl_pct:.0f}% flooded — partial road isolation penalty applied"
+                )
+            else:
+                reasons.append(
+                    f"Zone roads are {frl_pct:.0f}% flooded — partial road isolation (isolation weight is 0.0; no penalty applied to score)"
+                )
     elif acc == "UNKNOWN":
-        reasons.append(
-            "No road data for this zone — isolation status unknown (intermediate penalty applied)"
-        )
+        if acc_raw is None:
+            road_note = "Accessibility data is missing for this zone"
+        elif rl <= 0:
+            road_note = "No road data for this zone"
+        else:
+            road_note = f"Road data unverified for this zone ({rl:.0f} m roads recorded)"
+
+        if iso_w > 0:
+            reasons.append(
+                f"{road_note} — isolation status unknown (intermediate penalty applied)"
+            )
+        else:
+            reasons.append(
+                f"{road_note} — isolation status unknown (isolation weight is 0.0; no penalty applied to score)"
+            )
     else:
         reasons.append("Roads in this zone are not significantly flooded")
 
@@ -615,25 +782,245 @@ def _build_reasons(
             f"'flooded' label — extent may not overlap recorded structures"
         )
 
+    # Explain primary score driver concisely
+    if breakdown and breakdown.get("primary_driver_summary") and score is not None and score > 0:
+        reasons.append(f"Primary score driver: {breakdown['primary_driver_summary']}")
+
+    # Explain ranking-relevant factors
+    if breakdown and breakdown.get("ranking_factors"):
+        for rf in breakdown["ranking_factors"]:
+            reasons.append(f"Ranking factor: {rf}")
+
+    # Explanation for low-risk zones with incomplete data requiring verification
+    if assessment is not None and assessment.needs_verification and priority == "LOW":
+        score_val = f"{score:.1f}" if score is not None else "LOW"
+        reasons.append(
+            f"VERIFICATION REQUIRED: Zone priority is LOW ({score_val}) but input data is "
+            f"{assessment.data_quality_status.lower()} (confidence: {assessment.confidence}) — "
+            f"insufficient data must be verified rather than assumed safe"
+        )
+
     return reasons
+
+
+
+def assess_zone_data_quality(
+    zone: dict[str, Any],
+    global_warnings: list[DataQualityWarning],
+    cfg_dq: dict[str, Any],
+    priority: str,
+    score_basis: str,
+    omitted_components: list[str],
+) -> ZoneDataQualityAssessment:
+    """Evaluate data completeness, physical consistency, and confidence deterministically.
+
+    Categories:
+        HIGH: All required and optional measurements present, valid, physically consistent,
+              and accessibility confirmed (not UNKNOWN). No warnings or clamped values.
+        MEDIUM: Data is usable for scoring but has single unverified/missing attributes:
+              e.g. UNKNOWN accessibility, missing flood extent area requiring partial scoring,
+              omitted building/road metadata, missing geometry coordinates, or heuristic extent mismatch.
+        LOW: Severe data quality issues: direct physical contradictions in measurements,
+              clamped out-of-range or coerced negative values, or multiple compounding incomplete fields.
+
+    Safety Policy:
+        A zone classified as LOW priority cannot be assumed safe if data is incomplete or unverified.
+        Any such zone is flagged with needs_verification=True.
+    """
+    zid = zone["zone_id"]
+    fp = float(zone["flooded_percent"])
+    eb = int(zone["exposed_buildings"])
+    tb_raw = zone.get("total_buildings")
+    tb = int(tb_raw) if tb_raw is not None else 0
+    acc_raw = zone.get("accessibility")
+    acc = acc_raw if isinstance(acc_raw, str) and acc_raw in ACCESSIBILITY_VALUES else "UNKNOWN"
+    fam = zone.get("flooded_area_m2")
+    rl_raw = zone.get("road_length_m")
+    rl = float(rl_raw) if rl_raw is not None else 0.0
+    frl_raw = zone.get("flooded_road_length_m")
+    frl = float(frl_raw) if frl_raw is not None else 0.0
+    centroid = zone.get("centroid", [])
+    bbox = zone.get("bbox", [])
+    missing_fields = zone.get("_missing_fields", [])
+
+    zone_warnings: list[str] = [w.issue for w in global_warnings if w.zone_id == zid]
+
+    warn_thresh = cfg_dq.get("warn_on_zero_exposure_with_high_flood_percent_threshold", 5.0)
+
+    # 1. Road accessibility warning (exactly once per zone)
+    if acc_raw is None:
+        msg = "accessibility is missing; cannot be assumed accessible (flagged for verification)"
+        if msg not in zone_warnings:
+            zone_warnings.append(msg)
+    elif acc == "UNKNOWN" and cfg_dq.get("warn_on_unknown_accessibility", True):
+        msg = "accessibility=UNKNOWN: no road data; isolation status cannot be determined"
+        if msg not in zone_warnings:
+            zone_warnings.append(msg)
+
+    # 2. Heuristic zero exposure with high flood percentage
+    if eb == 0 and fp >= warn_thresh:
+        msg = (
+            f"flooded_percent={fp:.1f}% but exposed_buildings=0: "
+            f"flood extent may not coincide with recorded building footprints"
+        )
+        if msg not in zone_warnings:
+            zone_warnings.append(msg)
+
+    # 3. Partial scoring warning
+    if score_basis == "partial" and cfg_dq.get("warn_on_null_flooded_area_m2", True):
+        warn_msg = (
+            "flooded_area_m2 is null while flooded_percent > 0; "
+            "omitted flood_area_density component and renormalized remaining weights"
+        )
+        if warn_msg not in zone_warnings:
+            zone_warnings.append(warn_msg)
+
+    # 4. Identify specific issue categories
+    contradictions: list[str] = []
+    degradations: list[str] = []
+    incompletes: list[str] = []
+
+    # Check contradictions
+    if fp == 0.0 and eb > 0:
+        contradictions.append("contradictory_zero_flood_with_exposed_buildings")
+    if fp == 0.0 and fam is not None and fam > 0.0:
+        contradictions.append("contradictory_zero_flood_with_flooded_area")
+    if fp == 0.0 and frl > 0.0:
+        contradictions.append("contradictory_zero_flood_with_flooded_roads")
+    if fp > 0.0 and fam == 0.0 and "flooded_area_m2" not in missing_fields:
+        contradictions.append("contradictory_positive_flood_zero_area")
+    if eb > tb:
+        contradictions.append("exposed_buildings_exceeds_total")
+    if frl > rl:
+        contradictions.append("flooded_road_exceeds_total")
+    if rl > 0.0 and (frl / rl) >= 0.60 and acc == "ACCESSIBLE":
+        contradictions.append("contradictory_accessible_with_blocked_roads")
+    if rl > 0.0 and frl == 0.0 and acc == "BLOCKED":
+        contradictions.append("contradictory_blocked_with_zero_flooded_roads")
+
+    # Check degradations from warnings
+    for w in zone_warnings:
+        w_lower = w.lower()
+        if "clamped" in w_lower:
+            degradations.append("clamped_value")
+        if "negative" in w_lower:
+            degradations.append("negative_value_coerced")
+        if "non-numeric" in w_lower or "non-finite" in w_lower:
+            degradations.append("non_finite_coerced")
+        if "unrecognised accessibility" in w_lower:
+            degradations.append("unrecognised_accessibility")
+        if "invalid centroid" in w_lower or "invalid bbox" in w_lower:
+            degradations.append("invalid_geometry")
+
+    # Check incompleteness
+    if acc_raw is None:
+        incompletes.append("missing_accessibility")
+    elif acc == "UNKNOWN":
+        incompletes.append("unknown_accessibility")
+    if score_basis == "partial":
+        incompletes.append("missing_flood_area_partial_scoring")
+    for mf in missing_fields:
+        incompletes.append(f"missing_{mf}")
+    if (not centroid or not bbox) and "invalid_geometry" not in degradations:
+        incompletes.append("missing_geometry")
+    if eb == 0 and fp >= warn_thresh:
+        incompletes.append("zero_exposure_with_high_flood_percent")
+    if rl <= 0.0 and acc in ("BLOCKED", "PARTIAL"):
+        incompletes.append("unrecorded_road_network")
+
+    # Combine unique issues in order
+    all_issues: list[str] = []
+    for issue in contradictions + degradations + incompletes:
+        if issue not in all_issues:
+            all_issues.append(issue)
+
+    # 5. Determine status
+    if contradictions:
+        status = "CONTRADICTORY"
+    elif degradations:
+        status = "DEGRADED"
+    elif incompletes:
+        status = "INCOMPLETE"
+    else:
+        status = "VERIFIED"
+
+    # 6. Determine confidence level
+    # Count major missing/unknown attributes to detect compounding issues
+    major_deficiencies = 0
+    if acc == "UNKNOWN":
+        major_deficiencies += 1
+    if score_basis == "partial":
+        major_deficiencies += 1
+    if not centroid or not bbox or "invalid_geometry" in degradations:
+        major_deficiencies += 1
+    if "total_buildings" in missing_fields:
+        major_deficiencies += 1
+    if "road_length_m" in missing_fields:
+        major_deficiencies += 1
+
+    if status in ("CONTRADICTORY", "DEGRADED"):
+        confidence = "LOW"
+    elif major_deficiencies >= 2:
+        confidence = "LOW"
+    elif status == "INCOMPLETE":
+        confidence = "MEDIUM"
+    else:
+        confidence = "HIGH"
+
+    # 7. Determine needs_verification flag
+    needs_verification = False
+    if confidence == "LOW":
+        needs_verification = True
+    elif score_basis == "partial":
+        needs_verification = True
+    elif acc == "UNKNOWN":
+        needs_verification = True
+    elif status in ("CONTRADICTORY", "DEGRADED"):
+        needs_verification = True
+    elif priority == "LOW" and confidence != "HIGH":
+        # Cannot treat unknown or incomplete measurements as proof of safety
+        needs_verification = True
+    elif "zero_exposure_with_high_flood_percent" in all_issues and priority in ("LOW", "MEDIUM"):
+        needs_verification = True
+
+    return ZoneDataQualityAssessment(
+        zone_id=zid,
+        confidence=confidence,
+        needs_verification=needs_verification,
+        data_quality_status=status,
+        issues=all_issues,
+        warnings=zone_warnings,
+        missing_fields=missing_fields,
+        score_basis=score_basis,
+        omitted_components=omitted_components,
+    )
 
 
 def _build_zone_warnings(
     zone: dict[str, Any],
     global_warnings: list[DataQualityWarning],
     cfg_dq: dict[str, Any],
+    assessment: ZoneDataQualityAssessment | None = None,
 ) -> list[str]:
     """Collect per-zone warning strings from global warnings and heuristic flags."""
+    if assessment is not None:
+        return assessment.warnings
+
     zid = zone["zone_id"]
     msgs: list[str] = [w.issue for w in global_warnings if w.zone_id == zid]
 
-    acc = zone["accessibility"]
-    fp = zone["flooded_percent"]
-    eb = zone["exposed_buildings"]
+    acc_raw = zone.get("accessibility")
+    acc = acc_raw if isinstance(acc_raw, str) and acc_raw in ACCESSIBILITY_VALUES else "UNKNOWN"
+    fp = float(zone.get("flooded_percent") or 0.0)
+    eb = int(zone.get("exposed_buildings") or 0)
     warn_thresh = cfg_dq.get("warn_on_zero_exposure_with_high_flood_percent_threshold", 5.0)
 
-    # Emit exactly one warning for UNKNOWN accessibility
-    if acc == "UNKNOWN" and cfg_dq.get("warn_on_unknown_accessibility", True):
+    # Emit warning for missing or UNKNOWN accessibility
+    if acc_raw is None:
+        msg = "accessibility is missing; cannot be assumed accessible (flagged for verification)"
+        if msg not in msgs:
+            msgs.append(msg)
+    elif acc == "UNKNOWN" and cfg_dq.get("warn_on_unknown_accessibility", True):
         msg = "accessibility=UNKNOWN: no road data; isolation status cannot be determined"
         if msg not in msgs:
             msgs.append(msg)
@@ -651,7 +1038,7 @@ def _build_zone_warnings(
 
 def score_zones(
     zones_doc: dict[str, Any],
-    config: dict[str, Any],
+    config: dict[str, Any] | RiskEngineConfig,
     global_warnings: list[DataQualityWarning],
 ) -> list[ZoneRiskRecord]:
     """Compute risk scores for all zones and rank them deterministically.
@@ -662,13 +1049,13 @@ def score_zones(
         3. Flooded percentage descending
         4. Natural-sort zone_id ascending
     """
+    if isinstance(config, RiskEngineConfig):
+        config = config.to_dict()
     weights_clean = _strip_comments(config["scoring"]["weights"])
     norms = _strip_comments(config["scoring"]["normalization"])
     iso_scores = _strip_comments(config["scoring"]["isolation_score"])
     thresholds = _strip_comments(config["priority_thresholds"])
     cfg_dq = config.get("data_quality", {})
-
-    warn_on_null_area = cfg_dq.get("warn_on_null_flooded_area_m2", True)
 
     records: list[ZoneRiskRecord] = []
 
@@ -676,8 +1063,17 @@ def score_zones(
         zid = zone["zone_id"]
         fp = float(zone["flooded_percent"])
         eb = int(zone["exposed_buildings"])
-        tb = int(zone.get("total_buildings", 0))
-        acc = zone["accessibility"]
+        tb_raw = zone.get("total_buildings")
+        tb = int(tb_raw) if tb_raw is not None else 0
+        rl_raw = zone.get("road_length_m")
+        rl = float(rl_raw) if rl_raw is not None else 0.0
+        frl_raw = zone.get("flooded_road_length_m")
+        frl = float(frl_raw) if frl_raw is not None else 0.0
+        acc_raw = zone.get("accessibility")
+        if acc_raw is None or not isinstance(acc_raw, str) or acc_raw not in ACCESSIBILITY_VALUES:
+            acc = "UNKNOWN"
+        else:
+            acc = acc_raw
         fam = zone.get("flooded_area_m2")
 
         # 1. Component normalization [0.0, 1.0]
@@ -689,8 +1085,6 @@ def score_zones(
         # 2. Handling missing flooded_area_m2:
         # Score as 0 ONLY when flooded_percent == 0.
         # If null while flooded_percent > 0, drop component and renormalize remaining weights.
-        zone_warnings = _build_zone_warnings(zone, global_warnings, cfg_dq)
-
         if fam is not None and fam >= 0.0:
             flood_area_c = min(float(fam) / norms["flood_area_m2_max"], 1.0)
             score_basis = "full"
@@ -714,15 +1108,8 @@ def score_zones(
             rem_sum = sum(active_weights.values())
             if rem_sum > 0:
                 active_weights = {k: v / rem_sum for k, v in active_weights.items()}
-            if warn_on_null_area:
-                warn_msg = (
-                    "flooded_area_m2 is null while flooded_percent > 0; "
-                    "omitted flood_area_density component and renormalized remaining weights"
-                )
-                if warn_msg not in zone_warnings:
-                    zone_warnings.append(warn_msg)
 
-        # 3. Compute raw score
+        # 3. Compute raw score and priority
         raw = (
             active_weights.get("flood_percent", 0.0) * flood_c
             + active_weights.get("exposure", 0.0) * exposure_c
@@ -734,7 +1121,38 @@ def score_zones(
         score = round(raw * 100, 1)
 
         priority = _priority_label(score, thresholds)
-        reasons = _build_reasons(zone, flood_c, has_flood_area, cfg_dq)
+
+        # 4. Compute transparent, auditable score breakdown
+        breakdown = compute_score_breakdown(
+            zone=zone,
+            active_weights=active_weights,
+            raw_components={
+                "flood_percent": flood_c,
+                "exposure": exposure_c,
+                "isolation": isolation_c,
+                "flood_area_density": flood_area_c,
+                "exposure_fraction": exp_frac_c,
+            },
+            raw_score=raw,
+            display_score=score,
+            score_basis=score_basis,
+            omitted_components=omitted_components,
+        )
+
+        # 5. Deterministic data quality and confidence assessment
+        assessment = assess_zone_data_quality(
+            zone=zone,
+            global_warnings=global_warnings,
+            cfg_dq=cfg_dq,
+            priority=priority,
+            score_basis=score_basis,
+            omitted_components=omitted_components,
+        )
+
+        zone_warnings = assessment.warnings
+        reasons = _build_reasons(
+            zone, flood_c, has_flood_area, cfg_dq, assessment, score, priority, breakdown
+        )
 
         records.append(ZoneRiskRecord(
             zone_id=zid,
@@ -755,11 +1173,16 @@ def score_zones(
             exposed_buildings=eb,
             total_buildings=tb,
             accessibility=acc,
-            road_length_m=float(zone.get("road_length_m", 0.0)),
-            flooded_road_length_m=float(zone.get("flooded_road_length_m", 0.0)),
+            road_length_m=rl,
+            flooded_road_length_m=frl,
             flooded_area_m2=float(fam) if fam is not None else 0.0,
             centroid=list(zone.get("centroid") or []),
             bbox=list(zone.get("bbox") or []),
+            confidence=assessment.confidence,
+            needs_verification=assessment.needs_verification,
+            data_quality_status=assessment.data_quality_status,
+            data_quality_issues=assessment.issues,
+            score_breakdown=breakdown,
         ))
 
     # Deterministic Ranking
@@ -789,10 +1212,12 @@ def records_to_dict(
     records: list[ZoneRiskRecord],
     global_warnings: list[DataQualityWarning],
     source_doc: dict[str, Any],
-    config: dict[str, Any],
+    config: dict[str, Any] | RiskEngineConfig,
     input_file_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Serialise scored records to a dictionary matching the output contract."""
+    if isinstance(config, RiskEngineConfig):
+        config = config.to_dict()
     weights = _strip_comments(config["scoring"]["weights"])
     norms = _strip_comments(config["scoring"]["normalization"])
     thresholds = _strip_comments(config["priority_thresholds"])
@@ -810,6 +1235,7 @@ def records_to_dict(
     cfg_hash = hashlib.sha256(
         json.dumps(effective_config_clean, sort_keys=True).encode("utf-8")
     ).hexdigest()
+    w_fingerprint = weights_fingerprint(weights)
 
     if input_file_sha256 is None:
         input_file_sha256 = hashlib.sha256(
@@ -847,6 +1273,36 @@ def records_to_dict(
 
     scored_zones = []
     for r in records:
+        iso_comp = r.score_breakdown.get("components", {}).get("isolation", {})
+        iso_weight = iso_comp.get("weight", 0.15)
+        iso_points = iso_comp.get("points", 0.0)
+        iso_weighted = iso_comp.get("weighted_contribution", 0.0)
+        iso_pct = iso_comp.get("percentage_of_score", 0.0)
+
+        flooded_road_share = (
+            round(r.flooded_road_length_m / r.road_length_m, 4)
+            if r.road_length_m > 0
+            else None
+        )
+        isolation_warnings = [
+            w for w in r.warnings
+            if any(term in w.lower() for term in ("accessibility", "road", "isolation"))
+        ]
+
+        isolation_dict = {
+            "status": r.accessibility,
+            "score": r.isolation_component,
+            "weight": iso_weight,
+            "weighted_contribution": iso_weighted,
+            "points": iso_points,
+            "percentage_of_score": iso_pct,
+            "road_length_m": r.road_length_m,
+            "flooded_road_length_m": r.flooded_road_length_m,
+            "flooded_road_share": flooded_road_share,
+            "warnings": isolation_warnings,
+            "needs_verification": r.accessibility == "UNKNOWN",
+        }
+
         scored_zones.append({
             "rank": r.rank,
             "zone_id": r.zone_id,
@@ -854,6 +1310,18 @@ def records_to_dict(
             "priority": r.priority,
             "score_basis": r.score_basis,
             "omitted_components": r.omitted_components,
+            "confidence": r.confidence,
+            "needs_verification": r.needs_verification,
+            "accessibility": r.accessibility,
+            "isolation": isolation_dict,
+            "data_quality": {
+                "confidence": r.confidence,
+                "status": r.data_quality_status,
+                "needs_verification": r.needs_verification,
+                "issues": r.data_quality_issues,
+                "warnings": r.warnings,
+            },
+            "score_breakdown": r.score_breakdown,
             "reasons": r.reasons,
             "warnings": r.warnings,
             "score_components": {
@@ -880,8 +1348,15 @@ def records_to_dict(
         })
 
     priority_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+    confidence_counts = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
+    accessibility_counts = {"ACCESSIBLE": 0, "PARTIAL": 0, "BLOCKED": 0, "UNKNOWN": 0}
+    verification_needed_count = 0
     for r in records:
         priority_counts[r.priority] = priority_counts.get(r.priority, 0) + 1
+        confidence_counts[r.confidence] = confidence_counts.get(r.confidence, 0) + 1
+        accessibility_counts[r.accessibility] = accessibility_counts.get(r.accessibility, 0) + 1
+        if r.needs_verification:
+            verification_needed_count += 1
 
     all_warnings = [
         {"zone_id": w.zone_id, "field": w.field, "issue": w.issue}
@@ -900,9 +1375,12 @@ def records_to_dict(
             "input_crs": crs_val,
             "input_file_sha256": input_file_sha256,
             "config_hash_sha256": cfg_hash,
+            "weights_fingerprint": w_fingerprint,
         },
         "scoring_config": {
             "config_version": config_ver,
+            "config_hash_sha256": cfg_hash,
+            "weights_fingerprint": w_fingerprint,
             "weights": weights,
             "normalization_ceilings": norms,
             "priority_thresholds": thresholds,
@@ -910,6 +1388,9 @@ def records_to_dict(
         "summary": {
             "total_zones": len(records),
             "priority_counts": priority_counts,
+            "confidence_counts": confidence_counts,
+            "accessibility_counts": accessibility_counts,
+            "verification_needed_count": verification_needed_count,
         },
         "data_quality_warnings": all_warnings,
         "ranked_zones": scored_zones,
@@ -967,13 +1448,18 @@ def export_dashboard(
             "name": f"Zone {z['zone_id']}",
             "risk_level": z["priority"],
             "risk_score": round(float(z["score"]), 1),
+            "confidence": z.get("confidence", "HIGH"),
+            "needs_verification": z.get("needs_verification", False),
+            "needs_survey": z.get("needs_verification", False),
             "flooded_percent": float(inp.get("flooded_percent", 0.0)),
             "flooded_area_km2": fam_km2,
             "exposed_buildings": int(inp.get("exposed_buildings", 0)),
             "total_buildings": int(inp.get("total_buildings", 0)),
             "accessibility": acc_mapped,
+            "isolation": z.get("isolation"),
             "reasons": z.get("reasons", []),
             "geometry": geometry,
+            "score_breakdown": z.get("score_breakdown"),
         })
 
     return {

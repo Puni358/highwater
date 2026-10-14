@@ -6,7 +6,7 @@ import { Waves, RefreshCw, AlertTriangle, ShieldCheck } from 'lucide-react';
  * Displays brand, study area, timestamp, DEMO MODE badge, and refresh trigger.
  */
 export default function Header({
-  studyArea = 'Bengaluru, Karnataka',
+  studyArea = 'Dernau (Ahr valley), Germany',
   timestamp = null,
   dataMode = 'demo',
   dataSource = null,
@@ -16,13 +16,13 @@ export default function Header({
   lastRefreshedAt = null,
 }) {
   const isDernau =
-    dataMode === 'demo' &&
     !studyArea?.includes('Bengaluru') &&
     (dataSource === 'mock-dernau' ||
-      (typeof source === 'string' && source.includes('SpaceNet')) ||
-      (typeof studyArea === 'string' && studyArea.includes('Dernau')));
+      (typeof source === 'string' && (source.includes('SpaceNet') || source.includes('Dernau'))) ||
+      (typeof studyArea === 'string' && (studyArea.includes('Dernau') || studyArea.includes('Germany'))));
 
   const isDemo = dataMode === 'demo' && !isDernau;
+  const isUnverified = typeof studyArea === 'string' && (studyArea.includes('Unverified') || studyArea.includes('Unknown'));
 
   const formatTimestamp = (ts) => {
     if (!ts) return 'Timestamp not available';
@@ -105,6 +105,15 @@ export default function Header({
           >
             <AlertTriangle className="w-3.5 h-3.5 text-demo-text" aria-hidden="true" />
             <span>DEMO MODE</span>
+          </div>
+        ) : isUnverified ? (
+          <div
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-amber-500/20 text-amber-300 text-xs font-medium border border-amber-500/40"
+            role="status"
+            aria-label="Unverified location active"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
+            <span>Unverified location</span>
           </div>
         ) : (
           <div

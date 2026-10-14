@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { selectSummaryStats } from '../features/dashboard/dashboardSelectors.js';
 import { filterZones, sortZones } from '../features/zones/zoneUtils.js';
+import { verifyGeographicData } from '../features/map/mapUtils.js';
 
 /**
  * DashboardLayout
@@ -97,6 +98,15 @@ export default function DashboardLayout({
   const selectedZone = useMemo(() => {
     return allZones.find((z) => z.zoneId === selectedZoneId) || null;
   }, [allZones, selectedZoneId]);
+
+  // Geographic extent verification and historical/simulated event labeling
+  const geoVerification = useMemo(() => {
+    return verifyGeographicData({
+      zones: allZones,
+      floodGeoJSON: data?.floodExtent,
+      metadata,
+    });
+  }, [allZones, data?.floodExtent, metadata]);
 
   // Handlers
   const handleToggleLayer = useCallback((layerKey) => {
@@ -224,6 +234,48 @@ export default function DashboardLayout({
           </div>
         )}
 
+        {/* Geographic Extent & Verification Warning (Task 5) */}
+        {geoVerification.warning && (
+          <div
+            role="alert"
+            aria-label="Geographic Data Warning"
+            className="flex items-center space-x-2 px-3 py-2 rounded-card bg-red-50 border border-red-300 text-red-900 text-xs font-medium shadow-sm"
+          >
+            <AlertTriangle className="w-4 h-4 text-red-700 shrink-0" aria-hidden="true" />
+            <span>
+              <strong>Geographic Warning:</strong> {geoVerification.warning}
+            </span>
+          </div>
+        )}
+
+        {/* Historical Event Notice (Task 5) */}
+        {geoVerification.isHistorical && (
+          <div
+            role="status"
+            aria-label="Historical Event Notice"
+            className="flex items-center space-x-2 px-3 py-2 rounded-card bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium shadow-sm"
+          >
+            <AlertTriangle className="w-4 h-4 text-blue-700 shrink-0" aria-hidden="true" />
+            <span>
+              <strong>HISTORICAL FLOOD DATA:</strong> {geoVerification.eventDescription || 'SpaceNet 8 July 2021 Flood Event (Dernau, Germany)'}. Displayed data reflects historical flood analysis, <em>not a live flood alert</em>.
+            </span>
+          </div>
+        )}
+
+        {/* Simulated Scenario Notice (Task 5) */}
+        {geoVerification.isSimulated && !geoVerification.isHistorical && (
+          <div
+            role="status"
+            aria-label="Simulated Scenario Notice"
+            className="flex items-center space-x-2 px-3 py-2 rounded-card bg-slate-100 border border-slate-300 text-slate-800 text-xs font-medium shadow-sm"
+          >
+            <AlertTriangle className="w-4 h-4 text-slate-600 shrink-0" aria-hidden="true" />
+            <span>
+              <strong>SIMULATED SCENARIO:</strong> {geoVerification.eventDescription || 'Synthetic demonstration scenario'}. Not a live flood alert.
+            </span>
+          </div>
+        )}
+
         {/* Empty state when no zones reported (FR-50, T5.1) */}
         {allZones.length === 0 && !loading && (
           <EmptyState onRefresh={onRefresh} loading={loading} />
@@ -258,6 +310,7 @@ export default function DashboardLayout({
                     routes={data?.routes || []}
                     buildingsExposed={data?.buildingsExposed}
                     selectedZoneId={selectedZoneId}
+                    studyArea={metadata.studyArea}
                     visibleLayers={visibleLayers}
                     onZoneSelect={handleZoneSelect}
                     droppedCount={data?.droppedFeatureCount || 0}

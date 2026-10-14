@@ -110,7 +110,11 @@ export function MapController({
       try {
         map.flyToBounds(targetBounds, { padding: [30, 30], maxZoom: 16, duration: 1 });
       } catch {
-        map.setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
+        const center = [
+          (targetBounds[0][0] + targetBounds[1][0]) / 2,
+          (targetBounds[0][1] + targetBounds[1][1]) / 2,
+        ];
+        map.setView(center, DEFAULT_MAP_ZOOM);
       }
     }
   }, [resetTrigger, dataBounds, map]);
@@ -154,6 +158,7 @@ export default function FloodMap({
   routes = [],
   buildingsExposed = null,
   selectedZoneId = null,
+  studyArea = null,
   visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false, buildings: false },
   onZoneSelect,
   droppedCount = 0,
@@ -170,8 +175,18 @@ export default function FloodMap({
   const activeReset = resetTrigger;
 
   const dataBounds = useMemo(() => {
-    return computeDataBounds(riskZones, floodGeoJSON);
-  }, [riskZones, floodGeoJSON]);
+    return computeDataBounds(riskZones, floodGeoJSON, studyArea);
+  }, [riskZones, floodGeoJSON, studyArea]);
+
+  const initialMapCenter = useMemo(() => {
+    if (dataBounds && Array.isArray(dataBounds) && dataBounds.length === 2) {
+      const [[minLat, minLng], [maxLat, maxLng]] = dataBounds;
+      if (Number.isFinite(minLat) && Number.isFinite(maxLat) && Number.isFinite(minLng) && Number.isFinite(maxLng)) {
+        return [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
+      }
+    }
+    return DEFAULT_MAP_CENTER;
+  }, [dataBounds]);
 
   // Base map tile provider configuration supporting both README and .env conventions
   const rawTileUrl =
@@ -257,7 +272,7 @@ export default function FloodMap({
 
       {/* Interactive Leaflet Surface */}
       <MapContainer
-        center={DEFAULT_MAP_CENTER}
+        center={initialMapCenter}
         zoom={DEFAULT_MAP_ZOOM}
         className="w-full h-full min-h-[380px] flex-1 z-0 bg-slate-200"
         style={{ width: '100%', height: '100%', minHeight: '380px' }}
