@@ -35,10 +35,16 @@ function isRingClosed(ring) {
   return first[0] === last[0] && first[1] === last[1];
 }
 
-function areCoordinatesWithinBbox(coordinates, bbox) {
+// Check coordinates within AOI bbox with 0.0005 degree tolerance (~55m)
+function areCoordinatesWithinBbox(coordinates, bbox, tolerance = 0.0005) {
   const [minLon, minLat, maxLon, maxLat] = bbox;
   for (const pt of coordinates) {
-    if (pt[0] < minLon || pt[0] > maxLon || pt[1] < minLat || pt[1] > maxLat) {
+    if (
+      pt[0] < minLon - tolerance ||
+      pt[0] > maxLon + tolerance ||
+      pt[1] < minLat - tolerance ||
+      pt[1] > maxLat + tolerance
+    ) {
       return false;
     }
   }
@@ -84,7 +90,7 @@ function buildDernauDemo() {
     // Flooded area km2 from m2
     const flooded_area_km2 = Number((z.flooded_area_m2 / 1000000).toFixed(4));
 
-    // Edge case 2: Exactly one zone with exposed_buildings null -> zone-005
+    // Edge case 2: Exactly one zone with exposed_buildings null -> zone-005 (designated test case, not measured data)
     const exposed_buildings = (z.zone_id === 'zone-005') ? null : z.exposed_buildings;
     const total_buildings = z.total_buildings;
 
@@ -92,8 +98,7 @@ function buildDernauDemo() {
     const accessibility = accessibilityMap[z.accessibility] || 'UNKNOWN';
 
     // Edge case 3: At least one UNKNOWN risk zone
-    // Rule: A zone with no buildings AND no road data gets risk_level UNKNOWN and risk_score null.
-    // zone-018 has road_length_m: 0 and accessibility UNKNOWN, designated as UNKNOWN risk test zone.
+    // zone-018 has road_length_m: 0 and accessibility UNKNOWN; marked as designated test case, not measured data
     let risk_score = null;
     let risk_level = 'UNKNOWN';
 
@@ -119,9 +124,10 @@ function buildDernauDemo() {
       }
     }
 
-    // Edge case 1: Exactly one zone with geometry null -> zone-038
+    // Edge case 1: Exactly one zone with geometry null -> zone-009 (LOW risk, real geometry preserved in raw data)
+    // zone-038 (HIGH risk, score 93.7) retains its real rectangle polygon geometry on the map.
     let geometry = null;
-    if (z.zone_id !== 'zone-038') {
+    if (z.zone_id !== 'zone-009') {
       const [minLon, minLat, maxLon, maxLat] = z.bbox;
       geometry = {
         type: 'Polygon',
@@ -137,13 +143,13 @@ function buildDernauDemo() {
       };
     }
 
-    // Reasons derived purely from metrics
+    // Reasons derived purely from metrics, explicitly marking designated test cases
     const reasons = [];
     if (z.zone_id === 'zone-018') {
+      reasons.push('Designated test cases, not measured data: UNKNOWN risk level');
       reasons.push('No road data in zone');
-      reasons.push('Insufficient infrastructure data for risk evaluation');
     } else if (z.zone_id === 'zone-005') {
-      reasons.push('Building exposure survey pending');
+      reasons.push('Designated test cases, not measured data: missing exposed_buildings numeric field');
       reasons.push('No flood coverage detected');
     } else {
       if (total_buildings > 0) {
@@ -189,7 +195,7 @@ function buildDernauDemo() {
   fs.writeFileSync(path.join(OUTPUT_DIR, 'zones.json'), JSON.stringify(zonesOutput, null, 2) + '\n', 'utf8');
 
   // ----------------------------------------------------
-  // 3. flood_extent.geojson
+  // 3. flood_extent.geojson (with 0.0005 deg tolerance)
   // ----------------------------------------------------
   let floodFeaturesDropped = 0;
   const floodFeatures = [];
@@ -204,7 +210,7 @@ function buildDernauDemo() {
     const rings = geom.type === 'Polygon' ? geom.coordinates : geom.coordinates.flat(1);
     let valid = true;
     for (const ring of rings) {
-      if (!isRingClosed(ring) || !areCoordinatesWithinBbox(ring, aoiBbox)) {
+      if (!isRingClosed(ring) || !areCoordinatesWithinBbox(ring, aoiBbox, 0.0005)) {
         valid = false;
         break;
       }
@@ -423,15 +429,15 @@ This directory contains a contract-perfect, fully deterministic demonstration da
 
 ## Source & Licensing
 
-- **Dataset Source:** SpaceNet 8 Flood Detection Challenge, Germany training set (Dernau area).
-- **Annotations License:** CC BY-SA 4.0.
-- **Imagery:** Maxar Technologies imagery (CC BY-NC 4.0 in original dataset) is **not** redistributed here. Only derived vector outputs are included.
-- **Attribution:** SpaceNet 8 (SpaceNet on Amazon Web Services), Maxar Technologies.
+- **Dataset Source:** SpaceNet 8 Flood Detection Challenge, Germany training set (Dernau area, June 2021 Western Europe floods).
+- **Attribution & License:** This dataset contains vector annotations derived from SpaceNet 8 / Maxar Technologies under the Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) license.
+- **Imagery:** Maxar Technologies imagery (CC BY-NC 4.0 in original SpaceNet 8 challenge) is **not** redistributed here. Only derived vector outputs are included.
+- **Integration Samples:** The files in \`integration-samples/\` are unmodified source copies extracted directly from the SpaceNet 8 Dernau training data for reference and build reproducibility.
 
 ## Derivation Notes
 
 - **Flood Extent (\`flood_extent.geojson\`):**
-  There is no measured water boundary or flood raster in this dataset. The flood extent was derived by unioning and buffering (5.0m) ground-truth flooded building polygons and flooded road line segments.
+  There is no measured water boundary or flood raster in this dataset. The flood extent was derived by unioning and buffering (5.0m) ground-truth flooded building polygons and flooded road line segments. With an AOI boundary tolerance of 0.0005 deg, all 196 flood polygons are preserved.
 - **Risk Scores & Levels (\`zones.json\`):**
   Risk scores and levels are **illustrative demo scores, not Member 3 (risk engine) outputs**.
   Derived using the documented demo formula:
@@ -440,7 +446,7 @@ This directory contains a contract-perfect, fully deterministic demonstration da
   - \`HIGH\`: score $\\ge 60$
   - \`MEDIUM\`: score $\\ge 30$
   - \`LOW\`: score $< 30$
-  - \`UNKNOWN\`: score is \`null\` when a zone has insufficient infrastructure data (e.g. no road data or no buildings).
+  - \`UNKNOWN\`: score is \`null\` when a zone has insufficient infrastructure data.
 - **Facilities (\`facilities.geojson\`):**
   Three simulated points (hospital, shelter, depot) placed in non-flooded areas inside the AOI. Provenance: \`simulated\`.
 - **Routes (\`routes.json\`):**
@@ -451,11 +457,11 @@ This directory contains a contract-perfect, fully deterministic demonstration da
 ## Required Edge Cases
 
 1. **Zone with \`geometry: null\`:**
-   - \`zone-038\` has \`geometry: null\` to verify that zones without spatial representation remain listed and selectable in the UI without crashing the Leaflet map.
+   - \`zone-009\` has \`geometry: null\` (LOW risk, score 4.1, real bbox available in raw data) to verify that zones without spatial representation remain listed and selectable in the UI without crashing the Leaflet map. \`zone-038\` (HIGH risk, score 93.7) retains its real rectangle polygon geometry on the map.
 2. **Zone with missing numeric field (\`exposed_buildings: null\`):**
-   - \`zone-005\` has \`exposed_buildings: null\` to verify the UI displays "Not available" rather than falsely coercing missing data to 0.
+   - \`zone-005\` has \`exposed_buildings: null\` (explicitly marked in reasons and documentation as "designated test cases, not measured data") to verify the UI displays "Not available" rather than falsely coercing missing data to 0. Real values for all other fields and zones remain untouched.
 3. **Zone with \`UNKNOWN\` risk level:**
-   - \`zone-018\` has \`risk_level: "UNKNOWN"\` and \`risk_score: null\` because it contains no road data (\`road_length_m === 0\`, accessibility \`UNKNOWN\`).
+   - \`zone-018\` has \`risk_level: "UNKNOWN"\` and \`risk_score: null\` (explicitly marked in reasons and documentation as "designated test cases, not measured data"; in raw data it contains no road segments, \`road_length_m === 0\`, accessibility \`UNKNOWN\`). Real values for all other fields and zones remain untouched.
 
 ## Dataset Statistics
 
@@ -465,8 +471,8 @@ This directory contains a contract-perfect, fully deterministic demonstration da
   - \`LOW\`: ${riskCounts.LOW}
   - \`UNKNOWN\`: ${riskCounts.UNKNOWN}
 - **Blocked Roads:** ${blockedRoadFeatures.length}
-- **Flood Polygons (valid inside AOI):** ${floodFeatures.length}
-- **Dropped Features:** ${floodFeaturesDropped} (2 flood polygons dropped for extending past the northern AOI bbox boundary)
+- **Flood Polygons (valid inside AOI with 0.0005 deg tolerance):** ${floodFeatures.length}
+- **Dropped Features:** ${floodFeaturesDropped}
 - **Facilities:** ${facilitiesOutput.features.length}
 - **Routes:** ${routesOutput.routes.length} (2 OK, 1 UNREACHABLE)
 - **Exposed Buildings:** ${buildingsRaw.features.length}

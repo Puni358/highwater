@@ -186,7 +186,7 @@
       "total_buildings": 0,
       "accessibility": "OPEN",
       "reasons": [
-        "Building exposure survey pending",
+        "Designated test cases, not measured data: missing exposed_buildings numeric field",
         "No flood coverage detected"
       ],
       "geometry": {
@@ -357,33 +357,7 @@
         "3 of 36 buildings flood-labelled",
         "0.57% area inundated"
       ],
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              7.0147169211358245,
-              50.516514300662465
-            ],
-            [
-              7.019059061268224,
-              50.516514300662465
-            ],
-            [
-              7.019059061268224,
-              50.519282717251976
-            ],
-            [
-              7.0147169211358245,
-              50.519282717251976
-            ],
-            [
-              7.0147169211358245,
-              50.516514300662465
-            ]
-          ]
-        ]
-      }
+      "geometry": null
     },
     {
       "zone_id": "zone-010",
@@ -733,8 +707,8 @@
       "total_buildings": 1,
       "accessibility": "UNKNOWN",
       "reasons": [
-        "No road data in zone",
-        "Insufficient infrastructure data for risk evaluation"
+        "Designated test cases, not measured data: UNKNOWN risk level",
+        "No road data in zone"
       ],
       "geometry": {
         "type": "Polygon",
@@ -1578,7 +1552,33 @@
         "16.87% area inundated",
         "215.4m of 215.4m road flooded"
       ],
-      "geometry": null
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.039601319105211,
+              50.5304262932973
+            ],
+            [
+              7.04387594060662,
+              50.5304262932973
+            ],
+            [
+              7.04387594060662,
+              50.53156652046202
+            ],
+            [
+              7.039601319105211,
+              50.53156652046202
+            ],
+            [
+              7.039601319105211,
+              50.5304262932973
+            ]
+          ]
+        ]
+      }
     }
   ]
 }

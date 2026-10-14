@@ -49,6 +49,7 @@ function runValidation() {
 
   const meta = JSON.parse(fs.readFileSync(path.join(SAMPLES_DIR, 'metadata.json'), 'utf8'));
   const aoiBbox = meta.aoi_bbox_lonlat;
+  const aoiTolerance = 0.0005;
 
   // -------------------------------------------------------------------------
   // 1. zones.json validation
@@ -89,6 +90,11 @@ function runValidation() {
     assert(['OPEN', 'LIMITED', 'BLOCKED', 'UNKNOWN'].includes(z.accessibility), `${z.zone_id}: valid accessibility enum`);
     assert(Array.isArray(z.reasons) && z.reasons.length > 0, `${z.zone_id}: reasons is non-empty array of strings`);
 
+    if (z.zone_id === 'zone-018' || z.zone_id === 'zone-005') {
+      const hasDesignatedNote = z.reasons.some((r) => r.toLowerCase().includes('designated test case'));
+      assert(hasDesignatedNote, `${z.zone_id}: reasons explicitly marks as designated test case`);
+    }
+
     if (z.exposed_buildings === null) {
       nullNumericCount++;
       nullNumericZoneIds.push(z.zone_id);
@@ -99,6 +105,7 @@ function runValidation() {
     if (z.geometry === null) {
       nullGeomCount++;
       nullGeomZoneIds.push(z.zone_id);
+      assert(z.risk_level === 'LOW', `${z.zone_id}: null geometry edge case must be a LOW-risk zone`);
     } else {
       assert(z.geometry.type === 'Polygon', `${z.zone_id}: geometry type is Polygon`);
       assert(Array.isArray(z.geometry.coordinates) && z.geometry.coordinates.length === 1, `${z.zone_id}: single ring polygon`);
@@ -111,19 +118,25 @@ function runValidation() {
     }
   });
 
+  const zone038 = zonesData.zones.find((z) => z.zone_id === 'zone-038');
+  assert(zone038 && zone038.geometry !== null, 'zone-038 has valid geometry and is kept on the map');
+
   assert(nullGeomCount === 1, `Exactly 1 zone with null geometry (found ${nullGeomCount}: ${nullGeomZoneIds.join(', ')})`);
+  assert(nullGeomZoneIds[0] === 'zone-009', `Null geometry zone is zone-009 (found: ${nullGeomZoneIds.join(', ')})`);
   assert(nullNumericCount === 1, `Exactly 1 zone with null numeric field (found ${nullNumericCount}: ${nullNumericZoneIds.join(', ')})`);
+  assert(nullNumericZoneIds[0] === 'zone-005', `Null numeric zone is zone-005 (found: ${nullNumericZoneIds.join(', ')})`);
   assert(riskCounts.UNKNOWN >= 1, `At least 1 UNKNOWN risk zone (found ${riskCounts.UNKNOWN})`);
   assert(riskCounts.HIGH >= 1, `At least 1 HIGH risk zone (found ${riskCounts.HIGH})`);
   assert(riskCounts.MEDIUM >= 1, `At least 1 MEDIUM risk zone (found ${riskCounts.MEDIUM})`);
   assert(riskCounts.LOW >= 1, `At least 1 LOW risk zone (found ${riskCounts.LOW})`);
 
   console.log(`  -> Checked 38 zones: HIGH=${riskCounts.HIGH}, MEDIUM=${riskCounts.MEDIUM}, LOW=${riskCounts.LOW}, UNKNOWN=${riskCounts.UNKNOWN}`);
-  console.log(`  -> Null geometry edge case: ${nullGeomZoneIds.join(', ')}`);
+  console.log(`  -> Null geometry edge case: ${nullGeomZoneIds.join(', ')} (LOW risk)`);
   console.log(`  -> Null numeric field edge case: ${nullNumericZoneIds.join(', ')} (exposed_buildings)`);
+  console.log(`  -> zone-038 status: geometry is Polygon (kept on map, risk ${zone038.risk_level})`);
 
   // -------------------------------------------------------------------------
-  // 2. flood_extent.geojson validation
+  // 2. flood_extent.geojson validation (with 0.0005 deg tolerance)
   // -------------------------------------------------------------------------
   console.log('\n2. Validating flood_extent.geojson...');
   const floodPath = path.join(DIR, 'flood_extent.geojson');
@@ -131,7 +144,7 @@ function runValidation() {
   const floodData = JSON.parse(fs.readFileSync(floodPath, 'utf8'));
 
   assert(floodData.type === 'FeatureCollection', 'flood_extent is a FeatureCollection');
-  assert(Array.isArray(floodData.features) && floodData.features.length > 0, 'features is non-empty array');
+  assert(Array.isArray(floodData.features) && floodData.features.length === 196, `Expected exactly 196 features, got ${floodData.features?.length}`);
 
   let floodBadCoords = 0;
   let floodUnclosedRings = 0;
@@ -152,7 +165,12 @@ function runValidation() {
       if (!isClosedRing(ring)) floodUnclosedRings++;
       ring.forEach((pt) => {
         if (!isValidLngLat(pt)) floodBadCoords++;
-        if (pt[0] < aoiBbox[0] || pt[0] > aoiBbox[2] || pt[1] < aoiBbox[1] || pt[1] > aoiBbox[3]) {
+        if (
+          pt[0] < aoiBbox[0] - aoiTolerance ||
+          pt[0] > aoiBbox[2] + aoiTolerance ||
+          pt[1] < aoiBbox[1] - aoiTolerance ||
+          pt[1] > aoiBbox[3] + aoiTolerance
+        ) {
           floodBadCoords++;
         }
       });
@@ -161,8 +179,8 @@ function runValidation() {
 
   assert(floodInventedZoneIds === 0, 'No invented zone_id in flood_extent.geojson');
   assert(floodUnclosedRings === 0, 'All flood polygon rings are closed');
-  assert(floodBadCoords === 0, 'All flood coordinates are valid [lng, lat] and within AOI bbox');
-  console.log(`  -> Checked ${floodData.features.length} flood polygons: all rings closed, coordinates valid within AOI bbox`);
+  assert(floodBadCoords === 0, 'All flood coordinates are valid [lng, lat] and within AOI bbox (0.0005 deg tolerance)');
+  console.log(`  -> Checked ${floodData.features.length} flood polygons: all 196 kept, all rings closed, coordinates within AOI bbox with 0.0005 deg tolerance`);
 
   // -------------------------------------------------------------------------
   // 3. blocked_roads.geojson validation
@@ -173,7 +191,7 @@ function runValidation() {
   const roadsData = JSON.parse(fs.readFileSync(roadsPath, 'utf8'));
 
   assert(roadsData.type === 'FeatureCollection', 'blocked_roads is FeatureCollection');
-  assert(Array.isArray(roadsData.features) && roadsData.features.length > 0, 'features is non-empty array');
+  assert(Array.isArray(roadsData.features) && roadsData.features.length === 45, `Expected 45 blocked roads, got ${roadsData.features?.length}`);
 
   roadsData.features.forEach((feat, idx) => {
     assert(feat.type === 'Feature', `Road ${idx}: valid type`);
@@ -270,11 +288,13 @@ function runValidation() {
 
   assert(readmeText.includes('CC BY-SA 4.0'), 'README mentions CC BY-SA 4.0 license');
   assert(readmeText.includes('SpaceNet 8') && readmeText.includes('Maxar'), 'README mentions SpaceNet 8 / Maxar attribution');
+  assert(readmeText.includes('unmodified source'), 'README notes integration-samples/ are unmodified source copies');
+  assert(readmeText.includes('designated test cases, not measured data'), 'README explicitly marks test cases');
   assert(readmeText.includes('not a measured water boundary') || readmeText.includes('not a flood-extent raster') || readmeText.includes('derived'), 'README notes derived flood extent');
   assert(readmeText.includes('simulated') && readmeText.includes('Member 3'), 'README notes simulated demo values / not Member 3 output');
   assert(readmeText.includes('Dernau') && readmeText.includes('Germany'), 'README notes AOI is Dernau, Germany');
-  assert(readmeText.includes('zone-038') && readmeText.includes('zone-005') && readmeText.includes('zone-018'), 'README documents the three edge cases explicitly');
-  console.log('  -> Checked README.md: contains source, license, derivation, simulation disclaimer, AOI location, and edge cases');
+  assert(readmeText.includes('zone-009') && readmeText.includes('zone-005') && readmeText.includes('zone-018'), 'README documents the three edge cases explicitly (zone-009, zone-005, zone-018)');
+  console.log('  -> Checked README.md: contains source, license, attribution, unmodified source note, derivation, simulation disclaimer, AOI location, and edge cases');
 
   // -------------------------------------------------------------------------
   // 8. File sizes report

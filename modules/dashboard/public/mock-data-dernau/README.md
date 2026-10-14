@@ -4,15 +4,15 @@ This directory contains a contract-perfect, fully deterministic demonstration da
 
 ## Source & Licensing
 
-- **Dataset Source:** SpaceNet 8 Flood Detection Challenge, Germany training set (Dernau area).
-- **Annotations License:** CC BY-SA 4.0.
-- **Imagery:** Maxar Technologies imagery (CC BY-NC 4.0 in original dataset) is **not** redistributed here. Only derived vector outputs are included.
-- **Attribution:** SpaceNet 8 (SpaceNet on Amazon Web Services), Maxar Technologies.
+- **Dataset Source:** SpaceNet 8 Flood Detection Challenge, Germany training set (Dernau area, June 2021 Western Europe floods).
+- **Attribution & License:** This dataset contains vector annotations derived from SpaceNet 8 / Maxar Technologies under the Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) license.
+- **Imagery:** Maxar Technologies imagery (CC BY-NC 4.0 in original SpaceNet 8 challenge) is **not** redistributed here. Only derived vector outputs are included.
+- **Integration Samples:** The files in `integration-samples/` are unmodified source copies extracted directly from the SpaceNet 8 Dernau training data for reference and build reproducibility.
 
 ## Derivation Notes
 
 - **Flood Extent (`flood_extent.geojson`):**
-  There is no measured water boundary or flood raster in this dataset. The flood extent was derived by unioning and buffering (5.0m) ground-truth flooded building polygons and flooded road line segments.
+  There is no measured water boundary or flood raster in this dataset. The flood extent was derived by unioning and buffering (5.0m) ground-truth flooded building polygons and flooded road line segments. With an AOI boundary tolerance of 0.0005 deg, all 196 flood polygons are preserved.
 - **Risk Scores & Levels (`zones.json`):**
   Risk scores and levels are **illustrative demo scores, not Member 3 (risk engine) outputs**.
   Derived using the documented demo formula:
@@ -21,7 +21,7 @@ This directory contains a contract-perfect, fully deterministic demonstration da
   - `HIGH`: score $\ge 60$
   - `MEDIUM`: score $\ge 30$
   - `LOW`: score $< 30$
-  - `UNKNOWN`: score is `null` when a zone has insufficient infrastructure data (e.g. no road data or no buildings).
+  - `UNKNOWN`: score is `null` when a zone has insufficient infrastructure data.
 - **Facilities (`facilities.geojson`):**
   Three simulated points (hospital, shelter, depot) placed in non-flooded areas inside the AOI. Provenance: `simulated`.
 - **Routes (`routes.json`):**
@@ -32,11 +32,11 @@ This directory contains a contract-perfect, fully deterministic demonstration da
 ## Required Edge Cases
 
 1. **Zone with `geometry: null`:**
-   - `zone-038` has `geometry: null` to verify that zones without spatial representation remain listed and selectable in the UI without crashing the Leaflet map.
+   - `zone-009` has `geometry: null` (LOW risk, score 4.1, real bbox available in raw data) to verify that zones without spatial representation remain listed and selectable in the UI without crashing the Leaflet map. `zone-038` (HIGH risk, score 93.7) retains its real rectangle polygon geometry on the map.
 2. **Zone with missing numeric field (`exposed_buildings: null`):**
-   - `zone-005` has `exposed_buildings: null` to verify the UI displays "Not available" rather than falsely coercing missing data to 0.
+   - `zone-005` has `exposed_buildings: null` (explicitly marked in reasons and documentation as "designated test cases, not measured data") to verify the UI displays "Not available" rather than falsely coercing missing data to 0. Real values for all other fields and zones remain untouched.
 3. **Zone with `UNKNOWN` risk level:**
-   - `zone-018` has `risk_level: "UNKNOWN"` and `risk_score: null` because it contains no road data (`road_length_m === 0`, accessibility `UNKNOWN`).
+   - `zone-018` has `risk_level: "UNKNOWN"` and `risk_score: null` (explicitly marked in reasons and documentation as "designated test cases, not measured data"; in raw data it contains no road segments, `road_length_m === 0`, accessibility `UNKNOWN`). Real values for all other fields and zones remain untouched.
 
 ## Dataset Statistics
 
@@ -46,8 +46,8 @@ This directory contains a contract-perfect, fully deterministic demonstration da
   - `LOW`: 29
   - `UNKNOWN`: 1
 - **Blocked Roads:** 45
-- **Flood Polygons (valid inside AOI):** 194
-- **Dropped Features:** 2 (2 flood polygons dropped for extending past the northern AOI bbox boundary)
+- **Flood Polygons (valid inside AOI with 0.0005 deg tolerance):** 196
+- **Dropped Features:** 0
 - **Facilities:** 3
 - **Routes:** 3 (2 OK, 1 UNREACHABLE)
 - **Exposed Buildings:** 759
