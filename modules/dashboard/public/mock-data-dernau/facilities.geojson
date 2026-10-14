@@ -1,0 +1,53 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "facility_id": "fac-001",
+        "name": "Demo hospital",
+        "type": "hospital",
+        "provenance": "simulated"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.01678,
+          50.52059
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "facility_id": "fac-002",
+        "name": "Demo shelter",
+        "type": "shelter",
+        "provenance": "simulated"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.03392,
+          50.51549
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "facility_id": "fac-003",
+        "name": "Demo depot",
+        "type": "depot",
+        "provenance": "simulated"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.04249,
+          50.51294
+        ]
+      }
+    }
+  ]
+}

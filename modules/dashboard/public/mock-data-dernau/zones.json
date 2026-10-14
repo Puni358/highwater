@@ -1,0 +1,1584 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-10-14T10:00:00Z",
+  "data_mode": "demo",
+  "source": "SpaceNet 8 Germany (Dernau)",
+  "study_area": "Dernau (Ahr valley), Germany",
+  "crs": "EPSG:4326",
+  "risk_method": "score = 0.40*min(flooded_percent/20,1) + 0.35*(exposed_buildings/total_buildings, 0 if none) + 0.25*(flooded_road_length_m/road_length_m, 0 if none), times 100, rounded to 1 dp (illustrative demo score, not Member 3 output)",
+  "zones": [
+    {
+      "zone_id": "zone-001",
+      "name": "Zone 001 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 12.4,
+      "flooded_percent": 1.24,
+      "flooded_area_km2": 0.0011,
+      "exposed_buildings": 1,
+      "total_buildings": 12,
+      "accessibility": "LIMITED",
+      "reasons": [
+        "1 of 12 buildings flood-labelled",
+        "1.24% area inundated",
+        "103.5m of 371.7m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.031858318899586,
+              50.51140883995279
+            ],
+            [
+              7.036199049714956,
+              50.51140883995279
+            ],
+            [
+              7.036199049714956,
+              50.51417665898513
+            ],
+            [
+              7.031858318899586,
+              50.51417665898513
+            ],
+            [
+              7.031858318899586,
+              50.51140883995279
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-002",
+      "name": "Zone 002 (grid cell)",
+      "risk_level": "MEDIUM",
+      "risk_score": 52.9,
+      "flooded_percent": 10.31,
+      "flooded_area_km2": 0.0093,
+      "exposed_buildings": 52,
+      "total_buildings": 104,
+      "accessibility": "LIMITED",
+      "reasons": [
+        "52 of 104 buildings flood-labelled",
+        "10.31% area inundated",
+        "439.8m of 744.6m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.036087143983389,
+              50.51148026870624
+            ],
+            [
+              7.04042765130077,
+              50.51148026870624
+            ],
+            [
+              7.04042765130077,
+              50.514247941021566
+            ],
+            [
+              7.036087143983389,
+              50.514247941021566
+            ],
+            [
+              7.036087143983389,
+              50.51148026870624
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-003",
+      "name": "Zone 003 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 3,
+      "accessibility": "OPEN",
+      "reasons": [
+        "0 of 3 buildings flood-labelled"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.0403159861565445,
+              50.511551543951896
+            ],
+            [
+              7.044656269935855,
+              50.511551543951896
+            ],
+            [
+              7.044656269935855,
+              50.514319069534146
+            ],
+            [
+              7.0403159861565445,
+              50.514319069534146
+            ],
+            [
+              7.0403159861565445,
+              50.511551543951896
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-004",
+      "name": "Zone 004 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 11.7,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 1,
+      "total_buildings": 3,
+      "accessibility": "OPEN",
+      "reasons": [
+        "1 of 3 buildings flood-labelled"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.014830064301679,
+              50.51381794599654
+            ],
+            [
+              7.019171946551024,
+              50.51381794599654
+            ],
+            [
+              7.019171946551024,
+              50.51658635716067
+            ],
+            [
+              7.014830064301679,
+              50.51658635716067
+            ],
+            [
+              7.014830064301679,
+              50.51381794599654
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-005",
+      "name": "Zone 005 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": null,
+      "total_buildings": 0,
+      "accessibility": "OPEN",
+      "reasons": [
+        "Building exposure survey pending",
+        "No flood coverage detected"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.019059061268224,
+              50.513889995630166
+            ],
+            [
+              7.023400720146729,
+              50.513889995630166
+            ],
+            [
+              7.023400720146729,
+              50.516658260127805
+            ],
+            [
+              7.019059061268224,
+              50.516658260127805
+            ],
+            [
+              7.019059061268224,
+              50.513889995630166
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-006",
+      "name": "Zone 006 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 16.1,
+      "flooded_percent": 0.76,
+      "flooded_area_km2": 0.0007,
+      "exposed_buildings": 0,
+      "total_buildings": 0,
+      "accessibility": "LIMITED",
+      "reasons": [
+        "0.76% area inundated",
+        "61.2m of 104.9m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.027517106883096,
+              50.514033634346525
+            ],
+            [
+              7.031858318899586,
+              50.514033634346525
+            ],
+            [
+              7.031858318899586,
+              50.51680160546291
+            ],
+            [
+              7.027517106883096,
+              50.51680160546291
+            ],
+            [
+              7.027517106883096,
+              50.514033634346525
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-007",
+      "name": "Zone 007 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 5,
+      "accessibility": "OPEN",
+      "reasons": [
+        "0 of 5 buildings flood-labelled"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.031746155458061,
+              50.51410522342628
+            ],
+            [
+              7.036087143983389,
+              50.51410522342628
+            ],
+            [
+              7.036087143983389,
+              50.516873047827914
+            ],
+            [
+              7.031746155458061,
+              50.516873047827914
+            ],
+            [
+              7.031746155458061,
+              50.51410522342628
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-008",
+      "name": "Zone 008 (grid cell)",
+      "risk_level": "MEDIUM",
+      "risk_score": 49.2,
+      "flooded_percent": 9.5,
+      "flooded_area_km2": 0.0085,
+      "exposed_buildings": 23,
+      "total_buildings": 46,
+      "accessibility": "LIMITED",
+      "reasons": [
+        "23 of 46 buildings flood-labelled",
+        "9.5% area inundated",
+        "338.1m of 666.0m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.035975221162471,
+              50.51417665898513
+            ],
+            [
+              7.0403159861565445,
+              50.51417665898513
+            ],
+            [
+              7.0403159861565445,
+              50.51694433665592
+            ],
+            [
+              7.035975221162471,
+              50.51694433665592
+            ],
+            [
+              7.035975221162471,
+              50.51417665898513
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-009",
+      "name": "Zone 009 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 4.1,
+      "flooded_percent": 0.57,
+      "flooded_area_km2": 0.0005,
+      "exposed_buildings": 3,
+      "total_buildings": 36,
+      "accessibility": "OPEN",
+      "reasons": [
+        "3 of 36 buildings flood-labelled",
+        "0.57% area inundated"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.0147169211358245,
+              50.516514300662465
+            ],
+            [
+              7.019059061268224,
+              50.516514300662465
+            ],
+            [
+              7.019059061268224,
+              50.519282717251976
+            ],
+            [
+              7.0147169211358245,
+              50.519282717251976
+            ],
+            [
+              7.0147169211358245,
+              50.516514300662465
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-010",
+      "name": "Zone 010 (grid cell)",
+      "risk_level": "HIGH",
+      "risk_score": 60.2,
+      "flooded_percent": 7.5,
+      "flooded_area_km2": 0.0068,
+      "exposed_buildings": 20,
+      "total_buildings": 21,
+      "accessibility": "LIMITED",
+      "reasons": [
+        "20 of 21 buildings flood-labelled",
+        "7.5% area inundated",
+        "133.1m of 280.5m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.018946158745936,
+              50.51658635716067
+            ],
+            [
+              7.023288075474256,
+              50.51658635716067
+            ],
+            [
+              7.023288075474256,
+              50.519354627069866
+            ],
+            [
+              7.018946158745936,
+              50.519354627069866
+            ],
+            [
+              7.018946158745936,
+              50.51658635716067
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-011",
+      "name": "Zone 011 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 26.2,
+      "flooded_percent": 0.59,
+      "flooded_area_km2": 0.0005,
+      "exposed_buildings": 0,
+      "total_buildings": 1,
+      "accessibility": "BLOCKED",
+      "reasons": [
+        "0 of 1 buildings flood-labelled",
+        "0.59% area inundated",
+        "49.5m of 49.5m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.023175413598976,
+              50.516658260127805
+            ],
+            [
+              7.027517106883096,
+              50.516658260127805
+            ],
+            [
+              7.027517106883096,
+              50.51942638334059
+            ],
+            [
+              7.023175413598976,
+              50.51942638334059
+            ],
+            [
+              7.023175413598976,
+              50.516658260127805
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-012",
+      "name": "Zone 012 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 29,
+      "flooded_percent": 2,
+      "flooded_area_km2": 0.0018,
+      "exposed_buildings": 0,
+      "total_buildings": 0,
+      "accessibility": "BLOCKED",
+      "reasons": [
+        "2% area inundated",
+        "180.1m of 180.1m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.027404685658257,
+              50.51673000956239
+            ],
+            [
+              7.031746155458061,
+              50.51673000956239
+            ],
+            [
+              7.031746155458061,
+              50.51949798606265
+            ],
+            [
+              7.027404685658257,
+              50.51949798606265
+            ],
+            [
+              7.027404685658257,
+              50.51673000956239
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-013",
+      "name": "Zone 013 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 0,
+      "accessibility": "OPEN",
+      "reasons": [
+        "No flood coverage detected"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.031633974887092,
+              50.51680160546291
+            ],
+            [
+              7.035975221162471,
+              50.51680160546291
+            ],
+            [
+              7.035975221162471,
+              50.519569435234594
+            ],
+            [
+              7.031633974887092,
+              50.519569435234594
+            ],
+            [
+              7.031633974887092,
+              50.51680160546291
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-014",
+      "name": "Zone 014 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 24.3,
+      "flooded_percent": 4.54,
+      "flooded_area_km2": 0.0041,
+      "exposed_buildings": 6,
+      "total_buildings": 32,
+      "accessibility": "LIMITED",
+      "reasons": [
+        "6 of 32 buildings flood-labelled",
+        "4.54% area inundated",
+        "337.8m of 973.4m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.035863281248791,
+              50.516873047827914
+            ],
+            [
+              7.040204303959645,
+              50.516873047827914
+            ],
+            [
+              7.040204303959645,
+              50.519640730854924
+            ],
+            [
+              7.035863281248791,
+              50.519640730854924
+            ],
+            [
+              7.035863281248791,
+              50.516873047827914
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-015",
+      "name": "Zone 015 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 0,
+      "accessibility": "OPEN",
+      "reasons": [
+        "No flood coverage detected"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.040092604706666,
+              50.51694433665592
+            ],
+            [
+              7.044433403812896,
+              50.51694433665592
+            ],
+            [
+              7.044433403812896,
+              50.519711872922166
+            ],
+            [
+              7.040092604706666,
+              50.519711872922166
+            ],
+            [
+              7.040092604706666,
+              50.51694433665592
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-016",
+      "name": "Zone 016 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 75,
+      "accessibility": "OPEN",
+      "reasons": [
+        "0 of 75 buildings flood-labelled"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.014603760690354,
+              50.5192106538884
+            ],
+            [
+              7.018946158745936,
+              50.5192106538884
+            ],
+            [
+              7.018946158745936,
+              50.52197907590405
+            ],
+            [
+              7.014603760690354,
+              50.52197907590405
+            ],
+            [
+              7.014603760690354,
+              50.5192106538884
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-017",
+      "name": "Zone 017 (grid cell)",
+      "risk_level": "MEDIUM",
+      "risk_score": 33.7,
+      "flooded_percent": 5.59,
+      "flooded_area_km2": 0.005,
+      "exposed_buildings": 21,
+      "total_buildings": 59,
+      "accessibility": "LIMITED",
+      "reasons": [
+        "21 of 59 buildings flood-labelled",
+        "5.59% area inundated",
+        "153.0m of 381.1m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.0188332389807195,
+              50.519282717251976
+            ],
+            [
+              7.023175413598976,
+              50.519282717251976
+            ],
+            [
+              7.023175413598976,
+              50.52205099257349
+            ],
+            [
+              7.0188332389807195,
+              50.52205099257349
+            ],
+            [
+              7.0188332389807195,
+              50.519282717251976
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-018",
+      "name": "Zone 018 (grid cell)",
+      "risk_level": "UNKNOWN",
+      "risk_score": null,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 1,
+      "accessibility": "UNKNOWN",
+      "reasons": [
+        "No road data in zone",
+        "Insufficient infrastructure data for risk evaluation"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.023062734517453,
+              50.519354627069866
+            ],
+            [
+              7.027404685658257,
+              50.519354627069866
+            ],
+            [
+              7.027404685658257,
+              50.52212275568114
+            ],
+            [
+              7.023062734517453,
+              50.52212275568114
+            ],
+            [
+              7.023062734517453,
+              50.519354627069866
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-019",
+      "name": "Zone 019 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 0,
+      "accessibility": "OPEN",
+      "reasons": [
+        "No flood coverage detected"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.031521777183259,
+              50.51949798606265
+            ],
+            [
+              7.035863281248791,
+              50.51949798606265
+            ],
+            [
+              7.035863281248791,
+              50.52226582120516
+            ],
+            [
+              7.031521777183259,
+              50.52226582120516
+            ],
+            [
+              7.031521777183259,
+              50.51949798606265
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-020",
+      "name": "Zone 020 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 4.6,
+      "flooded_percent": 1.05,
+      "flooded_area_km2": 0.0009,
+      "exposed_buildings": 0,
+      "total_buildings": 1,
+      "accessibility": "OPEN",
+      "reasons": [
+        "0 of 1 buildings flood-labelled",
+        "1.05% area inundated",
+        "80.2m of 806.3m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.0357513242389365,
+              50.519569435234594
+            ],
+            [
+              7.040092604706666,
+              50.519569435234594
+            ],
+            [
+              7.040092604706666,
+              50.52233712361859
+            ],
+            [
+              7.0357513242389365,
+              50.52233712361859
+            ],
+            [
+              7.0357513242389365,
+              50.519569435234594
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-021",
+      "name": "Zone 021 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 27.6,
+      "flooded_percent": 1.29,
+      "flooded_area_km2": 0.0012,
+      "exposed_buildings": 0,
+      "total_buildings": 0,
+      "accessibility": "BLOCKED",
+      "reasons": [
+        "1.29% area inundated",
+        "112.4m of 112.4m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.0399808883942026,
+              50.519640730854924
+            ],
+            [
+              7.044321945224024,
+              50.519640730854924
+            ],
+            [
+              7.044321945224024,
+              50.52240827246432
+            ],
+            [
+              7.0399808883942026,
+              50.52240827246432
+            ],
+            [
+              7.0399808883942026,
+              50.519640730854924
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-022",
+      "name": "Zone 022 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 59,
+      "accessibility": "OPEN",
+      "reasons": [
+        "0 of 59 buildings flood-labelled"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.014490582961821,
+              50.521907005674336
+            ],
+            [
+              7.0188332389807195,
+              50.521907005674336
+            ],
+            [
+              7.0188332389807195,
+              50.5246754331169
+            ],
+            [
+              7.014490582961821,
+              50.5246754331169
+            ],
+            [
+              7.014490582961821,
+              50.521907005674336
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-023",
+      "name": "Zone 023 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 7.6,
+      "flooded_percent": 1.92,
+      "flooded_area_km2": 0.0017,
+      "exposed_buildings": 6,
+      "total_buildings": 111,
+      "accessibility": "OPEN",
+      "reasons": [
+        "6 of 111 buildings flood-labelled",
+        "1.92% area inundated",
+        "64.6m of 859.2m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.018720301969131,
+              50.52197907590405
+            ],
+            [
+              7.023062734517453,
+              50.52197907590405
+            ],
+            [
+              7.023062734517453,
+              50.52474735663864
+            ],
+            [
+              7.018720301969131,
+              50.52474735663864
+            ],
+            [
+              7.018720301969131,
+              50.52197907590405
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-024",
+      "name": "Zone 024 (grid cell)",
+      "risk_level": "MEDIUM",
+      "risk_score": 37.5,
+      "flooded_percent": 0.24,
+      "flooded_area_km2": 0.0002,
+      "exposed_buildings": 2,
+      "total_buildings": 2,
+      "accessibility": "OPEN",
+      "reasons": [
+        "2 of 2 buildings flood-labelled",
+        "0.24% area inundated",
+        "10.8m of 130.6m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.022950038226255,
+              50.52205099257349
+            ],
+            [
+              7.0272922472638655,
+              50.52205099257349
+            ],
+            [
+              7.0272922472638655,
+              50.524819126584
+            ],
+            [
+              7.022950038226255,
+              50.524819126584
+            ],
+            [
+              7.022950038226255,
+              50.52205099257349
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-025",
+      "name": "Zone 025 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 0,
+      "accessibility": "OPEN",
+      "reasons": [
+        "No flood coverage detected"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.031409562343139,
+              50.52219436522552
+            ],
+            [
+              7.0357513242389365,
+              50.52219436522552
+            ],
+            [
+              7.0357513242389365,
+              50.52496220573959
+            ],
+            [
+              7.031409562343139,
+              50.52496220573959
+            ],
+            [
+              7.031409562343139,
+              50.52219436522552
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-026",
+      "name": "Zone 026 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0.4,
+      "flooded_percent": 0.08,
+      "flooded_area_km2": 0.0001,
+      "exposed_buildings": 0,
+      "total_buildings": 17,
+      "accessibility": "OPEN",
+      "reasons": [
+        "0 of 17 buildings flood-labelled",
+        "0.08% area inundated",
+        "4.1m of 422.7m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.035639350129495,
+              50.52226582120516
+            ],
+            [
+              7.0399808883942026,
+              50.52226582120516
+            ],
+            [
+              7.0399808883942026,
+              50.52503351494688
+            ],
+            [
+              7.035639350129495,
+              50.52503351494688
+            ],
+            [
+              7.035639350129495,
+              50.52226582120516
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-027",
+      "name": "Zone 027 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 27.8,
+      "flooded_percent": 1.42,
+      "flooded_area_km2": 0.0013,
+      "exposed_buildings": 0,
+      "total_buildings": 2,
+      "accessibility": "BLOCKED",
+      "reasons": [
+        "0 of 2 buildings flood-labelled",
+        "1.42% area inundated",
+        "128.1m of 128.1m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.03986915501885,
+              50.52233712361859
+            ],
+            [
+              7.0442104696123575,
+              50.52233712361859
+            ],
+            [
+              7.0442104696123575,
+              50.525104670571864
+            ],
+            [
+              7.03986915501885,
+              50.525104670571864
+            ],
+            [
+              7.03986915501885,
+              50.52233712361859
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-028",
+      "name": "Zone 028 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 35,
+      "accessibility": "OPEN",
+      "reasons": [
+        "0 of 35 buildings flood-labelled"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.014377387946771,
+              50.524603356020265
+            ],
+            [
+              7.018720301969131,
+              50.524603356020265
+            ],
+            [
+              7.018720301969131,
+              50.5273717888905
+            ],
+            [
+              7.014377387946771,
+              50.5273717888905
+            ],
+            [
+              7.014377387946771,
+              50.524603356020265
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-029",
+      "name": "Zone 029 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 33,
+      "accessibility": "OPEN",
+      "reasons": [
+        "0 of 33 buildings flood-labelled"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.018607347707729,
+              50.5246754331169
+            ],
+            [
+              7.022950038226255,
+              50.5246754331169
+            ],
+            [
+              7.022950038226255,
+              50.52744371926532
+            ],
+            [
+              7.018607347707729,
+              50.52744371926532
+            ],
+            [
+              7.018607347707729,
+              50.5246754331169
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-030",
+      "name": "Zone 030 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 9.4,
+      "flooded_percent": 1.9,
+      "flooded_area_km2": 0.0017,
+      "exposed_buildings": 0,
+      "total_buildings": 18,
+      "accessibility": "LIMITED",
+      "reasons": [
+        "0 of 18 buildings flood-labelled",
+        "1.9% area inundated",
+        "168.1m of 749.1m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.035527358917049,
+              50.52496220573959
+            ],
+            [
+              7.03986915501885,
+              50.52496220573959
+            ],
+            [
+              7.03986915501885,
+              50.52772990483979
+            ],
+            [
+              7.035527358917049,
+              50.52772990483979
+            ],
+            [
+              7.035527358917049,
+              50.52496220573959
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-031",
+      "name": "Zone 031 (grid cell)",
+      "risk_level": "HIGH",
+      "risk_score": 70.4,
+      "flooded_percent": 10.54,
+      "flooded_area_km2": 0.0095,
+      "exposed_buildings": 13,
+      "total_buildings": 17,
+      "accessibility": "BLOCKED",
+      "reasons": [
+        "13 of 17 buildings flood-labelled",
+        "10.54% area inundated",
+        "742.0m of 820.8m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.039757404577202,
+              50.52503351494688
+            ],
+            [
+              7.044098976974503,
+              50.52503351494688
+            ],
+            [
+              7.044098976974503,
+              50.527801067244795
+            ],
+            [
+              7.039757404577202,
+              50.527801067244795
+            ],
+            [
+              7.039757404577202,
+              50.52503351494688
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-032",
+      "name": "Zone 032 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 0,
+      "accessibility": "OPEN",
+      "reasons": [
+        "No flood coverage detected"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.043987467307057,
+              50.525104670571864
+            ],
+            [
+              7.044477608740789,
+              50.525104670571864
+            ],
+            [
+              7.044477608740789,
+              50.52780742983093
+            ],
+            [
+              7.043987467307057,
+              50.52780742983093
+            ],
+            [
+              7.043987467307057,
+              50.525104670571864
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-033",
+      "name": "Zone 033 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 2,
+      "accessibility": "UNKNOWN",
+      "reasons": [
+        "0 of 2 buildings flood-labelled"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.014264175641754,
+              50.52729970492616
+            ],
+            [
+              7.018607347707729,
+              50.52729970492616
+            ],
+            [
+              7.018607347707729,
+              50.53006814322484
+            ],
+            [
+              7.014264175641754,
+              50.53006814322484
+            ],
+            [
+              7.014264175641754,
+              50.52729970492616
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-034",
+      "name": "Zone 034 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 0,
+      "flooded_percent": 0,
+      "flooded_area_km2": 0,
+      "exposed_buildings": 0,
+      "total_buildings": 3,
+      "accessibility": "OPEN",
+      "reasons": [
+        "0 of 3 buildings flood-labelled"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.022724594001081,
+              50.52744371926532
+            ],
+            [
+              7.02706731895271,
+              50.52744371926532
+            ],
+            [
+              7.02706731895271,
+              50.530211864076605
+            ],
+            [
+              7.022724594001081,
+              50.530211864076605
+            ],
+            [
+              7.022724594001081,
+              50.52744371926532
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-035",
+      "name": "Zone 035 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 24,
+      "flooded_percent": 4.42,
+      "flooded_area_km2": 0.004,
+      "exposed_buildings": 14,
+      "total_buildings": 44,
+      "accessibility": "LIMITED",
+      "reasons": [
+        "14 of 44 buildings flood-labelled",
+        "4.42% area inundated",
+        "225.0m of 1389.9m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.035415350598187,
+              50.527658588837866
+            ],
+            [
+              7.039757404577202,
+              50.527658588837866
+            ],
+            [
+              7.039757404577202,
+              50.5304262932973
+            ],
+            [
+              7.035415350598187,
+              50.5304262932973
+            ],
+            [
+              7.035415350598187,
+              50.527658588837866
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-036",
+      "name": "Zone 036 (grid cell)",
+      "risk_level": "HIGH",
+      "risk_score": 97.7,
+      "flooded_percent": 18.85,
+      "flooded_area_km2": 0.017,
+      "exposed_buildings": 35,
+      "total_buildings": 35,
+      "accessibility": "BLOCKED",
+      "reasons": [
+        "35 of 35 buildings flood-labelled",
+        "18.85% area inundated",
+        "1145.5m of 1145.5m road flooded"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.039645637065847,
+              50.52772990483979
+            ],
+            [
+              7.043987467307057,
+              50.52772990483979
+            ],
+            [
+              7.043987467307057,
+              50.5304974624831
+            ],
+            [
+              7.039645637065847,
+              50.5304974624831
+            ],
+            [
+              7.039645637065847,
+              50.52772990483979
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-037",
+      "name": "Zone 037 (grid cell)",
+      "risk_level": "LOW",
+      "risk_score": 3.5,
+      "flooded_percent": 0.33,
+      "flooded_area_km2": 0.0001,
+      "exposed_buildings": 2,
+      "total_buildings": 25,
+      "accessibility": "OPEN",
+      "reasons": [
+        "2 of 25 buildings flood-labelled",
+        "0.33% area inundated"
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.035370937152776,
+              50.53035497049997
+            ],
+            [
+              7.039645637065847,
+              50.53035497049997
+            ],
+            [
+              7.039645637065847,
+              50.53149534858758
+            ],
+            [
+              7.035370937152776,
+              50.53149534858758
+            ],
+            [
+              7.035370937152776,
+              50.53035497049997
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "zone_id": "zone-038",
+      "name": "Zone 038 (grid cell)",
+      "risk_level": "HIGH",
+      "risk_score": 93.7,
+      "flooded_percent": 16.87,
+      "flooded_area_km2": 0.006,
+      "exposed_buildings": 25,
+      "total_buildings": 25,
+      "accessibility": "BLOCKED",
+      "reasons": [
+        "25 of 25 buildings flood-labelled",
+        "16.87% area inundated",
+        "215.4m of 215.4m road flooded"
+      ],
+      "geometry": null
+    }
+  ]
+}
