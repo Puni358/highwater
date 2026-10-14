@@ -1,0 +1,1531 @@
+{
+  "schema_version": "2.3",
+  "verified": false,
+  "provenance": {
+    "generated_by": "HighWater Rescue Routing Engine Person 4",
+    "code_version": "2.2.1",
+    "network": "osm_region_regional_deployment",
+    "coordinates_verified": false,
+    "risk_model": "heuristic_uncalibrated",
+    "geometry_quality": "osm_polyline",
+    "benchmark": "none",
+    "population": "local_sites_census",
+    "input_files": {
+      "roads": "ab65a92e588d0dfd35d9c2ef842ee978321d68b9c7206c43c6cae515ca2cac23",
+      "sites": "baa0b1932d2f5d0eb869f038e50e46a8aaa42cf4abdc8f6972beb9f64b62ec4f",
+      "mask": "24b456da628c140eb5da6d2b35ffd509e2a6ff65489bf82fb89593475330fea0"
+    },
+    "deterministic_seed": 42,
+    "region": "regional_deployment",
+    "mask_source": "mask",
+    "mask_sha256": "24b456da628c140eb5da6d2b35ffd509e2a6ff65489bf82fb89593475330fea0",
+    "dem_used": true,
+    "depth_method": "satellite_mask_dem",
+    "roads_source": "roads.geojson",
+    "roads_sha256": "ab65a92e588d0dfd35d9c2ef842ee978321d68b9c7206c43c6cae515ca2cac23"
+  },
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -1.0,
+            41.005
+          ],
+          [
+            -0.998,
+            41.008
+          ],
+          [
+            -0.995,
+            41.008
+          ],
+          [
+            -0.992,
+            41.008
+          ],
+          [
+            -0.99,
+            41.005
+          ]
+        ]
+      },
+      "properties": {
+        "status": "OK",
+        "vehicle_type": "AMBULANCE",
+        "origin": "BASE_STATION",
+        "destination": "ZONE_RIVER_VILLAGE",
+        "eta_minutes": 1.62,
+        "distance_km": 1.25,
+        "path_nodes": [
+          "BASE_STATION",
+          "node_-0.998000_41.008000",
+          "node_-0.992000_41.008000",
+          "ZONE_RIVER_VILLAGE"
+        ],
+        "geometry_quality": "osm_polyline",
+        "avoided_hazards": [],
+        "is_predictive_detour": false,
+        "route_reliability": 0.0,
+        "outbound_reliability": 0.0,
+        "edge_risks": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "planning_edge_risks": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "max_planning_risk": 1.0,
+        "risk_warning": false,
+        "advisory": "LOW_RELIABILITY",
+        "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+        "round_trip": true,
+        "eta_delta_min": 0.0,
+        "counterfactual": {
+          "reactive_path_nodes": [
+            "BASE_STATION",
+            "node_-0.998000_41.008000",
+            "node_-0.992000_41.008000",
+            "ZONE_RIVER_VILLAGE"
+          ],
+          "reactive_eta_min": 1.62,
+          "reactive_reliability": 0.0,
+          "eta_delta_min": 0.0,
+          "reliability_gain": 0.0
+        },
+        "departure_window_min": null,
+        "window_capped": false,
+        "rainfall_mmh": 15.0,
+        "blocked_edges": [],
+        "depth_source": "satellite_mask_dem",
+        "data_freshness": "UNKNOWN",
+        "satellite_coverage": "OK",
+        "geometry_length_km": 1.25,
+        "scenario_id": "scenario_1_baseline"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -1.0,
+            41.005
+          ],
+          [
+            -0.998,
+            41.008
+          ],
+          [
+            -0.995,
+            41.008
+          ],
+          [
+            -0.992,
+            41.008
+          ],
+          [
+            -0.99,
+            41.005
+          ]
+        ]
+      },
+      "properties": {
+        "status": "OK",
+        "vehicle_type": "AMBULANCE",
+        "origin": "BASE_STATION",
+        "destination": "ZONE_RIVER_VILLAGE",
+        "eta_minutes": 1.62,
+        "distance_km": 1.25,
+        "path_nodes": [
+          "BASE_STATION",
+          "node_-0.998000_41.008000",
+          "node_-0.992000_41.008000",
+          "ZONE_RIVER_VILLAGE"
+        ],
+        "geometry_quality": "osm_polyline",
+        "avoided_hazards": [],
+        "is_predictive_detour": false,
+        "route_reliability": 0.0,
+        "outbound_reliability": 0.0,
+        "edge_risks": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "planning_edge_risks": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "max_planning_risk": 1.0,
+        "risk_warning": false,
+        "advisory": "LOW_RELIABILITY",
+        "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+        "round_trip": true,
+        "eta_delta_min": 0.0,
+        "counterfactual": {
+          "reactive_path_nodes": [
+            "BASE_STATION",
+            "node_-0.998000_41.008000",
+            "node_-0.992000_41.008000",
+            "ZONE_RIVER_VILLAGE"
+          ],
+          "reactive_eta_min": 1.62,
+          "reactive_reliability": 0.0,
+          "eta_delta_min": 0.0,
+          "reliability_gain": 0.0
+        },
+        "departure_window_min": null,
+        "window_capped": false,
+        "rainfall_mmh": 45.0,
+        "blocked_edges": [],
+        "depth_source": "satellite_mask_dem",
+        "data_freshness": "UNKNOWN",
+        "satellite_coverage": "OK",
+        "geometry_length_km": 1.25,
+        "scenario_id": "scenario_2a_predictive_detour"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "scenario_1_baseline",
+      "title": "Baseline Ambulance Route (15 mm/h)",
+      "feature_indices": [
+        0
+      ],
+      "briefing": "Route cleared for AMBULANCE to ZONE_RIVER_VILLAGE with ETA of 1.6 minutes covering 1.25 km with 0.0% route reliability. All assigned road segments and bridgeheads report nominal surface conditions without active flood threats.",
+      "briefing_source": "offline"
+    },
+    {
+      "id": "scenario_2a_predictive_detour",
+      "title": "Predictive Flood Routing Detour (45 mm/h)",
+      "feature_indices": [
+        1
+      ],
+      "briefing": "Route cleared for AMBULANCE to ZONE_RIVER_VILLAGE with ETA of 1.6 minutes covering 1.25 km with 0.0% route reliability. All assigned road segments and bridgeheads report nominal surface conditions without active flood threats.",
+      "briefing_source": "offline"
+    }
+  ],
+  "flood_extent": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -0.9978,
+            41.0085
+          ],
+          [
+            -0.9978,
+            41.006499999999996
+          ],
+          [
+            -0.9922,
+            41.006499999999996
+          ],
+          [
+            -0.9922,
+            41.0085
+          ],
+          [
+            -0.9978,
+            41.0085
+          ]
+        ]
+      ]
+    ]
+  },
+  "network": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -0.998,
+              41.008
+            ],
+            [
+              -0.998,
+              41.002
+            ]
+          ]
+        },
+        "properties": {
+          "name": "West Connector",
+          "kind": "road",
+          "depth": 0.0,
+          "elevation": 110.0,
+          "distance_to_river_m": 22.9,
+          "geometry_quality": "osm_polyline"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -0.998,
+              41.008
+            ],
+            [
+              -0.995,
+              41.008
+            ],
+            [
+              -0.992,
+              41.008
+            ]
+          ]
+        },
+        "properties": {
+          "name": "North Road",
+          "kind": "road",
+          "depth": 0.0,
+          "elevation": 105.0,
+          "distance_to_river_m": 0.0,
+          "geometry_quality": "osm_polyline"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -1.0,
+              41.005
+            ],
+            [
+              -0.998,
+              41.008
+            ]
+          ]
+        },
+        "properties": {
+          "name": "West Connector",
+          "kind": "road",
+          "depth": 0.0,
+          "elevation": 110.0,
+          "distance_to_river_m": 22.9,
+          "geometry_quality": "osm_polyline"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -0.998,
+              41.002
+            ],
+            [
+              -0.995,
+              41.002
+            ],
+            [
+              -0.992,
+              41.002
+            ]
+          ]
+        },
+        "properties": {
+          "name": "South Road",
+          "kind": "road",
+          "depth": 0.0,
+          "elevation": 110.0,
+          "distance_to_river_m": 525.9,
+          "geometry_quality": "osm_polyline"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -0.992,
+              41.008
+            ],
+            [
+              -0.99,
+              41.005
+            ],
+            [
+              -0.992,
+              41.002
+            ]
+          ]
+        },
+        "properties": {
+          "name": "East Connector",
+          "kind": "road",
+          "depth": 0.0,
+          "elevation": 110.0,
+          "distance_to_river_m": 22.9,
+          "geometry_quality": "osm_polyline"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -0.99,
+              41.005
+            ],
+            [
+              -0.992,
+              41.008
+            ]
+          ]
+        },
+        "properties": {
+          "name": "access_ZONE_RIVER_VILLAGE",
+          "kind": "road",
+          "depth": 0.0,
+          "elevation": 110.0,
+          "distance_to_river_m": 22.9,
+          "geometry_quality": "osm_polyline"
+        }
+      }
+    ]
+  },
+  "slider": {
+    "rainfall_steps_mm_h": [
+      0.0,
+      15.0,
+      30.0,
+      45.0,
+      60.0
+    ],
+    "planning_risk_horizon_min": 30,
+    "queries": [
+      {
+        "id": "ambulance_BASE_STATION_ZONE_RIVER_VILLAGE",
+        "vehicle_type": "AMBULANCE",
+        "origin": "BASE_STATION",
+        "destination": "ZONE_RIVER_VILLAGE",
+        "multimodal": false
+      },
+      {
+        "id": "truck_BASE_STATION_ZONE_RIVER_VILLAGE",
+        "vehicle_type": "TRUCK_4X4",
+        "origin": "BASE_STATION",
+        "destination": "ZONE_RIVER_VILLAGE",
+        "multimodal": false
+      }
+    ],
+    "steps": [
+      {
+        "rainfall_mm_h": 0.0,
+        "planning_risk_horizon_min": 30,
+        "edge_risks": {
+          "node_-0.992000_41.008000|ZONE_RIVER_VILLAGE": 1.0,
+          "node_-0.992000_41.008000|node_-0.992000_41.002000": 1.0,
+          "node_-0.998000_41.002000|node_-0.992000_41.002000": 1.0,
+          "node_-0.998000_41.008000|BASE_STATION": 1.0,
+          "node_-0.998000_41.008000|node_-0.992000_41.008000": 1.0,
+          "node_-0.998000_41.008000|node_-0.998000_41.002000": 1.0
+        },
+        "results": [
+          {
+            "status": "OK",
+            "vehicle_type": "AMBULANCE",
+            "origin": "BASE_STATION",
+            "destination": "ZONE_RIVER_VILLAGE",
+            "eta_minutes": 1.62,
+            "distance_km": 1.25,
+            "path_nodes": [
+              "BASE_STATION",
+              "node_-0.998000_41.008000",
+              "node_-0.992000_41.008000",
+              "ZONE_RIVER_VILLAGE"
+            ],
+            "geojson_geometry": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  -1.0,
+                  41.005
+                ],
+                [
+                  -0.998,
+                  41.008
+                ],
+                [
+                  -0.995,
+                  41.008
+                ],
+                [
+                  -0.992,
+                  41.008
+                ],
+                [
+                  -0.99,
+                  41.005
+                ]
+              ]
+            },
+            "geometry_quality": "osm_polyline",
+            "avoided_hazards": [],
+            "is_predictive_detour": false,
+            "route_reliability": 0.0,
+            "outbound_reliability": 0.0,
+            "edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "planning_edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "advisory": "LOW_RELIABILITY",
+            "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+            "round_trip": true,
+            "eta_delta_min": 0.0,
+            "counterfactual": {
+              "reactive_path_nodes": [
+                "BASE_STATION",
+                "node_-0.998000_41.008000",
+                "node_-0.992000_41.008000",
+                "ZONE_RIVER_VILLAGE"
+              ],
+              "reactive_eta_min": 1.62,
+              "reactive_reliability": 0.0,
+              "eta_delta_min": 0.0,
+              "reliability_gain": 0.0
+            },
+            "departure_window_min": null,
+            "window_capped": false,
+            "rainfall_mmh": 0.0,
+            "blocked_edges": [],
+            "depth_source": "satellite_mask_dem",
+            "data_freshness": "UNKNOWN",
+            "satellite_coverage": "OK",
+            "geometry_length_km": 1.25,
+            "query_id": "ambulance_BASE_STATION_ZONE_RIVER_VILLAGE",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          },
+          {
+            "status": "OK",
+            "vehicle_type": "TRUCK_4X4",
+            "origin": "BASE_STATION",
+            "destination": "ZONE_RIVER_VILLAGE",
+            "eta_minutes": 2.11,
+            "distance_km": 1.25,
+            "path_nodes": [
+              "BASE_STATION",
+              "node_-0.998000_41.008000",
+              "node_-0.992000_41.008000",
+              "ZONE_RIVER_VILLAGE"
+            ],
+            "geojson_geometry": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  -1.0,
+                  41.005
+                ],
+                [
+                  -0.998,
+                  41.008
+                ],
+                [
+                  -0.995,
+                  41.008
+                ],
+                [
+                  -0.992,
+                  41.008
+                ],
+                [
+                  -0.99,
+                  41.005
+                ]
+              ]
+            },
+            "geometry_quality": "osm_polyline",
+            "avoided_hazards": [],
+            "is_predictive_detour": false,
+            "route_reliability": 0.0,
+            "outbound_reliability": 0.0,
+            "edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "planning_edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "advisory": "LOW_RELIABILITY",
+            "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+            "round_trip": true,
+            "eta_delta_min": 0.0,
+            "counterfactual": {
+              "reactive_path_nodes": [
+                "BASE_STATION",
+                "node_-0.998000_41.008000",
+                "node_-0.992000_41.008000",
+                "ZONE_RIVER_VILLAGE"
+              ],
+              "reactive_eta_min": 2.11,
+              "reactive_reliability": 0.0,
+              "eta_delta_min": 0.0,
+              "reliability_gain": 0.0
+            },
+            "departure_window_min": null,
+            "window_capped": false,
+            "rainfall_mmh": 0.0,
+            "blocked_edges": [],
+            "depth_source": "satellite_mask_dem",
+            "data_freshness": "UNKNOWN",
+            "satellite_coverage": "OK",
+            "geometry_length_km": 1.25,
+            "query_id": "truck_BASE_STATION_ZONE_RIVER_VILLAGE",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          }
+        ],
+        "advisory": "LOW_RELIABILITY"
+      },
+      {
+        "rainfall_mm_h": 15.0,
+        "planning_risk_horizon_min": 30,
+        "edge_risks": {
+          "node_-0.992000_41.008000|ZONE_RIVER_VILLAGE": 1.0,
+          "node_-0.992000_41.008000|node_-0.992000_41.002000": 1.0,
+          "node_-0.998000_41.002000|node_-0.992000_41.002000": 1.0,
+          "node_-0.998000_41.008000|BASE_STATION": 1.0,
+          "node_-0.998000_41.008000|node_-0.992000_41.008000": 1.0,
+          "node_-0.998000_41.008000|node_-0.998000_41.002000": 1.0
+        },
+        "results": [
+          {
+            "status": "OK",
+            "vehicle_type": "AMBULANCE",
+            "origin": "BASE_STATION",
+            "destination": "ZONE_RIVER_VILLAGE",
+            "eta_minutes": 1.62,
+            "distance_km": 1.25,
+            "path_nodes": [
+              "BASE_STATION",
+              "node_-0.998000_41.008000",
+              "node_-0.992000_41.008000",
+              "ZONE_RIVER_VILLAGE"
+            ],
+            "geojson_geometry": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  -1.0,
+                  41.005
+                ],
+                [
+                  -0.998,
+                  41.008
+                ],
+                [
+                  -0.995,
+                  41.008
+                ],
+                [
+                  -0.992,
+                  41.008
+                ],
+                [
+                  -0.99,
+                  41.005
+                ]
+              ]
+            },
+            "geometry_quality": "osm_polyline",
+            "avoided_hazards": [],
+            "is_predictive_detour": false,
+            "route_reliability": 0.0,
+            "outbound_reliability": 0.0,
+            "edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "planning_edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "advisory": "LOW_RELIABILITY",
+            "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+            "round_trip": true,
+            "eta_delta_min": 0.0,
+            "counterfactual": {
+              "reactive_path_nodes": [
+                "BASE_STATION",
+                "node_-0.998000_41.008000",
+                "node_-0.992000_41.008000",
+                "ZONE_RIVER_VILLAGE"
+              ],
+              "reactive_eta_min": 1.62,
+              "reactive_reliability": 0.0,
+              "eta_delta_min": 0.0,
+              "reliability_gain": 0.0
+            },
+            "departure_window_min": null,
+            "window_capped": false,
+            "rainfall_mmh": 15.0,
+            "blocked_edges": [],
+            "depth_source": "satellite_mask_dem",
+            "data_freshness": "UNKNOWN",
+            "satellite_coverage": "OK",
+            "geometry_length_km": 1.25,
+            "query_id": "ambulance_BASE_STATION_ZONE_RIVER_VILLAGE",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          },
+          {
+            "status": "OK",
+            "vehicle_type": "TRUCK_4X4",
+            "origin": "BASE_STATION",
+            "destination": "ZONE_RIVER_VILLAGE",
+            "eta_minutes": 2.11,
+            "distance_km": 1.25,
+            "path_nodes": [
+              "BASE_STATION",
+              "node_-0.998000_41.008000",
+              "node_-0.992000_41.008000",
+              "ZONE_RIVER_VILLAGE"
+            ],
+            "geojson_geometry": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  -1.0,
+                  41.005
+                ],
+                [
+                  -0.998,
+                  41.008
+                ],
+                [
+                  -0.995,
+                  41.008
+                ],
+                [
+                  -0.992,
+                  41.008
+                ],
+                [
+                  -0.99,
+                  41.005
+                ]
+              ]
+            },
+            "geometry_quality": "osm_polyline",
+            "avoided_hazards": [],
+            "is_predictive_detour": false,
+            "route_reliability": 0.0,
+            "outbound_reliability": 0.0,
+            "edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "planning_edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "advisory": "LOW_RELIABILITY",
+            "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+            "round_trip": true,
+            "eta_delta_min": 0.0,
+            "counterfactual": {
+              "reactive_path_nodes": [
+                "BASE_STATION",
+                "node_-0.998000_41.008000",
+                "node_-0.992000_41.008000",
+                "ZONE_RIVER_VILLAGE"
+              ],
+              "reactive_eta_min": 2.11,
+              "reactive_reliability": 0.0,
+              "eta_delta_min": 0.0,
+              "reliability_gain": 0.0
+            },
+            "departure_window_min": null,
+            "window_capped": false,
+            "rainfall_mmh": 15.0,
+            "blocked_edges": [],
+            "depth_source": "satellite_mask_dem",
+            "data_freshness": "UNKNOWN",
+            "satellite_coverage": "OK",
+            "geometry_length_km": 1.25,
+            "query_id": "truck_BASE_STATION_ZONE_RIVER_VILLAGE",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          }
+        ],
+        "advisory": "LOW_RELIABILITY"
+      },
+      {
+        "rainfall_mm_h": 30.0,
+        "planning_risk_horizon_min": 30,
+        "edge_risks": {
+          "node_-0.992000_41.008000|ZONE_RIVER_VILLAGE": 1.0,
+          "node_-0.992000_41.008000|node_-0.992000_41.002000": 1.0,
+          "node_-0.998000_41.002000|node_-0.992000_41.002000": 1.0,
+          "node_-0.998000_41.008000|BASE_STATION": 1.0,
+          "node_-0.998000_41.008000|node_-0.992000_41.008000": 1.0,
+          "node_-0.998000_41.008000|node_-0.998000_41.002000": 1.0
+        },
+        "results": [
+          {
+            "status": "OK",
+            "vehicle_type": "AMBULANCE",
+            "origin": "BASE_STATION",
+            "destination": "ZONE_RIVER_VILLAGE",
+            "eta_minutes": 1.62,
+            "distance_km": 1.25,
+            "path_nodes": [
+              "BASE_STATION",
+              "node_-0.998000_41.008000",
+              "node_-0.992000_41.008000",
+              "ZONE_RIVER_VILLAGE"
+            ],
+            "geojson_geometry": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  -1.0,
+                  41.005
+                ],
+                [
+                  -0.998,
+                  41.008
+                ],
+                [
+                  -0.995,
+                  41.008
+                ],
+                [
+                  -0.992,
+                  41.008
+                ],
+                [
+                  -0.99,
+                  41.005
+                ]
+              ]
+            },
+            "geometry_quality": "osm_polyline",
+            "avoided_hazards": [],
+            "is_predictive_detour": false,
+            "route_reliability": 0.0,
+            "outbound_reliability": 0.0,
+            "edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "planning_edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "advisory": "LOW_RELIABILITY",
+            "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+            "round_trip": true,
+            "eta_delta_min": 0.0,
+            "counterfactual": {
+              "reactive_path_nodes": [
+                "BASE_STATION",
+                "node_-0.998000_41.008000",
+                "node_-0.992000_41.008000",
+                "ZONE_RIVER_VILLAGE"
+              ],
+              "reactive_eta_min": 1.62,
+              "reactive_reliability": 0.0,
+              "eta_delta_min": 0.0,
+              "reliability_gain": 0.0
+            },
+            "departure_window_min": null,
+            "window_capped": false,
+            "rainfall_mmh": 30.0,
+            "blocked_edges": [],
+            "depth_source": "satellite_mask_dem",
+            "data_freshness": "UNKNOWN",
+            "satellite_coverage": "OK",
+            "geometry_length_km": 1.25,
+            "query_id": "ambulance_BASE_STATION_ZONE_RIVER_VILLAGE",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          },
+          {
+            "status": "OK",
+            "vehicle_type": "TRUCK_4X4",
+            "origin": "BASE_STATION",
+            "destination": "ZONE_RIVER_VILLAGE",
+            "eta_minutes": 2.11,
+            "distance_km": 1.25,
+            "path_nodes": [
+              "BASE_STATION",
+              "node_-0.998000_41.008000",
+              "node_-0.992000_41.008000",
+              "ZONE_RIVER_VILLAGE"
+            ],
+            "geojson_geometry": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  -1.0,
+                  41.005
+                ],
+                [
+                  -0.998,
+                  41.008
+                ],
+                [
+                  -0.995,
+                  41.008
+                ],
+                [
+                  -0.992,
+                  41.008
+                ],
+                [
+                  -0.99,
+                  41.005
+                ]
+              ]
+            },
+            "geometry_quality": "osm_polyline",
+            "avoided_hazards": [],
+            "is_predictive_detour": false,
+            "route_reliability": 0.0,
+            "outbound_reliability": 0.0,
+            "edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "planning_edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "advisory": "LOW_RELIABILITY",
+            "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+            "round_trip": true,
+            "eta_delta_min": 0.0,
+            "counterfactual": {
+              "reactive_path_nodes": [
+                "BASE_STATION",
+                "node_-0.998000_41.008000",
+                "node_-0.992000_41.008000",
+                "ZONE_RIVER_VILLAGE"
+              ],
+              "reactive_eta_min": 2.11,
+              "reactive_reliability": 0.0,
+              "eta_delta_min": 0.0,
+              "reliability_gain": 0.0
+            },
+            "departure_window_min": null,
+            "window_capped": false,
+            "rainfall_mmh": 30.0,
+            "blocked_edges": [],
+            "depth_source": "satellite_mask_dem",
+            "data_freshness": "UNKNOWN",
+            "satellite_coverage": "OK",
+            "geometry_length_km": 1.25,
+            "query_id": "truck_BASE_STATION_ZONE_RIVER_VILLAGE",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          }
+        ],
+        "advisory": "LOW_RELIABILITY"
+      },
+      {
+        "rainfall_mm_h": 45.0,
+        "planning_risk_horizon_min": 30,
+        "edge_risks": {
+          "node_-0.992000_41.008000|ZONE_RIVER_VILLAGE": 1.0,
+          "node_-0.992000_41.008000|node_-0.992000_41.002000": 1.0,
+          "node_-0.998000_41.002000|node_-0.992000_41.002000": 1.0,
+          "node_-0.998000_41.008000|BASE_STATION": 1.0,
+          "node_-0.998000_41.008000|node_-0.992000_41.008000": 1.0,
+          "node_-0.998000_41.008000|node_-0.998000_41.002000": 1.0
+        },
+        "results": [
+          {
+            "status": "OK",
+            "vehicle_type": "AMBULANCE",
+            "origin": "BASE_STATION",
+            "destination": "ZONE_RIVER_VILLAGE",
+            "eta_minutes": 1.62,
+            "distance_km": 1.25,
+            "path_nodes": [
+              "BASE_STATION",
+              "node_-0.998000_41.008000",
+              "node_-0.992000_41.008000",
+              "ZONE_RIVER_VILLAGE"
+            ],
+            "geojson_geometry": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  -1.0,
+                  41.005
+                ],
+                [
+                  -0.998,
+                  41.008
+                ],
+                [
+                  -0.995,
+                  41.008
+                ],
+                [
+                  -0.992,
+                  41.008
+                ],
+                [
+                  -0.99,
+                  41.005
+                ]
+              ]
+            },
+            "geometry_quality": "osm_polyline",
+            "avoided_hazards": [],
+            "is_predictive_detour": false,
+            "route_reliability": 0.0,
+            "outbound_reliability": 0.0,
+            "edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "planning_edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "advisory": "LOW_RELIABILITY",
+            "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+            "round_trip": true,
+            "eta_delta_min": 0.0,
+            "counterfactual": {
+              "reactive_path_nodes": [
+                "BASE_STATION",
+                "node_-0.998000_41.008000",
+                "node_-0.992000_41.008000",
+                "ZONE_RIVER_VILLAGE"
+              ],
+              "reactive_eta_min": 1.62,
+              "reactive_reliability": 0.0,
+              "eta_delta_min": 0.0,
+              "reliability_gain": 0.0
+            },
+            "departure_window_min": null,
+            "window_capped": false,
+            "rainfall_mmh": 45.0,
+            "blocked_edges": [],
+            "depth_source": "satellite_mask_dem",
+            "data_freshness": "UNKNOWN",
+            "satellite_coverage": "OK",
+            "geometry_length_km": 1.25,
+            "query_id": "ambulance_BASE_STATION_ZONE_RIVER_VILLAGE",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          },
+          {
+            "status": "OK",
+            "vehicle_type": "TRUCK_4X4",
+            "origin": "BASE_STATION",
+            "destination": "ZONE_RIVER_VILLAGE",
+            "eta_minutes": 2.11,
+            "distance_km": 1.25,
+            "path_nodes": [
+              "BASE_STATION",
+              "node_-0.998000_41.008000",
+              "node_-0.992000_41.008000",
+              "ZONE_RIVER_VILLAGE"
+            ],
+            "geojson_geometry": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  -1.0,
+                  41.005
+                ],
+                [
+                  -0.998,
+                  41.008
+                ],
+                [
+                  -0.995,
+                  41.008
+                ],
+                [
+                  -0.992,
+                  41.008
+                ],
+                [
+                  -0.99,
+                  41.005
+                ]
+              ]
+            },
+            "geometry_quality": "osm_polyline",
+            "avoided_hazards": [],
+            "is_predictive_detour": false,
+            "route_reliability": 0.0,
+            "outbound_reliability": 0.0,
+            "edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "planning_edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "advisory": "LOW_RELIABILITY",
+            "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+            "round_trip": true,
+            "eta_delta_min": 0.0,
+            "counterfactual": {
+              "reactive_path_nodes": [
+                "BASE_STATION",
+                "node_-0.998000_41.008000",
+                "node_-0.992000_41.008000",
+                "ZONE_RIVER_VILLAGE"
+              ],
+              "reactive_eta_min": 2.11,
+              "reactive_reliability": 0.0,
+              "eta_delta_min": 0.0,
+              "reliability_gain": 0.0
+            },
+            "departure_window_min": null,
+            "window_capped": false,
+            "rainfall_mmh": 45.0,
+            "blocked_edges": [],
+            "depth_source": "satellite_mask_dem",
+            "data_freshness": "UNKNOWN",
+            "satellite_coverage": "OK",
+            "geometry_length_km": 1.25,
+            "query_id": "truck_BASE_STATION_ZONE_RIVER_VILLAGE",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          }
+        ],
+        "advisory": "LOW_RELIABILITY"
+      },
+      {
+        "rainfall_mm_h": 60.0,
+        "planning_risk_horizon_min": 30,
+        "edge_risks": {
+          "node_-0.992000_41.008000|ZONE_RIVER_VILLAGE": 1.0,
+          "node_-0.992000_41.008000|node_-0.992000_41.002000": 1.0,
+          "node_-0.998000_41.002000|node_-0.992000_41.002000": 1.0,
+          "node_-0.998000_41.008000|BASE_STATION": 1.0,
+          "node_-0.998000_41.008000|node_-0.992000_41.008000": 1.0,
+          "node_-0.998000_41.008000|node_-0.998000_41.002000": 1.0
+        },
+        "results": [
+          {
+            "status": "OK",
+            "vehicle_type": "AMBULANCE",
+            "origin": "BASE_STATION",
+            "destination": "ZONE_RIVER_VILLAGE",
+            "eta_minutes": 1.62,
+            "distance_km": 1.25,
+            "path_nodes": [
+              "BASE_STATION",
+              "node_-0.998000_41.008000",
+              "node_-0.992000_41.008000",
+              "ZONE_RIVER_VILLAGE"
+            ],
+            "geojson_geometry": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  -1.0,
+                  41.005
+                ],
+                [
+                  -0.998,
+                  41.008
+                ],
+                [
+                  -0.995,
+                  41.008
+                ],
+                [
+                  -0.992,
+                  41.008
+                ],
+                [
+                  -0.99,
+                  41.005
+                ]
+              ]
+            },
+            "geometry_quality": "osm_polyline",
+            "avoided_hazards": [],
+            "is_predictive_detour": false,
+            "route_reliability": 0.0,
+            "outbound_reliability": 0.0,
+            "edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "planning_edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "advisory": "LOW_RELIABILITY",
+            "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+            "round_trip": true,
+            "eta_delta_min": 0.0,
+            "counterfactual": {
+              "reactive_path_nodes": [
+                "BASE_STATION",
+                "node_-0.998000_41.008000",
+                "node_-0.992000_41.008000",
+                "ZONE_RIVER_VILLAGE"
+              ],
+              "reactive_eta_min": 1.62,
+              "reactive_reliability": 0.0,
+              "eta_delta_min": 0.0,
+              "reliability_gain": 0.0
+            },
+            "departure_window_min": null,
+            "window_capped": false,
+            "rainfall_mmh": 60.0,
+            "blocked_edges": [],
+            "depth_source": "satellite_mask_dem",
+            "data_freshness": "UNKNOWN",
+            "satellite_coverage": "OK",
+            "geometry_length_km": 1.25,
+            "query_id": "ambulance_BASE_STATION_ZONE_RIVER_VILLAGE",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          },
+          {
+            "status": "OK",
+            "vehicle_type": "TRUCK_4X4",
+            "origin": "BASE_STATION",
+            "destination": "ZONE_RIVER_VILLAGE",
+            "eta_minutes": 2.11,
+            "distance_km": 1.25,
+            "path_nodes": [
+              "BASE_STATION",
+              "node_-0.998000_41.008000",
+              "node_-0.992000_41.008000",
+              "ZONE_RIVER_VILLAGE"
+            ],
+            "geojson_geometry": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  -1.0,
+                  41.005
+                ],
+                [
+                  -0.998,
+                  41.008
+                ],
+                [
+                  -0.995,
+                  41.008
+                ],
+                [
+                  -0.992,
+                  41.008
+                ],
+                [
+                  -0.99,
+                  41.005
+                ]
+              ]
+            },
+            "geometry_quality": "osm_polyline",
+            "avoided_hazards": [],
+            "is_predictive_detour": false,
+            "route_reliability": 0.0,
+            "outbound_reliability": 0.0,
+            "edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "planning_edge_risks": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "advisory": "LOW_RELIABILITY",
+            "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
+            "round_trip": true,
+            "eta_delta_min": 0.0,
+            "counterfactual": {
+              "reactive_path_nodes": [
+                "BASE_STATION",
+                "node_-0.998000_41.008000",
+                "node_-0.992000_41.008000",
+                "ZONE_RIVER_VILLAGE"
+              ],
+              "reactive_eta_min": 2.11,
+              "reactive_reliability": 0.0,
+              "eta_delta_min": 0.0,
+              "reliability_gain": 0.0
+            },
+            "departure_window_min": null,
+            "window_capped": false,
+            "rainfall_mmh": 60.0,
+            "blocked_edges": [],
+            "depth_source": "satellite_mask_dem",
+            "data_freshness": "UNKNOWN",
+            "satellite_coverage": "OK",
+            "geometry_length_km": 1.25,
+            "query_id": "truck_BASE_STATION_ZONE_RIVER_VILLAGE",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          },
+          {
+            "id": "no_safe_option",
+            "query_id": "no_safe_option",
+            "status": "UNREACHABLE",
+            "advisory": "NO_SAFE_OPTION",
+            "vehicle_type": "ALL",
+            "origin": "BASE_STATION",
+            "destination": "ALL",
+            "route_reliability": 0.0,
+            "max_planning_risk": 1.0,
+            "risk_warning": false,
+            "reason": "Helicopter grounded by weather and all surface options below reliability threshold",
+            "decision_stability": {
+              "share_unchanged": 1.0,
+              "label": "STABLE"
+            }
+          }
+        ],
+        "advisory": "NO_SAFE_OPTION"
+      }
+    ],
+    "route_flip_points": {
+      "ambulance_BASE_STATION_ZONE_RIVER_VILLAGE": [],
+      "truck_BASE_STATION_ZONE_RIVER_VILLAGE": []
+    }
+  },
+  "dispatch": {
+    "policy": "One sortie per asset",
+    "objective": "priority*reliability*people*delivered_share",
+    "assignments": [],
+    "unserved": [
+      {
+        "incident": "ZONE_RIVER_VILLAGE",
+        "reason": "NO_FEASIBLE_ASSET"
+      }
+    ],
+    "partially_served": [],
+    "total_unmet_kg": 5595.0,
+    "total_value": 0,
+    "total_people_equivalents": 0,
+    "total_eta_minutes": 0,
+    "note": "Incident sites are existing graph nodes; a bridgehead node is used as a demo incident."
+  },
+  "benchmark": null,
+  "needs": {
+    "ZONE_RIVER_VILLAGE": {
+      "zone_id": "ZONE_RIVER_VILLAGE",
+      "catchment_note": "",
+      "demographics": {
+        "residents": 600,
+        "exposed": 300,
+        "exposure_fraction": 0.5,
+        "share_elderly": 0.2,
+        "share_infants": 0.08
+      },
+      "funnel": {
+        "residents": 600,
+        "exposed": 300,
+        "scenarios": {
+          "low": {
+            "stranded": 90,
+            "in_need": 72
+          },
+          "central": {
+            "stranded": 150,
+            "in_need": 120
+          },
+          "high": {
+            "stranded": 240,
+            "in_need": 192
+          }
+        }
+      },
+      "planning_duration_days": 3.0,
+      "ground_reachable": true,
+      "sphere_standards": {
+        "water_l_per_person_day": 15.0,
+        "kcal_per_person_day": 2100.0,
+        "food_kg_per_person_day": 0.5
+      },
+      "vulnerability_multipliers": {
+        "elderly": 1.2,
+        "infants": 1.3
+      },
+      "scenarios": {
+        "low": {
+          "stranded_share": 0.3,
+          "stranded": 90,
+          "in_need": 72,
+          "relief_water_kg": 3240.0,
+          "relief_food_kg": 108.0,
+          "medical_kits": 2,
+          "medical_kits_kg": 10.0,
+          "total_payload_kg": 3358.0,
+          "sorties_needed": {
+            "AMBULANCE": 9,
+            "TRUCK_4X4": 3,
+            "RESCUE_BOAT": 5,
+            "HELICOPTER": 3
+          }
+        },
+        "central": {
+          "stranded_share": 0.5,
+          "stranded": 150,
+          "in_need": 120,
+          "relief_water_kg": 5400.0,
+          "relief_food_kg": 180.0,
+          "medical_kits": 3,
+          "medical_kits_kg": 15.0,
+          "total_payload_kg": 5595.0,
+          "sorties_needed": {
+            "AMBULANCE": 14,
+            "TRUCK_4X4": 4,
+            "RESCUE_BOAT": 7,
+            "HELICOPTER": 5
+          }
+        },
+        "high": {
+          "stranded_share": 0.8,
+          "stranded": 240,
+          "in_need": 192,
+          "relief_water_kg": 8640.0,
+          "relief_food_kg": 288.0,
+          "medical_kits": 4,
+          "medical_kits_kg": 20.0,
+          "total_payload_kg": 8948.0,
+          "sorties_needed": {
+            "AMBULANCE": 23,
+            "TRUCK_4X4": 6,
+            "RESCUE_BOAT": 12,
+            "HELICOPTER": 8
+          }
+        }
+      },
+      "priority_loading_plan": [
+        {
+          "priority": 1,
+          "category": "MEDICAL",
+          "item": "Trauma & First Aid Kits",
+          "quantity": 3,
+          "unit": "kits",
+          "weight_kg": 15.0,
+          "rationale": "Immediate lifesaving stabilization and triage"
+        },
+        {
+          "priority": 2,
+          "category": "SURVIVAL_WATER",
+          "item": "Purified Drinking Water",
+          "quantity": 360.0,
+          "unit": "liters",
+          "weight_kg": 360.0,
+          "rationale": "Initial 3L/person critical rehydration"
+        },
+        {
+          "priority": 3,
+          "category": "SUSTENANCE_WATER",
+          "item": "Sanitation & Cooking Water",
+          "quantity": 5040.0,
+          "unit": "liters",
+          "weight_kg": 5040.0,
+          "rationale": "Sphere 12L/person/day bulk hydration and sanitation"
+        },
+        {
+          "priority": 4,
+          "category": "FOOD_RATIONS",
+          "item": "High-Energy Nutritional Biscuits",
+          "quantity": 180.0,
+          "unit": "kg",
+          "weight_kg": 180.0,
+          "rationale": "Sphere 2100 kcal / 0.5 kg/person/day survival food rations"
+        }
+      ],
+      "synthetic": true
+    }
+  }
+}
