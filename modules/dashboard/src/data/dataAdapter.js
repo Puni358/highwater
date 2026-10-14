@@ -111,6 +111,7 @@ export function adaptZones(rawZonesPayload) {
     generatedAt: rawZonesPayload.generated_at || null,
     dataMode: (rawZonesPayload.data_mode || 'demo').toLowerCase(),
     studyArea: rawZonesPayload.study_area || 'Bengaluru, Karnataka',
+    riskMethod: rawZonesPayload.risk_method || null,
   };
 
   const zones = rawZones.map((z, idx) => {
@@ -265,6 +266,19 @@ export function adaptDashboardData(raw) {
     routes = adaptRoutes(raw.rawRoutes);
   }
 
+  // Exposed Buildings
+  let buildingsExposed = null;
+  if (raw.rawBuildingsExposed?.error) {
+    layerErrors.buildings = raw.rawBuildingsExposed.error;
+    buildingsExposed = { error: raw.rawBuildingsExposed.error, type: 'FeatureCollection', features: null };
+  } else if (raw.rawBuildingsExposed && Array.isArray(raw.rawBuildingsExposed.features)) {
+    buildingsExposed = raw.rawBuildingsExposed;
+  } else if (raw.rawBuildingsExposed === null || raw.rawBuildingsExposed === undefined) {
+    buildingsExposed = { type: 'FeatureCollection', features: [] };
+  } else {
+    buildingsExposed = raw.rawBuildingsExposed;
+  }
+
   return {
     metadata,
     zones,
@@ -272,6 +286,7 @@ export function adaptDashboardData(raw) {
     blockedRoads,
     facilities,
     routes,
+    buildingsExposed,
     layerErrors,
     droppedFeatureCount,
     warnings,

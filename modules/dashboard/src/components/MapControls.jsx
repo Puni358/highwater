@@ -1,22 +1,24 @@
 import React from 'react';
-import { Layers, RotateCcw, Droplets, ShieldAlert, Ban, Building2, Route } from 'lucide-react';
+import { Layers, RotateCcw, Droplets, ShieldAlert, Ban, Building2, Route, Home } from 'lucide-react';
+import ProvenanceBadge from './ProvenanceBadge.jsx';
 
 /**
  * MapControls component (FR-14, FR-15, T3.6)
- * Provides layer overlay switches and reset-extent button.
+ * Provides 6 layer overlay switches and reset-extent button.
  * Toggling layers updates visibleLayers only and does NOT reset map viewport.
  */
 export default function MapControls({
-  visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false },
+  visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false, buildings: false },
   onToggleLayer,
   onResetExtent,
 }) {
   const layerConfigs = [
-    { key: 'flood', label: 'Flood Extent', icon: Droplets, color: 'text-flood' },
-    { key: 'risk', label: 'Risk Zones', icon: ShieldAlert, color: 'text-risk-high' },
-    { key: 'roads', label: 'Blocked Roads', icon: Ban, color: 'text-risk-high' },
-    { key: 'facilities', label: 'Rescue Facilities', icon: Building2, color: 'text-navy-900' },
-    { key: 'routes', label: 'Evacuation Routes', icon: Route, color: 'text-route' },
+    { key: 'flood', label: 'Flood Extent', icon: Droplets, color: 'text-flood', provenance: 'derived' },
+    { key: 'risk', label: 'Risk Zones', icon: ShieldAlert, color: 'text-risk-high', provenance: 'derived' },
+    { key: 'roads', label: 'Blocked Roads', icon: Ban, color: 'text-risk-high', provenance: 'derived' },
+    { key: 'facilities', label: 'Rescue Facilities', icon: Building2, color: 'text-navy-900', provenance: 'simulated' },
+    { key: 'routes', label: 'Evacuation Routes', icon: Route, color: 'text-route', provenance: 'simulated' },
+    { key: 'buildings', label: 'Exposed Buildings', icon: Home, color: 'text-amber-600', provenance: 'observed' },
   ];
 
   const enabledCount = Object.values(visibleLayers).filter(Boolean).length;
@@ -39,7 +41,7 @@ export default function MapControls({
       </div>
 
       <div className="space-y-1.5">
-        {layerConfigs.map(({ key, label, icon: Icon, color }) => {
+        {layerConfigs.map(({ key, label, icon: Icon, color, provenance }) => {
           const isChecked = Boolean(visibleLayers[key]);
           return (
             <label
@@ -50,6 +52,9 @@ export default function MapControls({
               <div className="flex items-center space-x-2 text-xs">
                 <Icon className={`w-3.5 h-3.5 ${color}`} aria-hidden="true" />
                 <span className="text-text group-hover:text-navy-900">{label}</span>
+                {provenance && (
+                  <ProvenanceBadge value={provenance} className="hidden sm:inline-flex scale-90" />
+                )}
               </div>
               <input
                 id={`toggle-${key}`}

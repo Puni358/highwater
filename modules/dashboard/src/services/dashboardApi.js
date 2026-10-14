@@ -16,6 +16,15 @@ export const MOCK_RESOURCE_PATHS = {
   routes: '/mock-data/routes.json',
 };
 
+export const MOCK_DERNAU_RESOURCE_PATHS = {
+  zones: '/mock-data-dernau/zones.json',
+  floodExtent: '/mock-data-dernau/flood_extent.geojson',
+  blockedRoads: '/mock-data-dernau/blocked_roads.geojson',
+  facilities: '/mock-data-dernau/facilities.geojson',
+  routes: '/mock-data-dernau/routes.json',
+  buildingsExposed: '/mock-data-dernau/buildings_exposed.geojson',
+};
+
 // No guessed default endpoint paths per Phase 6 requirements
 export const API_RESOURCE_PATHS = {
   zones: import.meta.env?.VITE_API_ZONES_PATH || '',
@@ -27,22 +36,27 @@ export const API_RESOURCE_PATHS = {
 
 /**
  * Primary data fetcher for the dashboard.
- * Selects mock or live API based on VITE_DATA_SOURCE.
+ * Selects mock, mock-dernau, or live API based on VITE_DATA_SOURCE.
  *
  * @param {Object} options Configuration overrides (useful for testing)
- * @param {'mock'|'api'} [options.dataSource] Override data source
+ * @param {'mock'|'mock-dernau'|'api'} [options.dataSource] Override data source
  * @param {string} [options.baseUrl] Override API base URL
  * @param {Object} [options.resourcePaths] Override per-resource endpoint paths
- * @returns {Promise<{rawZones: Object, rawFloodExtent: Object, rawBlockedRoads: Object, rawFacilities: Object, rawRoutes: Object}>}
+ * @returns {Promise<{rawZones: Object, rawFloodExtent: Object, rawBlockedRoads: Object, rawFacilities: Object, rawRoutes: Object, rawBuildingsExposed?: Object}>}
  */
 export async function getDashboardData(options = {}) {
   const dataSource = options.dataSource || import.meta.env?.VITE_DATA_SOURCE || 'mock';
   const baseUrl = options.baseUrl ?? (import.meta.env?.VITE_API_BASE_URL || '');
   const isApi = dataSource === 'api';
+  const isDernau = dataSource === 'mock-dernau';
 
-  const paths = isApi
-    ? { ...API_RESOURCE_PATHS, ...options.resourcePaths }
-    : { ...MOCK_RESOURCE_PATHS, ...options.resourcePaths };
+  const defaultPaths = isApi
+    ? API_RESOURCE_PATHS
+    : isDernau
+    ? MOCK_DERNAU_RESOURCE_PATHS
+    : MOCK_RESOURCE_PATHS;
+
+  const paths = { ...defaultPaths, ...options.resourcePaths };
 
   // Explicit configuration validation for api mode (no guessed endpoints)
   if (isApi) {
@@ -64,6 +78,7 @@ export async function getDashboardData(options = {}) {
 
   const getUrl = (resourceKey) => {
     const resourcePath = paths[resourceKey];
+    if (!resourcePath) return '';
     if (isApi) {
       const cleanBase = baseUrl.replace(/\/+$/, '');
       const cleanPath = resourcePath.startsWith('/') ? resourcePath : `/${resourcePath}`;
@@ -72,13 +87,19 @@ export async function getDashboardData(options = {}) {
     return resourcePath;
   };
 
-  const [zonesRes, floodRes, roadsRes, facilitiesRes, routesRes] = await Promise.all([
+  const fetchPromises = [
     fetch(getUrl('zones')),
     fetch(getUrl('floodExtent')),
     fetch(getUrl('blockedRoads')),
     fetch(getUrl('facilities')),
     fetch(getUrl('routes')),
-  ]);
+  ];
+
+  if (paths.buildingsExposed) {
+    fetchPromises.push(fetch(getUrl('buildingsExposed')));
+  }
+
+  const [zonesRes, floodRes, roadsRes, facilitiesRes, routesRes, buildingsRes] = await Promise.all(fetchPromises);
 
   if (!zonesRes.ok) {
     throw new Error(
@@ -89,7 +110,7 @@ export async function getDashboardData(options = {}) {
   }
 
   // Failed secondary layers must NOT become empty silently; record error payload for explicit warning
-  const [zones, floodExtent, blockedRoads, facilities, routes] = await Promise.all([
+  const [zones, floodExtent, blockedRoads, facilities, routes, buildingsExposed] = await Promise.all([
     zonesRes.json(),
     floodRes.ok
       ? floodRes.json().catch((err) => ({ error: `Malformed flood extent JSON: ${err.message}` }))
@@ -103,6 +124,11 @@ export async function getDashboardData(options = {}) {
     routesRes.ok
       ? routesRes.json().catch((err) => ({ error: `Malformed routes JSON: ${err.message}` }))
       : { error: `Failed to load routes (${routesRes.status} ${routesRes.statusText})` },
+    buildingsRes
+      ? buildingsRes.ok
+        ? buildingsRes.json().catch((err) => ({ error: `Malformed buildings exposed JSON: ${err.message}` }))
+        : { error: `Failed to load buildings exposed (${buildingsRes.status} ${buildingsRes.statusText})` }
+      : null,
   ]);
 
   return {
@@ -111,6 +137,7 @@ export async function getDashboardData(options = {}) {
     rawBlockedRoads: blockedRoads,
     rawFacilities: facilities,
     rawRoutes: routes,
+    rawBuildingsExposed: buildingsExposed,
   };
 }
 

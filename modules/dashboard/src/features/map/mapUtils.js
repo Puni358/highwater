@@ -138,3 +138,74 @@ export const DEFAULT_AOI_BOUNDS = [
  */
 export const DEFAULT_MAP_CENTER = [12.9500, 77.6900];
 export const DEFAULT_MAP_ZOOM = 12;
+
+/**
+ * Fits bounding box from loaded data (zones + flood extent).
+ * Falls back to DEFAULT_AOI_BOUNDS if no geometry exists.
+ * Returns Leaflet bounds: [[minLat, minLng], [maxLat, maxLng]].
+ *
+ * @param {Array<object>} [zones]
+ * @param {object} [floodGeoJSON]
+ * @returns {[[number, number], [number, number]]}
+ */
+export function computeDataBounds(zones = [], floodGeoJSON = null) {
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+  let count = 0;
+
+  const update = (lng, lat) => {
+    if (isValidCoordinate(lng, lat)) {
+      minLat = Math.min(minLat, lat);
+      maxLat = Math.max(maxLat, lat);
+      minLng = Math.min(minLng, lng);
+      maxLng = Math.max(maxLng, lng);
+      count++;
+    }
+  };
+
+  if (Array.isArray(zones)) {
+    for (const z of zones) {
+      if (z.hasGeometry && z.geometry?.coordinates) {
+        const rings = z.geometry.type === 'Polygon' ? z.geometry.coordinates : z.geometry.coordinates.flat(1);
+        for (const ring of rings) {
+          if (Array.isArray(ring)) {
+            for (const pt of ring) {
+              if (Array.isArray(pt) && pt.length >= 2) {
+                update(pt[0], pt[1]);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (floodGeoJSON && Array.isArray(floodGeoJSON.features)) {
+    for (const f of floodGeoJSON.features) {
+      if (f.geometry?.coordinates) {
+        const rings = f.geometry.type === 'Polygon' ? f.geometry.coordinates : f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates.flat(1) : [];
+        for (const ring of rings) {
+          if (Array.isArray(ring)) {
+            for (const pt of ring) {
+              if (Array.isArray(pt) && pt.length >= 2) {
+                update(pt[0], pt[1]);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (count === 0) {
+    return DEFAULT_AOI_BOUNDS;
+  }
+
+  return [
+    [minLat, minLng],
+    [maxLat, maxLng],
+  ];
+}
+

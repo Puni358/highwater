@@ -1,12 +1,19 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, DEFAULT_AOI_BOUNDS, toLatLng } from '../features/map/mapUtils.js';
+import {
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+  DEFAULT_AOI_BOUNDS,
+  computeDataBounds,
+  toLatLng,
+} from '../features/map/mapUtils.js';
 import FloodLayer from '../features/map/FloodLayer.jsx';
 import RiskLayer from '../features/map/RiskLayer.jsx';
 import FacilityLayer from '../features/map/FacilityLayer.jsx';
 import RoadLayer from '../features/map/RoadLayer.jsx';
 import RouteLayer from '../features/map/RouteLayer.jsx';
+import BuildingLayer from '../features/map/BuildingLayer.jsx';
 import LayerErrorBoundary from '../features/map/LayerErrorBoundary.jsx';
 import MapLegend from './MapLegend.jsx';
 import { AlertTriangle } from 'lucide-react';
@@ -14,15 +21,18 @@ import { AlertTriangle } from 'lucide-react';
 /**
  * MapController
  * Inner hook manager for Leaflet map instance.
- * Handles resize invalidation, selection fly-to, and reset-extent without resetting on layer toggle.
+ * Handles resize invalidation, selection fly-to, dynamic data bounds fitting,
+ * and reset-extent without resetting on layer toggle.
  */
 export function MapController({
   selectedZoneId,
   zones = [],
   resetTrigger = 0,
+  dataBounds = null,
 }) {
   const map = useMap();
   const prevSelectedIdRef = useRef(null);
+  const initialFitDoneRef = useRef(false);
 
   // Resize observer to ensure map tiles & vector layers redraw on container size changes (FR-19)
   useEffect(() => {
@@ -38,12 +48,20 @@ export function MapController({
     };
   }, [map]);
 
-  // Reset extent handler (FR-15, T3.6)
+  // Fit bounds from loaded data (Requirement 2)
+  useEffect(() => {
+    if (dataBounds && !initialFitDoneRef.current) {
+      initialFitDoneRef.current = true;
+      map.fitBounds(dataBounds, { padding: [30, 30] });
+    }
+  }, [dataBounds, map]);
+
+  // Reset extent handler returns to fitted bounds (FR-15, T3.6, Requirement 2)
   useEffect(() => {
     if (resetTrigger > 0) {
-      map.flyToBounds(DEFAULT_AOI_BOUNDS, { duration: 1 });
+      map.flyToBounds(dataBounds || DEFAULT_AOI_BOUNDS, { duration: 1 });
     }
-  }, [resetTrigger, map]);
+  }, [resetTrigger, dataBounds, map]);
 
   // Pan / fly to selected zone if it has geometry (FR-17)
   useEffect(() => {
@@ -66,7 +84,7 @@ export function MapController({
 
 /**
  * FloodMap component (FR-10 to FR-19, T3.1)
- * High-performance Leaflet WebGIS surface with 5 isolated overlay layers.
+ * High-performance Leaflet WebGIS surface with 6 isolated overlay layers.
  */
 export default function FloodMap({
   floodGeoJSON = null,
@@ -74,8 +92,9 @@ export default function FloodMap({
   blockedRoads = null,
   facilities = null,
   routes = [],
+  buildingsExposed = null,
   selectedZoneId = null,
-  visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false },
+  visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false, buildings: false },
   onZoneSelect,
   droppedCount = 0,
   resetTrigger = 0,
@@ -89,6 +108,10 @@ export default function FloodMap({
 
   const isTilesOffline = tilesOfflineProp !== null ? tilesOfflineProp : internalTilesOffline;
   const activeReset = resetTrigger || internalReset;
+
+  const dataBounds = useMemo(() => {
+    return computeDataBounds(riskZones, floodGeoJSON);
+  }, [riskZones, floodGeoJSON]);
 
   const tileUrl = import.meta.env.VITE_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   const tileAttribution = import.meta.env.VITE_TILE_ATTRIBUTION || '© OpenStreetMap contributors';
@@ -104,6 +127,7 @@ export default function FloodMap({
   if (floodGeoJSON?.error) combinedLayerErrors.flood = floodGeoJSON.error;
   if (blockedRoads?.error) combinedLayerErrors.roads = blockedRoads.error;
   if (facilities?.error) combinedLayerErrors.facilities = facilities.error;
+  if (buildingsExposed?.error) combinedLayerErrors.buildings = buildingsExposed.error;
 
   return (
     <div className="relative w-full h-full min-h-[380px] flex-1 overflow-hidden font-sans">
@@ -154,7 +178,7 @@ export default function FloodMap({
           url={tileUrl}
           attribution={tileAttribution}
           eventHandlers={{
-            tileerror: () => setTilesOffline(true),
+            tileerror: () => setInternalTilesOffline(true),
           }}
         />
 
@@ -162,6 +186,7 @@ export default function FloodMap({
           selectedZoneId={selectedZoneId}
           zones={riskZones}
           resetTrigger={activeReset}
+          dataBounds={dataBounds}
         />
 
         {/* 1. Flood Extent Layer (Isolated in Error Boundary) */}
@@ -215,6 +240,16 @@ export default function FloodMap({
             onError={(err) => handleLayerError('routes', err)}
           >
             <RouteLayer routes={routes} />
+          </LayerErrorBoundary>
+        )}
+
+        {/* 6. Exposed Buildings Layer (Isolated in Error Boundary) */}
+        {visibleLayers.buildings && (
+          <LayerErrorBoundary
+            layerName="buildings"
+            onError={(err) => handleLayerError('buildings', err)}
+          >
+            <BuildingLayer data={buildingsExposed} />
           </LayerErrorBoundary>
         )}
 

@@ -14,6 +14,7 @@ import EmptyState from '../components/states/EmptyState.jsx';
 import {
   Droplets,
   AlertOctagon,
+  AlertTriangle,
   Home,
   Ban,
   MapPin,
@@ -45,7 +46,8 @@ export default function DashboardLayout({
     risk: true,
     roads: true,
     facilities: true,
-    routes: true,
+    routes: false,
+    buildings: false,
   });
 
   // 2. Filter & Sort state
@@ -195,6 +197,18 @@ export default function DashboardLayout({
           />
         </section>
 
+        {/* Demo Mode Risk Disclaimer (Requirement 4) */}
+        {metadata.dataMode === 'demo' && (
+          <div
+            role="note"
+            aria-label="Demo Risk Scores Notice"
+            className="flex items-center space-x-2 px-3 py-2 rounded-card bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium shadow-sm"
+          >
+            <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" aria-hidden="true" />
+            <span>Risk scores are illustrative (demo formula), not from the risk engine.</span>
+          </div>
+        )}
+
         {/* Empty state when no zones reported (FR-50, T5.1) */}
         {allZones.length === 0 && !loading && (
           <EmptyState onRefresh={onRefresh} loading={loading} />
@@ -215,7 +229,7 @@ export default function DashboardLayout({
                     <span>Geospatial Flood Extent & Priority Zones</span>
                   </div>
                   <span className="text-xs text-text-muted bg-white px-2 py-0.5 rounded border border-border">
-                    {allZones.length} Zones • 5 Map Layers
+                    {allZones.length} Zones • 6 Map Layers
                   </span>
                 </div>
 
@@ -227,6 +241,7 @@ export default function DashboardLayout({
                     blockedRoads={data?.blockedRoads}
                     facilities={data?.facilities}
                     routes={data?.routes || []}
+                    buildingsExposed={data?.buildingsExposed}
                     selectedZoneId={selectedZoneId}
                     visibleLayers={visibleLayers}
                     onZoneSelect={handleZoneSelect}

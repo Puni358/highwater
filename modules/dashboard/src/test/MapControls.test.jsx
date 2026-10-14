@@ -3,16 +3,17 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import MapControls from '../components/MapControls.jsx';
 
 describe('MapControls component (T3.6)', () => {
-  it('renders all 5 layer toggle switches and enabled count', () => {
-    const visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false };
+  it('renders all 6 layer toggle switches and enabled count', () => {
+    const visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false, buildings: false };
     render(<MapControls visibleLayers={visibleLayers} onToggleLayer={() => {}} onResetExtent={() => {}} />);
 
-    expect(screen.getByText('4 of 5 Enabled')).toBeInTheDocument();
+    expect(screen.getByText('4 of 6 Enabled')).toBeInTheDocument();
     expect(screen.getByLabelText('Toggle Flood Extent overlay')).toBeChecked();
     expect(screen.getByLabelText('Toggle Risk Zones overlay')).toBeChecked();
     expect(screen.getByLabelText('Toggle Blocked Roads overlay')).toBeChecked();
     expect(screen.getByLabelText('Toggle Rescue Facilities overlay')).toBeChecked();
     expect(screen.getByLabelText('Toggle Evacuation Routes overlay')).not.toBeChecked();
+    expect(screen.getByLabelText('Toggle Exposed Buildings overlay')).not.toBeChecked();
   });
 
   it('triggers onToggleLayer for each individual layer independently', () => {
