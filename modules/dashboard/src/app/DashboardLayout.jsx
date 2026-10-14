@@ -10,6 +10,7 @@ import RiskDistributionChart from '../components/RiskDistributionChart.jsx';
 import ImpactChart from '../components/ImpactChart.jsx';
 import StaleBanner from '../components/StaleBanner.jsx';
 import CachedBanner from '../components/CachedBanner.jsx';
+import SurveyNeededList from '../components/SurveyNeededList.jsx';
 import ErrorState from '../components/states/ErrorState.jsx';
 import EmptyState from '../components/states/EmptyState.jsx';
 import {
@@ -282,6 +283,13 @@ export default function DashboardLayout({
                   timestamp={metadata.generatedAt}
                   onClearSelection={() => setSelectedZoneId(null)}
                 />
+
+                {/* Aerial Reconnaissance Survey Needed List */}
+                <SurveyNeededList
+                  zones={allZones}
+                  onSelectZone={handleZoneSelect}
+                  selectedZoneId={selectedZoneId}
+                />
               </aside>
             </div>
 
@@ -465,11 +473,20 @@ export default function DashboardLayout({
               )}
 
               {mobileDrawerTab === 'details' && (
-                <ZoneDetails
-                  zone={selectedZone}
-                  timestamp={metadata.generatedAt}
-                  onClearSelection={() => setSelectedZoneId(null)}
-                />
+                <div className="space-y-4">
+                  <ZoneDetails
+                    zone={selectedZone}
+                    timestamp={metadata.generatedAt}
+                    onClearSelection={() => setSelectedZoneId(null)}
+                  />
+                  <SurveyNeededList
+                    zones={allZones}
+                    onSelectZone={(zoneId) => {
+                      handleZoneSelect(zoneId);
+                    }}
+                    selectedZoneId={selectedZoneId}
+                  />
+                </div>
               )}
 
               {mobileDrawerTab === 'controls' && (
