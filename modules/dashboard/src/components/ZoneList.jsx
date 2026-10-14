@@ -25,13 +25,14 @@ function ZoneListRow({
     }
   }, [isSelected]);
 
-  const hasNullNumeric =
-    zone.riskScore === null ||
+  const isPartial = Boolean(
+    zone.partialData ||
     zone.exposedBuildings === null ||
     zone.floodedAreaKm2 === null ||
-    zone.floodedPercent === null;
+    zone.floodedPercent === null
+  );
 
-  const scoreText = (zone.riskScore !== null && !hasNullNumeric) ? zone.riskScore : 'Not assessed';
+  const scoreText = zone.riskScore !== null ? zone.riskScore : 'Not assessed';
   const bldgText = zone.exposedBuildings !== null ? `${zone.exposedBuildings} bldgs` : 'Bldgs: Not available';
 
   return (
@@ -46,7 +47,7 @@ function ZoneListRow({
           : 'bg-white border-border hover:border-slate-400 hover:bg-slate-50/50'
       }`}
     >
-      {/* Left: Rank, Risk Badge, Name & No map shape flag */}
+      {/* Left: Rank, Risk Badge, Name & No map shape / Partial data flags */}
       <div className="flex items-center space-x-3 min-w-0">
         <span className="text-xs font-bold text-text-muted w-6 text-center shrink-0">
           #{rank}
@@ -68,6 +69,14 @@ function ZoneListRow({
                 <span>No map shape</span>
               </span>
             )}
+            {isPartial && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-300 rounded shrink-0"
+                title="Zone contains partial data"
+              >
+                Partial data
+              </span>
+            )}
           </div>
           <div className="text-[11px] text-text-muted">
             ID: {zone.zoneId}
@@ -78,7 +87,7 @@ function ZoneListRow({
       {/* Right: Risk Score & Exposed Buildings */}
       <div className="text-right shrink-0 space-y-0.5">
         <div className="text-xs font-bold text-navy-900">
-          <span className={zone.riskScore === null || hasNullNumeric ? 'text-text-muted font-normal' : ''}>
+          <span className={zone.riskScore === null ? 'text-text-muted font-normal' : ''}>
             Score: {scoreText}
           </span>
         </div>

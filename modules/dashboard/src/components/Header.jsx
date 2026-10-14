@@ -85,9 +85,10 @@ export default function Header({
           <div
             className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-risk-low/20 text-emerald-300 text-xs font-medium border border-risk-low/40"
             role="status"
+            aria-label="Connected data active"
           >
             <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>OPERATIONAL</span>
+            <span>Connected data</span>
           </div>
         )}
 

@@ -77,13 +77,14 @@ export default function ZoneDetails({
   const access = getAccessibilityDisplay(zone.accessibility);
   const AccessIcon = access.icon;
 
-  const hasNullNumeric =
-    zone.riskScore === null ||
+  const isPartial = Boolean(
+    zone.partialData ||
+    zone.exposedBuildings === null ||
     zone.floodedAreaKm2 === null ||
-    zone.floodedPercent === null ||
-    zone.exposedBuildings === null;
+    zone.floodedPercent === null
+  );
 
-  const scoreDisplay = (zone.riskScore !== null && !hasNullNumeric) ? `${zone.riskScore} / 100` : 'Not assessed';
+  const scoreDisplay = zone.riskScore !== null ? `${zone.riskScore} / 100` : 'Not assessed';
   const floodAreaDisplay = zone.floodedAreaKm2 !== null ? `${zone.floodedAreaKm2} km²` : 'Not available';
   const floodPctDisplay = zone.floodedPercent !== null ? `${zone.floodedPercent}%` : 'Not available';
   const exposedBldgsDisplay = zone.exposedBuildings !== null ? zone.exposedBuildings : 'Not available';
@@ -104,6 +105,14 @@ export default function ZoneDetails({
               {zone.name}
             </h3>
             <RiskBadge level={zone.riskLevel} size="sm" />
+            {isPartial && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-300 rounded shrink-0"
+                title="Zone contains partial data"
+              >
+                Partial data
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-text-muted">
             Zone ID: <span className="font-mono">{zone.zoneId}</span>
@@ -142,7 +151,7 @@ export default function ZoneDetails({
         {/* Risk Score */}
         <div className="p-2.5 rounded bg-surface border border-border/50">
           <span className="text-[11px] text-text-muted block">Priority Score</span>
-          <span className={`text-sm font-bold block mt-0.5 ${zone.riskScore === null || hasNullNumeric ? 'text-text-muted font-normal' : 'text-navy-900'}`}>
+          <span className={`text-sm font-bold block mt-0.5 ${zone.riskScore === null ? 'text-text-muted font-normal' : 'text-navy-900'}`}>
             {scoreDisplay}
           </span>
         </div>

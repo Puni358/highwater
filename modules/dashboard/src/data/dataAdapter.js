@@ -124,17 +124,21 @@ export function adaptZones(rawZonesPayload) {
     const exposedBuildings = normalizeNumber(z.exposed_buildings);
     const scoreResult = normalizeRiskScore(z.risk_score);
 
-    // Rule (architecture.md & Phase 6 closeout):
-    // For any zone with a null numeric input, set risk to UNKNOWN and riskScore to null (not assessed).
-    const hasNullNumeric =
-      z.flooded_percent === null ||
-      z.flooded_area_km2 === null ||
-      z.exposed_buildings === null ||
-      z.risk_score === null ||
+    // Rule:
+    // Only force UNKNOWN when risk_level or risk_score is missing or invalid.
+    // If risk_level is supplied but other numeric fields are null, keep the risk level and add a partialData flag.
+    const normalizedRisk = normalizeRiskLevel(z.risk_level);
+    const isRiskMissingOrInvalid =
+      normalizedRisk === 'UNKNOWN' ||
       scoreResult.score === null;
 
-    const riskLevel = hasNullNumeric ? 'UNKNOWN' : normalizeRiskLevel(z.risk_level);
-    const riskScore = hasNullNumeric ? null : scoreResult.score;
+    const riskLevel = isRiskMissingOrInvalid ? 'UNKNOWN' : normalizedRisk;
+    const riskScore = scoreResult.score;
+
+    const partialData =
+      z.flooded_percent === null ||
+      z.flooded_area_km2 === null ||
+      z.exposed_buildings === null;
 
     let accessibility = 'UNKNOWN';
     if (typeof z.accessibility === 'string') {
@@ -152,7 +156,7 @@ export function adaptZones(rawZonesPayload) {
       zoneId,
       name,
       riskLevel,
-      riskScore: scoreResult.score,
+      riskScore,
       floodedPercent,
       floodedAreaKm2,
       exposedBuildings,
@@ -163,6 +167,7 @@ export function adaptZones(rawZonesPayload) {
       provenance: z.provenance || null,
       confidence: normalizeNumber(z.confidence),
       needsSurvey: Boolean(z.needs_survey),
+      partialData,
     };
   });
 

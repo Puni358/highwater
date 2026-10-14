@@ -65,6 +65,31 @@ describe('ZoneDetails component (T4.5, FR-20, FR-21)', () => {
     expect(screen.getAllByText('Not available').length).toBeGreaterThanOrEqual(4);
     expect(screen.getByText('None reported')).toBeInTheDocument();
     expect(screen.getByText('Non-spatial staging area')).toBeInTheDocument();
+    expect(screen.getByText('Partial data')).toBeInTheDocument();
+  });
+
+  it('renders "Partial data" note and preserves risk level when risk_level is supplied but other fields are null', () => {
+    const partialZone = {
+      zoneId: 'zone-partial',
+      name: 'Partial High Zone',
+      riskLevel: 'HIGH',
+      riskScore: 92,
+      floodedAreaKm2: 1.5,
+      floodedPercent: 25,
+      exposedBuildings: null, // missing numeric
+      accessibility: 'OPEN',
+      reasons: ['High flood impact'],
+      hasGeometry: true,
+      partialData: true,
+    };
+
+    render(<ZoneDetails zone={partialZone} onClearSelection={vi.fn()} />);
+
+    expect(screen.getByText('Partial High Zone')).toBeInTheDocument();
+    expect(screen.getByText('HIGH')).toBeInTheDocument();
+    expect(screen.getByText('92 / 100')).toBeInTheDocument();
+    expect(screen.getByText('Partial data')).toBeInTheDocument();
+    expect(screen.getAllByText('Not available').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders empty state when no zone is selected', () => {

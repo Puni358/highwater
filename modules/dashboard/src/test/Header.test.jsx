@@ -9,10 +9,10 @@ describe('Header component', () => {
     expect(screen.getByText(/Bengaluru, Karnataka/)).toBeInTheDocument();
   });
 
-  it('renders OPERATIONAL status when dataMode is not demo', () => {
+  it('renders Connected data status when dataMode is not demo', () => {
     render(<Header dataMode="live" studyArea="Bengaluru, Karnataka" />);
     expect(screen.queryByText('DEMO MODE')).not.toBeInTheDocument();
-    expect(screen.getByText('OPERATIONAL')).toBeInTheDocument();
+    expect(screen.getByText('Connected data')).toBeInTheDocument();
   });
 
   it('calls onRefresh when refresh button is clicked (FR-03)', () => {

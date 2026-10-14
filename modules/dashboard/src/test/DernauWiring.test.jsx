@@ -400,9 +400,10 @@ describe('Dernau Wiring & 6th Overlay Suite', () => {
 
     render(<DashboardLayout data={data} onRefresh={vi.fn()} />);
 
-    // In ZoneList: row shows Score: Not assessed (never 0)
+    // In ZoneList: row shows Score: Not assessed (never 0) and Partial data note
     expect(screen.getByText('Score: Not assessed')).toBeInTheDocument();
     expect(screen.queryByText('Score: 0')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Partial data').length).toBeGreaterThanOrEqual(1);
 
     // "(demo-derived)" tag must be completely removed
     expect(screen.queryByText('(demo-derived)')).not.toBeInTheDocument();
@@ -419,6 +420,7 @@ describe('Dernau Wiring & 6th Overlay Suite', () => {
     const detailsRegion = screen.getByRole('region', { name: /Zone Inspection Details/i });
     expect(detailsRegion).toHaveTextContent('Not assessed');
     expect(detailsRegion).toHaveTextContent('Not available');
+    expect(detailsRegion).toHaveTextContent('Partial data');
     expect(detailsRegion).not.toHaveTextContent('0 / 100');
     expect(screen.queryByText('(demo-derived)')).not.toBeInTheDocument();
   });

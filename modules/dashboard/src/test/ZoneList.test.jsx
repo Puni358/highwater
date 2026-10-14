@@ -65,4 +65,9 @@ describe('ZoneList component (T4.4, T4.6, FR-22, FR-26)', () => {
     render(<ZoneList zones={[]} selectedZoneId={null} onZoneSelect={vi.fn()} />);
     expect(screen.getByText(/No zones match the current search or filter criteria/i)).toBeInTheDocument();
   });
+
+  it('displays "Partial data" note for zones with partialData or null numeric fields', () => {
+    render(<ZoneList zones={sampleZones} selectedZoneId={null} onZoneSelect={vi.fn()} />);
+    expect(screen.getByText('Partial data')).toBeInTheDocument();
+  });
 });

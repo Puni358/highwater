@@ -128,6 +128,72 @@ describe('dataAdapter', () => {
       expect(zones[1].riskLevel).toBe('UNKNOWN');
       expect(zones[1].riskScore).toBeNull();
       expect(zones[1].floodedPercent).toBeNull();
+      expect(zones[1].partialData).toBe(true);
+    });
+
+    it('keeps risk level and sets partialData flag when risk_level is supplied but other numeric fields are null', () => {
+      const payload = {
+        schema_version: '1.0',
+        data_mode: 'demo',
+        zones: [
+          {
+            zone_id: 'z-partial',
+            name: 'High Risk Partial',
+            risk_level: 'HIGH',
+            risk_score: 91,
+            flooded_percent: 45.2,
+            flooded_area_km2: 1.2,
+            exposed_buildings: null, // one numeric field null
+          },
+          {
+            zone_id: 'z-missing-score',
+            name: 'Supplied Risk but Missing Score',
+            risk_level: 'MEDIUM',
+            risk_score: null,
+            flooded_percent: 20.0,
+            flooded_area_km2: 0.5,
+            exposed_buildings: 10,
+          },
+          {
+            zone_id: 'z-invalid-risk',
+            name: 'Invalid Risk Level',
+            risk_level: 'CRITICAL', // invalid level
+            risk_score: 85,
+            flooded_percent: 50.0,
+            flooded_area_km2: 1.0,
+            exposed_buildings: 25,
+          },
+          {
+            zone_id: 'z-complete',
+            name: 'Complete Data',
+            risk_level: 'LOW',
+            risk_score: 25,
+            flooded_percent: 5.0,
+            flooded_area_km2: 0.1,
+            exposed_buildings: 3,
+          },
+        ],
+      };
+
+      const { zones } = adaptZones(payload);
+
+      // z-partial keeps HIGH risk_level and 91 score, but has partialData flag true
+      expect(zones[0].riskLevel).toBe('HIGH');
+      expect(zones[0].riskScore).toBe(91);
+      expect(zones[0].partialData).toBe(true);
+
+      // z-missing-score has missing score -> forces UNKNOWN and riskScore null
+      expect(zones[1].riskLevel).toBe('UNKNOWN');
+      expect(zones[1].riskScore).toBeNull();
+
+      // z-invalid-risk has invalid risk level -> forces UNKNOWN
+      expect(zones[2].riskLevel).toBe('UNKNOWN');
+      expect(zones[2].riskScore).toBe(85);
+
+      // z-complete has all fields present -> partialData is false
+      expect(zones[3].riskLevel).toBe('LOW');
+      expect(zones[3].riskScore).toBe(25);
+      expect(zones[3].partialData).toBe(false);
     });
   });
 });
