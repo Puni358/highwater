@@ -1,5 +1,6 @@
 import React from 'react';
 import RiskBadge from './RiskBadge.jsx';
+import ProvenanceBadge from './ProvenanceBadge.jsx';
 import { AlertCircle, CheckCircle, Ban, HelpCircle, X, ShieldAlert, MapPinOff } from 'lucide-react';
 
 /**
@@ -200,9 +201,14 @@ export default function ZoneDetails({
         {zone.provenance !== null && zone.provenance !== undefined && (
           <div className="p-2.5 rounded bg-surface border border-border/50">
             <span className="text-[11px] text-text-muted block">Provenance</span>
-            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
-              {String(zone.provenance)}
-            </span>
+            <div className="mt-1 flex items-center space-x-1.5 flex-wrap">
+              <ProvenanceBadge value={zone.provenance} />
+              {zone.source && (
+                <span className="text-[11px] text-text-muted block">
+                  {zone.source}
+                </span>
+              )}
+            </div>
           </div>
         )}
 

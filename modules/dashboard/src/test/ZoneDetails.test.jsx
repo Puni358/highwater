@@ -102,7 +102,8 @@ describe('ZoneDetails component (T4.5, FR-20, FR-21)', () => {
   it('renders provenance, confidence and the P10 to P90 range when supplied and nothing when null', () => {
     const zoneWithSuppliedFields = {
       ...completeZone,
-      provenance: 'SpaceNet 8 / Maxar ground truth',
+      provenance: 'observed',
+      source: 'SpaceNet 8 / Maxar ground truth',
       confidence: 0.95,
       rank_p10: 12,
       rank_p90: 18,
@@ -113,6 +114,8 @@ describe('ZoneDetails component (T4.5, FR-20, FR-21)', () => {
     );
 
     expect(screen.getByText('Provenance')).toBeInTheDocument();
+    expect(screen.getByLabelText('Data provenance: Observed')).toBeInTheDocument();
+    expect(screen.getByText('Observed')).toBeInTheDocument();
     expect(screen.getByText('SpaceNet 8 / Maxar ground truth')).toBeInTheDocument();
     expect(screen.getByText('Confidence')).toBeInTheDocument();
     expect(screen.getByText('0.95')).toBeInTheDocument();
@@ -123,6 +126,7 @@ describe('ZoneDetails component (T4.5, FR-20, FR-21)', () => {
     const zoneWithNullFields = {
       ...completeZone,
       provenance: null,
+      source: null,
       confidence: null,
       rank_p10: null,
       rank_p90: null,
@@ -131,6 +135,7 @@ describe('ZoneDetails component (T4.5, FR-20, FR-21)', () => {
     rerender(<ZoneDetails zone={zoneWithNullFields} onClearSelection={vi.fn()} />);
 
     expect(screen.queryByText('Provenance')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Data provenance/i)).not.toBeInTheDocument();
     expect(screen.queryByText('SpaceNet 8 / Maxar ground truth')).not.toBeInTheDocument();
     expect(screen.queryByText('Confidence')).not.toBeInTheDocument();
     expect(screen.queryByText('Rank Range (P10 to P90)')).not.toBeInTheDocument();

@@ -165,6 +165,7 @@ export function adaptZones(rawZonesPayload) {
       geometry,
       hasGeometry,
       provenance: z.provenance !== undefined ? z.provenance : null,
+      source: z.source !== undefined ? z.source : null,
       confidence: z.confidence !== undefined ? z.confidence : null,
       rank_p10: z.rank_p10 !== undefined ? z.rank_p10 : null,
       rank_p90: z.rank_p90 !== undefined ? z.rank_p90 : null,
