@@ -232,11 +232,11 @@ export default function DashboardLayout({
         {/* 3. Primary Workspace: Map & Side Panel (Responsive) */}
         {allZones.length > 0 && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 lg:gap-6 items-start">
-              {/* Map Container Area (Col span 7 on tablet, 8 on desktop, full on mobile < 640px) */}
+            <div className="space-y-4 lg:space-y-6">
+              {/* Primary Map Workspace: Unobstructed Map with Docked Side Panel */}
               <section
                 aria-label="Flood Map View"
-                className="sm:col-span-7 lg:col-span-8 bg-card border border-border rounded-card shadow-sm overflow-hidden flex flex-col h-[50vh] min-h-[380px] sm:h-[480px] lg:h-[560px]"
+                className="w-full bg-card border border-border rounded-card shadow-sm overflow-hidden flex flex-col h-[65vh] min-h-[480px] lg:h-[620px]"
               >
                 <div className="px-4 py-3 border-b border-border bg-slate-50/50 flex items-center justify-between shrink-0">
                   <div className="flex items-center space-x-2 text-text font-semibold text-sm">
@@ -248,7 +248,7 @@ export default function DashboardLayout({
                   </span>
                 </div>
 
-                {/* Live Leaflet Map Container */}
+                {/* Live Leaflet Map Container with Docked Side Panel */}
                 <div className="flex-1 relative w-full h-full min-h-0">
                   <FloodMap
                     floodGeoJSON={data?.floodExtent}
@@ -259,26 +259,23 @@ export default function DashboardLayout({
                     buildingsExposed={data?.buildingsExposed}
                     selectedZoneId={selectedZoneId}
                     visibleLayers={visibleLayers}
+                    onToggleLayer={handleToggleLayer}
                     onZoneSelect={handleZoneSelect}
                     droppedCount={data?.droppedFeatureCount || 0}
                     resetTrigger={resetTrigger}
+                    onResetExtent={handleResetExtent}
                     layerErrors={data?.layerErrors}
+                    isFromCache={metadata.isFromCache}
+                    cachedAt={metadata.cachedAt}
                   />
                 </div>
               </section>
 
-              {/* Side Panel on Tablet & Desktop: Controls & Details Container (Hidden under 640px mobile, moved to drawer) */}
+              {/* Inspection & Priority Zone Details Row (Tablet & Desktop) */}
               <aside
                 aria-label="Layer Controls and Zone Details"
-                className="hidden sm:block sm:col-span-5 lg:col-span-4 space-y-4"
+                className="hidden sm:grid sm:grid-cols-2 gap-4 lg:gap-6 items-start"
               >
-                {/* Layer Controls Switch Panel */}
-                <MapControls
-                  visibleLayers={visibleLayers}
-                  onToggleLayer={handleToggleLayer}
-                  onResetExtent={handleResetExtent}
-                />
-
                 {/* Zone Details Inspection Panel (FR-20, FR-21, T4.5) */}
                 <ZoneDetails
                   zone={selectedZone}
