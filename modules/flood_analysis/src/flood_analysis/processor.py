@@ -10,9 +10,10 @@ import json
 import math
 from dataclasses import dataclass, field
 
+import numpy as np
 import pyproj
+import shapely
 from shapely.geometry import box, shape, mapping
-from shapely.ops import transform as shp_transform
 from shapely.ops import unary_union
 from shapely.validation import make_valid
 
@@ -44,7 +45,8 @@ def load_tile_features(raw_dir, tile_ids):
         fp = f"{raw_dir}/annotations/{tile_id}.geojson"
         if not os.path.exists(fp):
             continue
-        d = json.load(open(fp))
+        with open(fp, "r", encoding="utf-8") as f:
+            d = json.load(f)
         for f in d["features"]:
             p = f["properties"]
             fid = p.get("id")
@@ -74,6 +76,59 @@ AOI_WINDOW_COLS = 4
 AOI_MIN_TILES_PRESENT = 12  # out of window_rows*window_cols=24; below this a window is too sparse/rural
 
 
+def _scan_annotation_tiles(raw_dir, compute_bbox=False):
+    import os
+    import re
+
+    pattern = re.compile(r"^(\d+)_(\d+)_(\d+)\.geojson$")
+    ann_dir = os.path.join(raw_dir, "annotations")
+    if not os.path.exists(ann_dir):
+        return []
+
+    results = []
+    for fname in os.listdir(ann_dir):
+        m = pattern.match(fname)
+        if not m:
+            continue
+        prefix, row, col = m.group(1), int(m.group(2)), int(m.group(3))
+        tile_id = f"{prefix}_{row}_{col}"
+        filepath = os.path.join(ann_dir, fname)
+        with open(filepath, "r", encoding="utf-8") as f:
+            d = json.load(f)
+        n_buildings = n_roads = n_flooded_buildings = n_flooded_roads = 0
+        geoms = []
+        for feat in d.get("features", []):
+            p = feat.get("properties", {})
+            flooded = p.get("flooded") == "yes"
+            is_building = p.get("building") is not None
+            is_road = p.get("highway") is not None
+            if is_building:
+                n_buildings += 1
+                n_flooded_buildings += int(flooded)
+            elif is_road:
+                n_roads += 1
+                n_flooded_roads += int(flooded)
+            else:
+                continue
+            if compute_bbox and feat.get("geometry"):
+                g = shape(feat["geometry"])
+                if not g.is_empty:
+                    geoms.append(g)
+        bbox = list(unary_union(geoms).bounds) if compute_bbox and geoms else None
+        results.append({
+            "prefix": prefix,
+            "row": row,
+            "col": col,
+            "tile_id": tile_id,
+            "bbox": bbox,
+            "buildings": n_buildings,
+            "roads": n_roads,
+            "flooded_buildings": n_flooded_buildings,
+            "flooded_roads": n_flooded_roads,
+        })
+    return results
+
+
 def _tile_stats(raw_dir):
     """Per-tile (prefix, row, col) -> counts, parsed once from every annotation file.
 
@@ -81,36 +136,17 @@ def _tile_stats(raw_dir):
     tiles into separate spatial swaths (Germany only has one, Louisiana has several),
     so AOI search must stay within a single prefix group.
     """
-    import os
-    import re
-
-    pattern = re.compile(r"^(\d+)_(\d+)_(\d+)\.geojson$")
-    stats = {}
-    ann_dir = os.path.join(raw_dir, "annotations")
-    for fname in os.listdir(ann_dir):
-        m = pattern.match(fname)
-        if not m:
-            continue
-        prefix, row, col = m.group(1), int(m.group(2)), int(m.group(3))
-        d = json.load(open(os.path.join(ann_dir, fname)))
-        n_buildings = n_roads = n_flooded_buildings = n_flooded_roads = 0
-        for f in d["features"]:
-            p = f["properties"]
-            flooded = p.get("flooded") == "yes"
-            if p.get("building") is not None:
-                n_buildings += 1
-                n_flooded_buildings += flooded
-            elif p.get("highway") is not None:
-                n_roads += 1
-                n_flooded_roads += flooded
-        stats[(prefix, row, col)] = {
-            "tile_id": f"{prefix}_{row}_{col}",
-            "buildings": n_buildings,
-            "roads": n_roads,
-            "flooded_buildings": n_flooded_buildings,
-            "flooded_roads": n_flooded_roads,
+    records = _scan_annotation_tiles(raw_dir, compute_bbox=False)
+    return {
+        (r["prefix"], r["row"], r["col"]): {
+            "tile_id": r["tile_id"],
+            "buildings": r["buildings"],
+            "roads": r["roads"],
+            "flooded_buildings": r["flooded_buildings"],
+            "flooded_roads": r["flooded_roads"],
         }
-    return stats
+        for r in records
+    }
 
 
 def build_tile_index(raw_dir):
@@ -119,41 +155,17 @@ def build_tile_index(raw_dir):
     compute live tile-count/flooded-mix previews without a backend — the map just
     fetches this precomputed JSON and does the box-overlap math itself.
     """
-    import os
-    import re
-
-    pattern = re.compile(r"^(\d+)_(\d+)_(\d+)\.geojson$")
-    index = {}
-    ann_dir = os.path.join(raw_dir, "annotations")
-    for fname in os.listdir(ann_dir):
-        m = pattern.match(fname)
-        if not m:
-            continue
-        tile_id = f"{m.group(1)}_{m.group(2)}_{m.group(3)}"
-        d = json.load(open(os.path.join(ann_dir, fname)))
-        n_buildings = n_roads = n_flooded_buildings = n_flooded_roads = 0
-        geoms = []
-        for f in d["features"]:
-            p = f["properties"]
-            flooded = p.get("flooded") == "yes"
-            if p.get("building") is not None:
-                n_buildings += 1
-                n_flooded_buildings += flooded
-            elif p.get("highway") is not None:
-                n_roads += 1
-                n_flooded_roads += flooded
-            else:
-                continue
-            geoms.append(shape(f["geometry"]))
-        bbox = list(unary_union(geoms).bounds) if geoms else None
-        index[tile_id] = {
-            "bbox": bbox,
-            "buildings": n_buildings,
-            "roads": n_roads,
-            "flooded_buildings": n_flooded_buildings,
-            "flooded_roads": n_flooded_roads,
+    records = _scan_annotation_tiles(raw_dir, compute_bbox=True)
+    return {
+        r["tile_id"]: {
+            "bbox": r["bbox"],
+            "buildings": r["buildings"],
+            "roads": r["roads"],
+            "flooded_buildings": r["flooded_buildings"],
+            "flooded_roads": r["flooded_roads"],
         }
-    return index
+        for r in records
+    }
 
 
 def select_aoi_tile_ids(
@@ -221,9 +233,15 @@ def select_aoi_tile_ids(
 def to_utm_transformer(aoi):
     c = aoi.centroid
     utm_epsg = utm_crs_for(c.x, c.y)
-    fwd = pyproj.Transformer.from_crs("EPSG:4326", utm_epsg, always_xy=True).transform
-    inv = pyproj.Transformer.from_crs(utm_epsg, "EPSG:4326", always_xy=True).transform
+    fwd = pyproj.Transformer.from_crs("EPSG:4326", utm_epsg, always_xy=True)
+    inv = pyproj.Transformer.from_crs(utm_epsg, "EPSG:4326", always_xy=True)
     return utm_epsg, fwd, inv
+
+
+def _reproject(geom, transformer):
+    if geom is None:
+        return None
+    return shapely.transform(geom, lambda c: np.column_stack(transformer.transform(c[:, 0], c[:, 1])))
 
 
 def derive_flood_extent(features, fwd):
@@ -232,7 +250,7 @@ def derive_flood_extent(features, fwd):
     for f in features:
         if not f.flooded:
             continue
-        g_utm = shp_transform(fwd, f.geometry)
+        g_utm = _reproject(f.geometry, fwd)
         if f.kind == "building":
             polys.append(g_utm if g_utm.geom_type in ("Polygon", "MultiPolygon") else g_utm.buffer(0))
         else:
@@ -257,15 +275,22 @@ def accessibility_for(flooded_share):
 
 
 def build_zones(features, aoi, fwd, inv, flood_extent_utm, cell_size_m=GRID_CELL_SIZE_M):
-    aoi_utm = shp_transform(fwd, aoi)
+    aoi_utm = _reproject(aoi, fwd)
     minx, miny, maxx, maxy = aoi_utm.bounds
     ncols = max(1, math.ceil((maxx - minx) / cell_size_m))
     nrows = max(1, math.ceil((maxy - miny) / cell_size_m))
 
     buildings = [f for f in features if f.kind == "building"]
     roads = [f for f in features if f.kind == "road"]
-    buildings_utm = [(f, shp_transform(fwd, f.geometry)) for f in buildings]
-    roads_utm = [(f, shp_transform(fwd, f.geometry)) for f in roads]
+    buildings_utm = [(f, _reproject(f.geometry, fwd)) for f in buildings]
+    roads_utm = [(f, _reproject(f.geometry, fwd)) for f in roads]
+
+    buildings_by_cell = {}
+    for f, g in buildings_utm:
+        c = g.centroid
+        col = min(max(0, int((c.x - minx) // cell_size_m)), ncols - 1)
+        row = min(max(0, int((c.y - miny) // cell_size_m)), nrows - 1)
+        buildings_by_cell.setdefault((row, col), []).append((f, g))
 
     zones = []
     zi = 0
@@ -275,7 +300,7 @@ def build_zones(features, aoi, fwd, inv, flood_extent_utm, cell_size_m=GRID_CELL
             cx1, cy1 = min(cx0 + cell_size_m, maxx), min(cy0 + cell_size_m, maxy)
             cell = box(cx0, cy0, cx1, cy1)
 
-            cell_buildings = [(f, g) for f, g in buildings_utm if g.intersects(cell)]
+            cell_buildings = buildings_by_cell.get((row, col), [])
             cell_roads = [(f, g) for f, g in roads_utm if g.intersects(cell)]
             if not cell_buildings and not cell_roads:
                 continue
@@ -292,7 +317,7 @@ def build_zones(features, aoi, fwd, inv, flood_extent_utm, cell_size_m=GRID_CELL
                 flooded_area_m2 = flood_extent_utm.intersection(cell).area
                 flooded_percent = round(100.0 * flooded_area_m2 / cell.area, 2)
             else:
-                flooded_area_m2 = None
+                flooded_area_m2 = 0.0
                 flooded_percent = 0.0
 
             if cell_roads and road_length_m > 0:
@@ -300,7 +325,7 @@ def build_zones(features, aoi, fwd, inv, flood_extent_utm, cell_size_m=GRID_CELL
             else:
                 accessibility = "UNKNOWN"
 
-            cell_lonlat = shp_transform(inv, cell)
+            cell_lonlat = _reproject(cell, inv)
             minlon, minlat, maxlon, maxlat = cell_lonlat.bounds
             centroid = cell_lonlat.centroid
 
@@ -311,7 +336,7 @@ def build_zones(features, aoi, fwd, inv, flood_extent_utm, cell_size_m=GRID_CELL
                     "bbox": [minlon, minlat, maxlon, maxlat],
                     "centroid": [centroid.x, centroid.y],
                     "flooded_percent": flooded_percent,
-                    "flooded_area_m2": round(flooded_area_m2, 1) if flooded_area_m2 is not None else None,
+                    "flooded_area_m2": round(flooded_area_m2, 1),
                     "total_buildings": total_buildings,
                     "exposed_buildings": exposed_buildings,
                     "road_length_m": round(road_length_m, 1),
@@ -340,7 +365,7 @@ def features_to_geojson(features, kind, inv):
 def flood_extent_to_geojson(flood_extent_utm, inv):
     if flood_extent_utm is None or flood_extent_utm.is_empty:
         return {"type": "FeatureCollection", "features": []}
-    geom_lonlat = shp_transform(inv, flood_extent_utm)
+    geom_lonlat = _reproject(flood_extent_utm, inv)
     geoms = [geom_lonlat] if geom_lonlat.geom_type == "Polygon" else list(geom_lonlat.geoms)
     feats = []
     for i, g in enumerate(geoms):

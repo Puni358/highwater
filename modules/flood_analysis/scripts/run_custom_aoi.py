@@ -32,7 +32,11 @@ KEY_POOL = [OPENROUTER_API_KEY, OPENROUTER_API_KEY_FLOODNET, OPENROUTER_API_KEY_
 
 
 def update_manifest(key, label, base, raw_source, status, tile_ids=None):
-    manifest = json.load(open(MANIFEST_PATH)) if os.path.exists(MANIFEST_PATH) else {"datasets": []}
+    if os.path.exists(MANIFEST_PATH):
+        with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+    else:
+        manifest = {"datasets": []}
     entries = manifest["datasets"]
     existing = next((e for e in entries if e["key"] == key), None)
     entry = {"key": key, "label": label, "base": base, "raw_source": raw_source, "status": status}
@@ -85,7 +89,8 @@ def run_ai_detection_parallel(raw_dir, tile_ids, out_path):
     requests independently/simultaneously (not sequential with a label)."""
     results = {}
     if os.path.exists(out_path):
-        results = json.load(open(out_path))
+        with open(out_path, "r", encoding="utf-8") as f:
+            results = json.load(f)
     save_lock = threading.Lock()
 
     def save():

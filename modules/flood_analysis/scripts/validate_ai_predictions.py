@@ -40,7 +40,8 @@ def tile_features(annotations_dir, tile_id):
     fp = os.path.join(annotations_dir, f"{tile_id}.geojson")
     if not os.path.exists(fp):
         return None
-    d = json.load(open(fp))
+    with open(fp, "r", encoding="utf-8") as f:
+        d = json.load(f)
     return [
         f for f in d["features"]
         if f["properties"].get("building") is not None or f["properties"].get("highway") is not None
@@ -74,7 +75,8 @@ def main():
     if not os.path.exists(predictions_path):
         raise SystemExit(f"No predictions found at {predictions_path}. Run ai_flood_detect.py first.")
 
-    predictions = json.load(open(predictions_path))
+    with open(predictions_path, "r", encoding="utf-8") as f:
+        predictions = json.load(f)
     tile_ids = args.tiles.split(",") if args.tiles else list(predictions.keys())
 
     # Flat (original) scoring: every tile with a real prediction + ground truth, any confidence.

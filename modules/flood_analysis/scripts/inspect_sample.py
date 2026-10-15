@@ -23,8 +23,8 @@ def inspect_raster(path):
 
 def inspect_annotations():
     files = sorted(glob.glob(f"{RAW}/annotations/*.geojson"))
-    print(f"annotation files: {len(files)}")
-    d = json.load(open(files[0]))
+    with open(files[0], "r", encoding="utf-8") as f:
+        d = json.load(f)
     print(f"  sample file: {files[0]}")
     print(f"  crs: {d.get('crs')}")
     geom_types = Counter()
@@ -33,7 +33,8 @@ def inspect_annotations():
     highway_present = 0
     building_present = 0
     for fp in files:
-        dd = json.load(open(fp))
+        with open(fp, "r", encoding="utf-8") as f:
+            dd = json.load(f)
         for f in dd["features"]:
             p = f["properties"]
             geom_types[f["geometry"]["type"]] += 1
