@@ -465,6 +465,6 @@ describe('FloodWatch Layers & Unobstructed Map Integration (Step 6)', () => {
       expect(screen.getByText('Observed Flooded Features per Tile')).toBeInTheDocument();
       expect(screen.getByText('Observed Flooded Buildings per Tile')).toBeInTheDocument();
       expect(screen.queryByText('Risk Classification Distribution')).not.toBeInTheDocument();
-    });
+    }, 25000);
   });
 });

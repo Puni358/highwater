@@ -107,10 +107,12 @@ async function capture(url, width, height, filename) {
 
 async function run() {
   const mode = process.argv[2] || 'tile_0_41_58'; // 'before' | 'after' | 'tile_0_41_58'
-  if (mode === 'tile_0_41_58' || mode === 'tile') {
-    console.log('Capturing tile 0_41_58 screenshot at 1280px...');
-    await capture('http://127.0.0.1:5173/?dataSource=mock-floodwatch&tile=0_41_58', 1280, 900, 'tile_0_41_58_1280px.png');
-    console.log('Capture complete.');
+  if (mode === 'tile_0_41_58' || mode === 'tile' || mode === 'basemaps') {
+    console.log('Capturing tile 0_41_58 Plate basemap screenshot at 1280px...');
+    await capture('http://127.0.0.1:5173/?dataSource=mock-floodwatch&tile=0_41_58&basemap=plate', 1280, 900, 'tile_0_41_58_plate.png');
+    console.log('Capturing tile 0_41_58 Satellite basemap screenshot at 1280px...');
+    await capture('http://127.0.0.1:5173/?dataSource=mock-floodwatch&tile=0_41_58&basemap=satellite', 1280, 900, 'tile_0_41_58_satellite.png');
+    console.log('Capture complete for both basemaps.');
     return;
   }
   console.log(`Capturing ${mode} screenshots...`);

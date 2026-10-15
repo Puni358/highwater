@@ -209,6 +209,8 @@ export default function FloodMap({
   onChangeModelMode,
   selectedTileId: selectedTileIdProp,
   onSelectTile,
+  basemapMode: basemapModeProp,
+  onChangeBasemapMode: onChangeBasemapModeProp,
   children,
 }) {
   const [internalReset, setInternalReset] = useState(0);
@@ -218,6 +220,7 @@ export default function FloodMap({
   const [viewMode, setViewMode] = useState('2d'); // '2d' | '3d'
   const [internalModelMode, setInternalModelMode] = useState('fast');
   const [internalSelectedTileId, setInternalSelectedTileId] = useState('ALL');
+  const [internalBasemapMode, setInternalBasemapMode] = useState('plate');
   const [coords, setCoords] = useState({ lat: '50.5342° N', lng: '7.0421° E', zoom: 14 });
   const [scaleDistance, setScaleDistance] = useState('250 m');
 
@@ -226,6 +229,12 @@ export default function FloodMap({
 
   const activeModelMode = modelModeProp !== undefined ? modelModeProp : internalModelMode;
   const activeSelectedTileId = selectedTileIdProp !== undefined ? selectedTileIdProp : internalSelectedTileId;
+  const activeBasemapMode = basemapModeProp !== undefined ? basemapModeProp : internalBasemapMode;
+
+  const handleChangeBasemapMode = useCallback((mode) => {
+    if (onChangeBasemapModeProp) onChangeBasemapModeProp(mode);
+    setInternalBasemapMode(mode);
+  }, [onChangeBasemapModeProp]);
 
   const handleChangeModelMode = useCallback((mode) => {
     if (onChangeModelMode) onChangeModelMode(mode);
@@ -348,8 +357,14 @@ export default function FloodMap({
     return null;
   }, [activeSelectedTileId, riskZones, floodGroundTruth, floodPredictedFast, floodPredictedAccurate]);
 
-  const tileUrl = import.meta.env.VITE_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = import.meta.env.VITE_TILE_ATTRIBUTION || '© OpenStreetMap contributors';
+  const ESRI_SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+  const ESRI_SATELLITE_ATTRIBUTION = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+
+  const defaultTileUrl = import.meta.env.VITE_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const defaultTileAttribution = import.meta.env.VITE_TILE_ATTRIBUTION || '© OpenStreetMap contributors';
+
+  const tileUrl = activeBasemapMode === 'satellite' ? ESRI_SATELLITE_URL : defaultTileUrl;
+  const tileAttribution = activeBasemapMode === 'satellite' ? ESRI_SATELLITE_ATTRIBUTION : defaultTileAttribution;
 
   const handleTileError = useCallback(() => {
     if (!tilesOfflineRef.current) {
@@ -469,6 +484,7 @@ export default function FloodMap({
               scrollWheelZoom={true}
             >
               <TileLayer
+                key={activeBasemapMode}
                 url={tileUrl}
                 attribution={tileAttribution}
                 eventHandlers={{
@@ -710,6 +726,8 @@ export default function FloodMap({
                 selectedTileId={activeSelectedTileId}
                 onSelectTile={handleSelectTile}
                 hasFloodWatch={hasFloodWatch}
+                basemapMode={activeBasemapMode}
+                onChangeBasemapMode={handleChangeBasemapMode}
               />
 
               {/* 2. Map Legend */}

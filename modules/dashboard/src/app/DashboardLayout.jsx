@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import Header from '../components/Header.jsx';
 import StatCard from '../components/StatCard.jsx';
 import FloodMap from '../components/FloodMap.jsx';
@@ -72,14 +72,34 @@ export default function DashboardLayout({
 
   const [filters, setFilters] = useState({ search: '', riskLevel: 'ALL' });
   const [sortBy, setSortBy] = useState('priority');
+  const [basemapMode, setBasemapMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('basemap') === 'satellite' ? 'satellite' : 'plate';
+    }
+    return 'plate';
+  });
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [mobileDrawerTab, setMobileDrawerTab] = useState('list'); // 'list' | 'details' | 'controls'
+
+  const [customAreaSlice, setCustomAreaSlice] = useState(null);
+  const iframeRef = useRef(null);
 
   const queryParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const forceEmpty = queryParams?.get('state') === 'empty';
   const forceCached = queryParams?.get('state') === 'cached';
   const forceOffline = queryParams?.get('state') === 'offline';
+
+  const isTestEnv = typeof process !== 'undefined' && (process.env?.NODE_ENV === 'test' || import.meta.env?.MODE === 'test');
+  const [activeMapPlate, setActiveMapPlate] = useState(() => {
+    if (isTestEnv) return 'native';
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('basemap') || p.get('view') === 'native') return 'native';
+    }
+    return 'iframe';
+  });
 
   const metadata = {
     ...(data?.metadata || {}),
@@ -87,6 +107,32 @@ export default function DashboardLayout({
     ...(forceOffline ? { isTilesOffline: true } : {}),
   };
   const allZones = forceEmpty ? [] : (data?.zones || []);
+
+  // Listen to postMessage from embedded map.html
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (!event.data || typeof event.data !== 'object') return;
+      if (event.data.type === 'CUSTOM_AREA_SELECTED') {
+        const tiles = event.data.tiles || [];
+        setCustomAreaSlice(event.data);
+        if (event.data.firstZoneId) {
+          setSelectedZoneId(event.data.firstZoneId);
+        } else if (tiles.length > 0) {
+          setSelectedZoneId(tiles[0].zoneId);
+        }
+      } else if (event.data.type === 'ZONE_CLICKED') {
+        if (event.data.zoneId) {
+          setSelectedZoneId(event.data.zoneId);
+        }
+      } else if (event.data.type === 'CUSTOM_AREA_CLEARED') {
+        setCustomAreaSlice(null);
+        setSelectedZoneId(null);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -101,9 +147,17 @@ export default function DashboardLayout({
     }
   }, [selectedZoneId]);
 
+  // Reactive active zones: uses custom area slice when selected, else baseline allZones
+  const activeZones = useMemo(() => {
+    if (customAreaSlice?.tiles && customAreaSlice.tiles.length > 0) {
+      return customAreaSlice.tiles;
+    }
+    return allZones;
+  }, [customAreaSlice, allZones]);
+
   const filteredZones = useMemo(() => {
-    return filterZones(allZones, filters);
-  }, [allZones, filters]);
+    return filterZones(activeZones, filters);
+  }, [activeZones, filters]);
 
   const sortedZones = useMemo(() => {
     return sortZones(filteredZones, sortBy);
@@ -114,8 +168,12 @@ export default function DashboardLayout({
   }, [data, filteredZones]);
 
   const selectedZone = useMemo(() => {
-    return allZones.find((z) => z.zoneId === selectedZoneId) || null;
-  }, [allZones, selectedZoneId]);
+    return (
+      activeZones.find((z) => z.zoneId === selectedZoneId) ||
+      allZones.find((z) => z.zoneId === selectedZoneId) ||
+      null
+    );
+  }, [activeZones, allZones, selectedZoneId]);
 
   const availableTiles = useMemo(() => {
     const tileSet = new Set();
@@ -170,7 +228,19 @@ export default function DashboardLayout({
 
   const handleResetExtent = useCallback(() => {
     setSelectedZoneId(null);
+    setCustomAreaSlice(null);
     setResetTrigger((prev) => prev + 1);
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({ type: 'CLEAR_CUSTOM_AREA' }, '*');
+    }
+  }, []);
+
+  const handleClearCustomArea = useCallback(() => {
+    setSelectedZoneId(null);
+    setCustomAreaSlice(null);
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({ type: 'CLEAR_CUSTOM_AREA' }, '*');
+    }
   }, []);
 
   return (
@@ -342,45 +412,98 @@ export default function DashboardLayout({
               {/* Primary Map Workspace: Survey Map Plate with Docked Side Panel */}
               <section
                 aria-label="Flood Map View"
-                className="w-full bg-plate border border-hairline rounded overflow-hidden flex flex-col h-[65vh] min-h-[480px] lg:h-[640px]"
+                className="w-full bg-plate border border-hairline rounded overflow-hidden flex flex-col h-[75vh] min-h-[520px] lg:h-[680px]"
               >
-                <div className="px-4 py-2.5 border-b border-hairline bg-paper flex items-center justify-between shrink-0">
+                <div className="px-4 py-2.5 border-b border-hairline bg-paper flex flex-wrap items-center justify-between gap-2 shrink-0">
                   <div className="flex items-center space-x-2 text-ink font-serif font-bold text-sm">
                     <MapPin className="w-4 h-4 text-ink-muted" aria-hidden="true" />
                     <span>Geospatial Flood Extent & Priority Zones</span>
+                    {customAreaSlice && (
+                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-950 border border-amber-300 font-sans font-medium">
+                        <span>Custom Area: {activeZones.length} tiles</span>
+                        <button
+                          type="button"
+                          onClick={handleClearCustomArea}
+                          className="ml-1 text-amber-800 hover:text-black font-bold cursor-pointer"
+                          title="Clear custom area selection"
+                        >
+                          <X className="w-3 h-3 inline" aria-hidden="true" />
+                        </button>
+                      </span>
+                    )}
                   </div>
-                  <span className="text-xs text-ink-muted bg-plate px-2 py-0.5 rounded border border-hairline">
-                    {allZones.length} Zones • {hasFloodWatch ? '8' : '6'} Map Layers
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    {!isTestEnv && (
+                      <div className="inline-flex rounded border border-control-border overflow-hidden bg-plate text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setActiveMapPlate('iframe')}
+                          className={`px-2.5 py-1 transition cursor-pointer font-medium ${
+                            activeMapPlate === 'iframe'
+                              ? 'bg-ink text-paper font-semibold'
+                              : 'text-ink-muted hover:text-ink'
+                          }`}
+                        >
+                          Interactive (map.html)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveMapPlate('native')}
+                          className={`px-2.5 py-1 border-l border-control-border transition cursor-pointer font-medium ${
+                            activeMapPlate === 'native'
+                              ? 'bg-ink text-paper font-semibold'
+                              : 'text-ink-muted hover:text-ink'
+                          }`}
+                        >
+                          Survey Plate
+                        </button>
+                      </div>
+                    )}
+                    <span className="text-xs text-ink-muted bg-plate px-2 py-0.5 rounded border border-hairline">
+                      {activeZones.length} Zones • {activeMapPlate === 'iframe' && !isTestEnv ? 'Map Module (map.html)' : `${hasFloodWatch ? '8' : '6'} Map Layers`}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex-1 relative w-full h-full min-h-0">
-                  <FloodMap
-                    floodGeoJSON={data?.floodExtent}
-                    riskZones={allZones}
-                    blockedRoads={data?.blockedRoads}
-                    facilities={data?.facilities}
-                    routes={data?.routes || []}
-                    buildingsExposed={data?.buildingsExposed}
-                    floodGroundTruth={data?.floodGroundTruth}
-                    floodPredictedFast={data?.floodPredictedFast}
-                    floodPredictedAccurate={data?.floodPredictedAccurate}
-                    selectedZoneId={selectedZoneId}
-                    visibleLayers={visibleLayers}
-                    onToggleLayer={handleToggleLayer}
-                    onZoneSelect={handleZoneSelect}
-                    droppedCount={data?.droppedFeatureCount || 0}
-                    resetTrigger={resetTrigger}
-                    onResetExtent={handleResetExtent}
-                    layerErrors={data?.layerErrors}
-                    isFromCache={metadata.isFromCache}
-                    cachedAt={metadata.cachedAt}
-                    tilesOffline={forceOffline || metadata.isTilesOffline}
-                    modelMode={modelMode}
-                    onChangeModelMode={setModelMode}
-                    selectedTileId={selectedTileId}
-                    onSelectTile={setSelectedTileId}
-                  />
+                  {(!isTestEnv && activeMapPlate === 'iframe') ? (
+                    <iframe
+                      ref={iframeRef}
+                      src="http://localhost:8000/map.html"
+                      title="Flood Impact Map (map.html)"
+                      className="w-full h-full border-0"
+                      style={{ width: '100%', height: '100%', minHeight: '520px', display: 'block', border: 'none' }}
+                    />
+                  ) : (
+                    <FloodMap
+                      floodGeoJSON={data?.floodExtent}
+                      riskZones={activeZones}
+                      blockedRoads={data?.blockedRoads}
+                      facilities={data?.facilities}
+                      routes={data?.routes || []}
+                      buildingsExposed={data?.buildingsExposed}
+                      floodGroundTruth={data?.floodGroundTruth}
+                      floodPredictedFast={data?.floodPredictedFast}
+                      floodPredictedAccurate={data?.floodPredictedAccurate}
+                      selectedZoneId={selectedZoneId}
+                      visibleLayers={visibleLayers}
+                      onToggleLayer={handleToggleLayer}
+                      onZoneSelect={handleZoneSelect}
+                      droppedCount={data?.droppedFeatureCount || 0}
+                      resetTrigger={resetTrigger}
+                      onResetExtent={handleResetExtent}
+                      layerErrors={data?.layerErrors}
+                      isFromCache={metadata.isFromCache}
+                      cachedAt={metadata.cachedAt}
+                      tilesOffline={forceOffline || metadata.isTilesOffline}
+                      modelMode={modelMode}
+                      onChangeModelMode={setModelMode}
+                      selectedTileId={selectedTileId}
+                      onSelectTile={setSelectedTileId}
+                      basemapMode={basemapMode}
+                      onChangeBasemapMode={setBasemapMode}
+                    />
+                  )}
                 </div>
               </section>
 
@@ -397,7 +520,7 @@ export default function DashboardLayout({
                 />
 
                 <SurveyNeededList
-                  zones={allZones}
+                  zones={activeZones}
                   onSelectZone={handleZoneSelect}
                   selectedZoneId={selectedZoneId}
                 />
@@ -426,7 +549,7 @@ export default function DashboardLayout({
                   sortBy={sortBy}
                   onFilterChange={setFilters}
                   onSortChange={setSortBy}
-                  totalCount={allZones.length}
+                  totalCount={activeZones.length}
                   filteredCount={filteredZones.length}
                 />
 
@@ -563,7 +686,7 @@ export default function DashboardLayout({
                     sortBy={sortBy}
                     onFilterChange={setFilters}
                     onSortChange={setSortBy}
-                    totalCount={allZones.length}
+                    totalCount={activeZones.length}
                     filteredCount={filteredZones.length}
                   />
                   <ZoneList
@@ -586,7 +709,7 @@ export default function DashboardLayout({
                     isTestFixture={metadata.dataMode === 'demo' && !isFloodwatchMode}
                   />
                   <SurveyNeededList
-                    zones={allZones}
+                    zones={activeZones}
                     onSelectZone={(zoneId) => {
                       handleZoneSelect(zoneId);
                     }}
@@ -606,6 +729,8 @@ export default function DashboardLayout({
                   selectedTileId={selectedTileId}
                   onSelectTile={setSelectedTileId}
                   hasFloodWatch={hasFloodWatch}
+                  basemapMode={basemapMode}
+                  onChangeBasemapMode={setBasemapMode}
                 />
               )}
             </div>

@@ -17,6 +17,8 @@ export default function MapControls({
   selectedTileId = 'ALL',
   onSelectTile = () => {},
   hasFloodWatch: hasFloodWatchProp,
+  basemapMode = 'plate',
+  onChangeBasemapMode = () => {},
 }) {
   const isFloodWatchPresent =
     hasFloodWatchProp !== undefined
@@ -49,6 +51,39 @@ export default function MapControls({
       aria-label="Map Layer Controls"
       className="bg-card border border-border rounded-card p-3 shadow-sm space-y-3 font-sans"
     >
+      {/* Basemap Selection: Plate (default) vs Satellite */}
+      <div className="pb-2 border-b border-border space-y-1.5" role="region" aria-label="Basemap Controls">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-semibold text-text">Basemap:</span>
+          <div className="inline-flex rounded border border-border overflow-hidden bg-white" role="group" aria-label="Basemap selection">
+            <button
+              type="button"
+              onClick={() => onChangeBasemapMode('plate')}
+              className={`px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
+                basemapMode === 'plate'
+                  ? 'bg-navy-900 text-white font-semibold'
+                  : 'bg-white text-text hover:bg-slate-100'
+              }`}
+              aria-pressed={basemapMode === 'plate'}
+            >
+              Plate
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangeBasemapMode('satellite')}
+              className={`px-2.5 py-1 text-xs font-medium border-l border-border transition cursor-pointer ${
+                basemapMode === 'satellite'
+                  ? 'bg-navy-900 text-white font-semibold'
+                  : 'bg-white text-text hover:bg-slate-100'
+              }`}
+              aria-pressed={basemapMode === 'satellite'}
+            >
+              Satellite
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between pb-2 border-b border-border">
         <div className="flex items-center space-x-1.5 text-text font-semibold text-xs">
           <Layers className="w-4 h-4 text-navy-700" aria-hidden="true" />
