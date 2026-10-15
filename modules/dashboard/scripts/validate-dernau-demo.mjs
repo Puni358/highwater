@@ -59,11 +59,11 @@ function runValidation() {
   assert(fs.existsSync(zonesPath), 'zones.json exists');
   const zonesData = JSON.parse(fs.readFileSync(zonesPath, 'utf8'));
 
-  assert(zonesData.schema_version === '1.0' || zonesData.schema_version === '1.1', 'schema_version is "1.0" or "1.1"');
+  assert(zonesData.schema_version === '1.0', 'schema_version is "1.0"');
   assert(zonesData.data_mode === 'demo', 'data_mode is "demo"');
   assert(zonesData.crs === 'EPSG:4326', 'crs is "EPSG:4326"');
   assert(typeof zonesData.generated_at === 'string' && !isNaN(Date.parse(zonesData.generated_at)), 'generated_at is a valid ISO timestamp');
-  assert(typeof zonesData.risk_method === 'string', 'risk_method formula is documented');
+  assert(typeof zonesData.risk_method === 'string' && zonesData.risk_method.includes('0.40'), 'risk_method formula is documented');
   assert(Array.isArray(zonesData.zones), 'zones is an array');
   assert(zonesData.zones.length === 38, `Expected 38 zones, got ${zonesData.zones?.length}`);
 
@@ -90,6 +90,11 @@ function runValidation() {
     assert(['OPEN', 'LIMITED', 'BLOCKED', 'UNKNOWN'].includes(z.accessibility), `${z.zone_id}: valid accessibility enum`);
     assert(Array.isArray(z.reasons) && z.reasons.length > 0, `${z.zone_id}: reasons is non-empty array of strings`);
 
+    if (z.zone_id === 'zone-018' || z.zone_id === 'zone-005') {
+      const hasDesignatedNote = z.reasons.some((r) => r.toLowerCase().includes('designated test case'));
+      assert(hasDesignatedNote, `${z.zone_id}: reasons explicitly marks as designated test case`);
+    }
+
     if (z.exposed_buildings === null) {
       nullNumericCount++;
       nullNumericZoneIds.push(z.zone_id);
@@ -106,6 +111,7 @@ function runValidation() {
       assert(Array.isArray(z.geometry.coordinates) && z.geometry.coordinates.length === 1, `${z.zone_id}: single ring polygon`);
       const ring = z.geometry.coordinates[0];
       assert(isClosedRing(ring), `${z.zone_id}: polygon ring is closed`);
+      assert(ring.length === 5, `${z.zone_id}: rectangle polygon has 5 coordinates`);
       ring.forEach((pt) => {
         assert(isValidLngLat(pt), `${z.zone_id}: valid [lng, lat] coordinate`);
       });
@@ -115,11 +121,18 @@ function runValidation() {
   const zone038 = zonesData.zones.find((z) => z.zone_id === 'zone-038');
   assert(zone038 && zone038.geometry !== null, 'zone-038 has valid geometry and is kept on the map');
 
+  assert(nullGeomCount === 1, `Exactly 1 zone with null geometry (found ${nullGeomCount}: ${nullGeomZoneIds.join(', ')})`);
+  assert(nullGeomZoneIds[0] === 'zone-009', `Null geometry zone is zone-009 (found: ${nullGeomZoneIds.join(', ')})`);
+  assert(nullNumericCount === 1, `Exactly 1 zone with null numeric field (found ${nullNumericCount}: ${nullNumericZoneIds.join(', ')})`);
+  assert(nullNumericZoneIds[0] === 'zone-005', `Null numeric zone is zone-005 (found: ${nullNumericZoneIds.join(', ')})`);
+  assert(riskCounts.UNKNOWN >= 1, `At least 1 UNKNOWN risk zone (found ${riskCounts.UNKNOWN})`);
   assert(riskCounts.HIGH >= 1, `At least 1 HIGH risk zone (found ${riskCounts.HIGH})`);
   assert(riskCounts.MEDIUM >= 1, `At least 1 MEDIUM risk zone (found ${riskCounts.MEDIUM})`);
   assert(riskCounts.LOW >= 1, `At least 1 LOW risk zone (found ${riskCounts.LOW})`);
 
   console.log(`  -> Checked 38 zones: HIGH=${riskCounts.HIGH}, MEDIUM=${riskCounts.MEDIUM}, LOW=${riskCounts.LOW}, UNKNOWN=${riskCounts.UNKNOWN}`);
+  console.log(`  -> Null geometry edge case: ${nullGeomZoneIds.join(', ')} (LOW risk)`);
+  console.log(`  -> Null numeric field edge case: ${nullNumericZoneIds.join(', ')} (exposed_buildings)`);
   console.log(`  -> zone-038 status: geometry is Polygon (kept on map, risk ${zone038.risk_level})`);
 
   // -------------------------------------------------------------------------
@@ -202,7 +215,7 @@ function runValidation() {
   const facData = JSON.parse(fs.readFileSync(facPath, 'utf8'));
 
   assert(facData.type === 'FeatureCollection', 'facilities is FeatureCollection');
-  assert(Array.isArray(facData.features) && facData.features.length >= 3, 'At least 3 facilities');
+  assert(Array.isArray(facData.features) && facData.features.length === 3, 'Exactly 3 facilities');
 
   const facilityTypes = new Set();
   facData.features.forEach((feat, idx) => {
@@ -211,11 +224,11 @@ function runValidation() {
     assert(typeof feat.properties?.facility_id === 'string', `Facility ${idx}: facility_id present`);
     assert(typeof feat.properties?.name === 'string', `Facility ${idx}: name present`);
     assert(['hospital', 'shelter', 'depot'].includes(feat.properties?.type), `Facility ${idx}: valid type`);
-    assert(['simulated', 'derived', 'observed'].includes(feat.properties?.provenance), `Facility ${idx}: valid provenance`);
+    assert(feat.properties?.provenance === 'simulated', `Facility ${idx}: provenance is "simulated"`);
     facilityTypes.add(feat.properties?.type);
   });
   assert(facilityTypes.has('hospital') && facilityTypes.has('shelter') && facilityTypes.has('depot'), 'Covers hospital, shelter, and depot');
-  console.log(`  -> Checked ${facData.features.length} facilities: hospital, shelter, depot with simulated/derived provenance`);
+  console.log(`  -> Checked ${facData.features.length} facilities: hospital, shelter, depot with simulated provenance`);
 
   // -------------------------------------------------------------------------
   // 5. routes.json validation
@@ -226,31 +239,33 @@ function runValidation() {
   const routesData = JSON.parse(fs.readFileSync(routesPath, 'utf8'));
 
   assert(Array.isArray(routesData.routes), 'routes is array');
-  assert(routesData.routes.length >= 3, `Expected at least 3 routes, got ${routesData.routes.length}`);
+  assert(routesData.routes.length === 3, 'Exactly 3 routes');
 
   const okRoutes = routesData.routes.filter((r) => r.status === 'OK');
-  const failedRoutes = routesData.routes.filter((r) => r.status === 'NO_SAFE_ROUTE' || r.status === 'UNREACHABLE');
+  const unreachableRoutes = routesData.routes.filter((r) => r.status === 'UNREACHABLE');
 
-  assert(okRoutes.length >= 1, `Expected at least 1 OK route, got ${okRoutes.length}`);
+  assert(okRoutes.length === 2, `Expected 2 OK routes, got ${okRoutes.length}`);
+  assert(unreachableRoutes.length === 1, `Expected 1 UNREACHABLE route, got ${unreachableRoutes.length}`);
 
   routesData.routes.forEach((r) => {
     assert(typeof r.route_id === 'string', `${r.route_id}: valid route_id`);
-    assert(['OK', 'NO_SAFE_ROUTE', 'UNREACHABLE', 'UNKNOWN'].includes(r.status), `${r.route_id}: valid status`);
-    assert(['derived', 'simulated', 'observed'].includes(r.provenance), `${r.route_id}: valid provenance`);
+    assert(['OK', 'UNREACHABLE', 'UNKNOWN'].includes(r.status), `${r.route_id}: valid status`);
+    assert(r.eta_minutes === null, `${r.route_id}: eta_minutes is null (no invented speeds)`);
+    assert(r.provenance === 'simulated', `${r.route_id}: provenance is "simulated"`);
 
     if (r.status === 'OK') {
       assert(typeof r.distance_m === 'number' && r.distance_m > 0, `${r.route_id}: positive distance_m`);
-      assert(r.geometry?.type === 'LineString' || r.geometry?.type === 'MultiLineString', `${r.route_id}: geometry is LineString or MultiLineString`);
+      assert(r.geometry?.type === 'LineString', `${r.route_id}: geometry is LineString`);
       assert(Array.isArray(r.geometry.coordinates) && r.geometry.coordinates.length >= 2, `${r.route_id}: valid coordinates`);
       r.geometry.coordinates.forEach((pt) => {
         assert(isValidLngLat(pt), `${r.route_id}: valid [lng, lat] coordinate`);
       });
-    } else {
-      assert(r.distance_m === null, `${r.route_id}: distance_m is null for failed route`);
-      assert(r.geometry === null, `${r.route_id}: geometry is null for failed route`);
+    } else if (r.status === 'UNREACHABLE') {
+      assert(r.distance_m === null, `${r.route_id}: distance_m is null for UNREACHABLE`);
+      assert(r.geometry === null, `${r.route_id}: geometry is null for UNREACHABLE`);
     }
   });
-  console.log(`  -> Checked ${routesData.routes.length} routes: ${okRoutes.length} OK with real line geometry & Haversine distance, ${failedRoutes.length} failed with null geometry`);
+  console.log(`  -> Checked 3 routes: 2 OK with real line geometry & Haversine distance, 1 UNREACHABLE with null geometry`);
 
   // -------------------------------------------------------------------------
   // 6. buildings_exposed.geojson validation

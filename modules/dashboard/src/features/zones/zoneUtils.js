@@ -11,7 +11,6 @@
  * Priority order weighting for risk levels
  */
 const RISK_PRIORITY_WEIGHT = {
-  CRITICAL: 5,
   HIGH: 4,
   MEDIUM: 3,
   LOW: 2,
