@@ -25,17 +25,15 @@ export function normalizeNumber(val) {
   return null;
 }
 
-import { DEFAULT_PRIORITY_THRESHOLDS, classifyRiskScore } from '../config/thresholds.js';
-
 /**
- * Normalises risk level. Anything not strictly CRITICAL, HIGH, MEDIUM, LOW becomes UNKNOWN.
+ * Normalises risk level. Anything not strictly HIGH, MEDIUM, LOW becomes UNKNOWN.
  * @param {string} level 
- * @returns {"CRITICAL"|"HIGH"|"MEDIUM"|"LOW"|"UNKNOWN"}
+ * @returns {"HIGH"|"MEDIUM"|"LOW"|"UNKNOWN"}
  */
 export function normalizeRiskLevel(level) {
   if (typeof level !== 'string') return 'UNKNOWN';
   const upper = level.toUpperCase().trim();
-  if (upper === 'CRITICAL' || upper === 'HIGH' || upper === 'MEDIUM' || upper === 'LOW') {
+  if (upper === 'HIGH' || upper === 'MEDIUM' || upper === 'LOW') {
     return upper;
   }
   return 'UNKNOWN';
@@ -120,10 +118,6 @@ export function adaptZones(rawZonesPayload) {
     }
   }
 
-  const payloadThresholds = rawZonesPayload.priority_thresholds
-    || rawZonesPayload.scoring_config?.priority_thresholds
-    || DEFAULT_PRIORITY_THRESHOLDS;
-
   const metadata = {
     schemaVersion: rawZonesPayload.schema_version || '1.0',
     generatedAt: rawZonesPayload.generated_at || null,
@@ -132,7 +126,6 @@ export function adaptZones(rawZonesPayload) {
     riskMethod: rawZonesPayload.risk_method || null,
     source: rawZonesPayload.source || null,
     dataSource: rawZonesPayload.data_source || null,
-    priorityThresholds: payloadThresholds,
   };
 
   const zones = rawZones.map((z, idx) => {
@@ -143,23 +136,17 @@ export function adaptZones(rawZonesPayload) {
       z.flooded_area_km2 ?? (z.flooded_area_m2 ? z.flooded_area_m2 / 1000000 : null)
     );
     const exposedBuildings = normalizeNumber(z.exposed_buildings);
-    const rawScore = normalizeNumber(z.risk_score ?? z.score);
     const scoreResult = normalizeRiskScore(z.risk_score ?? z.score);
 
     // Rule:
     // Only force UNKNOWN when risk_level or risk_score is missing or invalid.
     // If risk_level is supplied but other numeric fields are null, keep the risk level and add a partialData flag.
-    const rawRiskInput = z.risk_level !== undefined ? z.risk_level : z.priority;
-    let riskLevel = 'UNKNOWN';
+    const normalizedRisk = normalizeRiskLevel(z.risk_level || z.priority);
+    const isRiskMissingOrInvalid =
+      normalizedRisk === 'UNKNOWN' ||
+      scoreResult.score === null;
 
-    if (scoreResult.score === null) {
-      riskLevel = 'UNKNOWN';
-    } else if (rawRiskInput !== undefined && rawRiskInput !== null) {
-      riskLevel = normalizeRiskLevel(rawRiskInput);
-    } else {
-      riskLevel = classifyRiskScore(rawScore ?? scoreResult.score, payloadThresholds);
-    }
-
+    const riskLevel = isRiskMissingOrInvalid ? 'UNKNOWN' : normalizedRisk;
     const riskScore = scoreResult.score;
 
     const partialData =
@@ -206,7 +193,6 @@ export function adaptZones(rawZonesPayload) {
       name,
       riskLevel,
       riskScore,
-      rawRiskScore: rawScore,
       floodedPercent,
       floodedAreaKm2,
       exposedBuildings,
@@ -223,6 +209,8 @@ export function adaptZones(rawZonesPayload) {
       rank_p90: z.rank_p90 !== undefined ? z.rank_p90 : null,
       needsSurvey: z.needs_survey === true || z.needs_verification === true,
       partialData,
+      observationTime: z.observation_time || z.acquired || rawZonesPayload.observation_time || rawZonesPayload.acquired || null,
+      runTime: z.run_time || rawZonesPayload.generated_at || null,
     };
   });
 
@@ -246,21 +234,27 @@ export function adaptRoutes(rawRoutesPayload) {
     : [];
 
   return rawList.map((r, idx) => ({
-    routeId: r.route_id || `route-${idx + 1}`,
-    zoneId: r.zone_id || null,
-    zoneName: r.zone_name || null,
-    riskLevel: r.risk_level || r.riskLevel || null,
-    destinationName: r.destination_name || null,
-    destinationId: r.destination_id || null,
-    destinationCoords: r.destination_coords || null,
-    originId: r.origin_id || null,
-    originCoords: r.origin_coords || null,
-    originType: r.origin_type || 'road_pickup_point',
+    routeId: r.route_id || r.routeId || `route-${idx + 1}`,
+    zoneId: r.zone_id || r.zoneId || null,
+    destinationName: r.destination_name || r.destinationName || r.name || null,
     status: (r.status || 'UNKNOWN').toUpperCase(),
-    distanceM: normalizeNumber(r.distance_m ?? (r.distance_km ? r.distance_km * 1000 : null)),
-    etaMinutes: normalizeNumber(r.eta_minutes),
-    provenance: r.provenance || 'derived',
+    distanceM: normalizeNumber(r.distance_m ?? r.distanceM ?? (r.distance_km ? r.distance_km * 1000 : null)),
+    lengthKm: normalizeNumber(r.length_km ?? (r.distance_m ? r.distance_m / 1000 : null)),
+    etaMinutes: normalizeNumber(r.eta_minutes ?? r.etaMinutes),
+    uncertainSegments: normalizeNumber(r.uncertain_segments ?? r.uncertainSegments ?? 0),
+    maxWaterDepthM: normalizeNumber(r.max_water_depth_meters ?? r.maxWaterDepthM ?? 0.0),
+    dataAgeHours: normalizeNumber(r.data_age_hours ?? r.dataAgeHours),
+    vehicleType: r.vehicle_type || r.vehicleType || 'AMBULANCE',
+    geometryQuality: r.geometry_quality || r.geometryQuality || (r.vehicle_type === 'HELICOPTER' ? 'AIR_LINE' : (r.vehicle_type === 'RESCUE_BOAT' ? 'WATER_LINE' : 'ROADS')),
+    corridorType: r.corridor_type || r.corridorType || (r.geometry_quality === 'AIR_LINE' || r.vehicle_type === 'HELICOPTER' ? 'AIR_LINE' : (r.geometry_quality === 'WATER_LINE' || r.vehicle_type === 'RESCUE_BOAT' ? 'WATER_LINE' : 'ROADS')),
+    scenarioId: r.scenario_id || r.scenarioId || null,
+    stage: r.stage || 1,
+    stageTitle: r.stage_title || r.stageTitle || null,
+    fallbackReason: r.fallback_reason || r.fallbackReason || r.reason || null,
     reason: r.reason || null,
+    label: r.label || (r.geometry_quality === 'AIR_LINE' || r.vehicle_type === 'HELICOPTER' ? 'Air/boat line, not a road route' : (r.geometry_quality === 'WATER_LINE' || r.vehicle_type === 'RESCUE_BOAT' ? 'Air/boat line, not a road route' : null)),
+    wording: r.wording || 'lowest-risk route (model)',
+    provenance: r.provenance || 'derived',
     geometry: r.geometry || null,
   }));
 }

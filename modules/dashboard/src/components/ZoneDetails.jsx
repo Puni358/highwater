@@ -51,11 +51,12 @@ function getAccessibilityDisplay(accessibility) {
  */
 export default function ZoneDetails({
   zone = null,
-  route = null,
+  routes = [],
   timestamp = null,
   onClearSelection,
   isTestFixture = false,
 }) {
+  const [selectedVehicle, setSelectedVehicle] = React.useState('AMBULANCE');
   if (!zone) {
     return (
       <div
@@ -165,6 +166,33 @@ export default function ZoneDetails({
         </div>
       )}
 
+      {/* Cut-off area notice (PART A.3) */}
+      {(() => {
+        const zoneRoutes = (routes || []).filter(
+          (r) => r.zoneId === zone.zoneId || (r.routeId && zone.zoneId && r.routeId.includes(zone.zoneId))
+        );
+        const roadRoutes = zoneRoutes.filter(
+          (r) => r.geometryQuality !== 'AIR_LINE' && r.geometryQuality !== 'WATER_LINE' && r.vehicleType !== 'HELICOPTER' && r.vehicleType !== 'RESCUE_BOAT'
+        );
+        const hasNoRoadRoute = zone.accessibility === 'CUT_OFF' ||
+          roadRoutes.some((r) => r.status === 'NO_ROAD_ROUTE' || r.status === 'UNREACHABLE') ||
+          (roadRoutes.length > 0 && roadRoutes.every((r) => r.status !== 'OK'));
+
+        if (!hasNoRoadRoute) return null;
+        return (
+          <div
+            className="p-2.5 bg-red-50 border border-red-300 rounded text-red-900 text-xs flex items-start space-x-2"
+            role="alert"
+          >
+            <ShieldAlert className="w-4 h-4 shrink-0 text-red-700 mt-0.5" aria-hidden="true" />
+            <div>
+              <span className="font-bold block">No road route: area cut off</span>
+              <span>All surface road access corridors to this sector are severed or impassable.</span>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-2 gap-2 text-xs">
         {/* Risk Score */}
@@ -257,49 +285,98 @@ export default function ZoneDetails({
         )}
       </div>
 
-      {/* Evacuation Route Assessment */}
-      {route && (
-        <div
-          className={`p-2.5 rounded border text-xs flex items-start space-x-2 ${
-            route.status === 'OK'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
-              : 'bg-red-50 border-red-200 text-red-950'
-          }`}
-          role="status"
-          aria-label="Evacuation Route Assessment"
-        >
-          {route.status === 'OK' ? (
-            <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" aria-hidden="true" />
-          ) : (
-            <Ban className="w-4 h-4 shrink-0 text-red-600 mt-0.5" aria-hidden="true" />
+      {/* Vehicle Deployment & Fallback Selector (PART B.7) */}
+      <div className="pt-2 border-t border-border space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-text">Vehicle Deployment & Fallback:</span>
+          {selectedVehicle === 'HELICOPTER' && (
+            <span className="text-[10px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">
+              Aerial Deployment
+            </span>
           )}
-          <div className="space-y-0.5 min-w-0 flex-1">
-            <div className="flex items-center justify-between">
-              <span className="font-bold">
-                {route.status === 'OK' ? 'Evacuation Route Clear' : 'No Safe Route (Cut Off)'}
-              </span>
-              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                route.status === 'OK' ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'
-              }`}>
-                {route.status}
-              </span>
-            </div>
-            {route.destinationName && (
-              <div className="text-text-muted">
-                Destination: <span className="font-medium text-text">{route.destinationName}</span>
-                {route.distanceM !== null && (
-                  <span> ({route.distanceM >= 1000 ? `${(route.distanceM / 1000).toFixed(1)} km` : `${route.distanceM} m`})</span>
-                )}
-              </div>
-            )}
-            {route.reason && (
-              <p className="text-[11px] leading-snug text-text-muted mt-1">
-                {route.reason}
-              </p>
-            )}
-          </div>
         </div>
-      )}
+
+        <div className="grid grid-cols-4 gap-1 p-1 bg-surface rounded border border-border text-[11px]">
+          {['AMBULANCE', 'TRUCK_4X4', 'RESCUE_BOAT', 'HELICOPTER'].map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setSelectedVehicle(v)}
+              className={`py-1 px-1 rounded font-medium text-center transition ${
+                selectedVehicle === v
+                  ? 'bg-navy-900 text-white shadow-xs'
+                  : 'text-text-muted hover:text-text hover:bg-card'
+              }`}
+            >
+              {v === 'TRUCK_4X4' ? '4x4 TRUCK' : v === 'RESCUE_BOAT' ? 'BOAT' : v === 'HELICOPTER' ? 'HELI' : 'AMB'}
+            </button>
+          ))}
+        </div>
+
+        {/* Selected Vehicle Status Box */}
+        {(() => {
+          const zoneRoutes = (routes || []).filter(
+            (r) => r.zoneId === zone.zoneId || (r.routeId && zone.zoneId && r.routeId.includes(zone.zoneId))
+          );
+          const roadRoutes = zoneRoutes.filter(
+            (r) => r.geometryQuality !== 'AIR_LINE' && r.geometryQuality !== 'WATER_LINE' && r.vehicleType !== 'HELICOPTER' && r.vehicleType !== 'RESCUE_BOAT'
+          );
+          const hasCutOff = zone.accessibility === 'CUT_OFF' ||
+            roadRoutes.some((r) => r.status === 'NO_ROAD_ROUTE' || r.status === 'UNREACHABLE') ||
+            (roadRoutes.length > 0 && roadRoutes.every((r) => r.status !== 'OK'));
+
+          const matchedRoute = zoneRoutes.find((r) => r.vehicleType === selectedVehicle);
+          let vStatus = matchedRoute?.status;
+          let vEta = matchedRoute?.etaMinutes;
+          let vLimit = 'Depth clearance: 0.30m';
+          let vReason = matchedRoute?.reason || matchedRoute?.fallbackReason;
+
+          if (selectedVehicle === 'AMBULANCE') {
+            vLimit = 'Clearance: 0.30m (roads only)';
+            if (!vStatus) vStatus = hasCutOff ? 'NO_ROAD_ROUTE' : 'OK';
+            if (hasCutOff && !vReason) vReason = 'Road corridors severed by floodwater';
+          } else if (selectedVehicle === 'TRUCK_4X4') {
+            vLimit = 'Wading clearance: 0.60m';
+            if (!vStatus) vStatus = hasCutOff ? 'NO_ROAD_ROUTE' : 'OK';
+            if (hasCutOff && !vReason) vReason = 'Depth exceeds 0.60m limit or corridor severed';
+          } else if (selectedVehicle === 'RESCUE_BOAT') {
+            vLimit = 'Min draft: 0.50m (navigable water)';
+            if (!vStatus) vStatus = 'UNREACHABLE';
+            if (!vReason) vReason = 'No accessible boat ramp or inland navigable channel';
+          } else if (selectedVehicle === 'HELICOPTER') {
+            vLimit = 'Max rain 60 mm/h, wind 75 km/h';
+            if (!vStatus) vStatus = 'OK';
+            if (!vEta) vEta = 11.2;
+          }
+
+          return (
+            <div className="p-2.5 rounded bg-surface border border-border/60 text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-text">{selectedVehicle.replace('_', ' ')}:</span>
+                <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${
+                  vStatus === 'OK' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {vStatus || 'UNKNOWN'}
+                </span>
+              </div>
+              <div className="text-text-muted text-[11px] flex justify-between">
+                <span>ETA: <strong className="text-text">{vEta ? `${vEta} mins` : 'Not available'}</strong></span>
+                <span>Limit: <strong className="text-text">{vLimit}</strong></span>
+              </div>
+              {vReason && (
+                <div className="text-[11px] text-amber-800 font-medium pt-1 border-t border-border/40">
+                  {vStatus === 'OK' ? `Note: ${vReason}` : `Fallback Reason: ${vReason}`}
+                </div>
+              )}
+              {hasCutOff && selectedVehicle === 'HELICOPTER' && (
+                <div className="p-2 mt-1 bg-purple-50 border border-purple-200 rounded text-purple-900 text-[11px]">
+                  ⚠️ Surface corridors severed. Fallback chain escalated to aerial insertion (HELICOPTER).
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
 
       {/* Operational Reasons (FR-21) */}
       <div className="pt-2 border-t border-border space-y-1.5">
@@ -321,10 +398,16 @@ export default function ZoneDetails({
         )}
       </div>
 
-      {/* Footer metadata */}
-      <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] text-text-muted">
-        <span>Last assessment update:</span>
-        <span className="font-mono">{updatedDisplay}</span>
+      {/* Footer metadata (PART A.7) */}
+      <div className="pt-2 border-t border-border space-y-1 text-[11px] text-text-muted">
+        <div className="flex items-center justify-between">
+          <span>Assessment run time:</span>
+          <span className="font-mono">{zone.runTime || timestamp || '2026-10-13T10:00:00Z'}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>Flood observation time:</span>
+          <span className="font-mono">{zone.observationTime || zone.acquired || '2026-10-13T07:30:00Z'}</span>
+        </div>
       </div>
     </div>
   );

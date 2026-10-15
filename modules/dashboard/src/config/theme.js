@@ -16,7 +16,6 @@ export const THEME = {
     flood: '#2B8CC4',
     floodBorder: '#1A6896',
     shelter: '#0284C7',
-    'risk-critical': '#7F1D1D',
     'risk-high': '#C62828',
     'risk-medium': '#E69F00',
     'risk-low': '#2E7D32',
@@ -56,7 +55,6 @@ export const THEME = {
     badge: '999px',
   },
   riskColors: {
-    CRITICAL: '#7F1D1D',
     HIGH: '#C62828',
     MEDIUM: '#E69F00',
     LOW: '#2E7D32',
