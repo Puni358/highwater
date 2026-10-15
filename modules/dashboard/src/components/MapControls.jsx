@@ -34,7 +34,7 @@ export default function MapControls({
     { key: 'buildings', label: 'Exposed Buildings', icon: Home, color: 'text-amber-700', provenance: 'observed' },
     ...(isFloodWatchPresent
       ? [
-          { key: 'floodGroundTruth', label: 'Observed labels (SpaceNet 8)', icon: Home, color: 'text-amber-700', provenance: 'observed' },
+          { key: 'floodGroundTruth', label: 'Observed flood labels', icon: Home, color: 'text-amber-700', provenance: 'observed' },
           { key: 'floodPredicted', label: 'Model output (derived)', icon: Droplets, color: 'text-sky-600', provenance: 'derived' },
         ]
       : []),

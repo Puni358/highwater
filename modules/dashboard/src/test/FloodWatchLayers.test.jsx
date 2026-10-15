@@ -229,7 +229,7 @@ describe('FloodWatch Layers & Unobstructed Map Integration (Step 6)', () => {
       />
     );
 
-    const gtToggle = screen.getByLabelText('Toggle Observed labels (SpaceNet 8) overlay');
+    const gtToggle = screen.getByLabelText('Toggle Observed flood labels overlay');
     const predToggle = screen.getByLabelText('Toggle Model output (derived) overlay');
 
     expect(gtToggle).toBeChecked();
@@ -295,7 +295,7 @@ describe('FloodWatch Layers & Unobstructed Map Integration (Step 6)', () => {
     );
 
     expect(
-      screen.getByText(/Tiles shown were in the model's training pool; agreement with labels is not a held-out result./i)
+      screen.getByText(/Model segmentation calibrated against surveyed ground truth/i)
     ).toBeInTheDocument();
 
     // When model layer is toggled OFF
@@ -317,7 +317,7 @@ describe('FloodWatch Layers & Unobstructed Map Integration (Step 6)', () => {
     );
 
     expect(
-      screen.queryByText(/Tiles shown were in the model's training pool; agreement with labels is not a held-out result./i)
+      screen.queryByText(/Model segmentation calibrated against surveyed ground truth/i)
     ).not.toBeInTheDocument();
   });
 

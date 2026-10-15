@@ -28,6 +28,7 @@ export default {
       },
       fontFamily: {
         sans: THEME.typography.fontFamily.sans,
+        mono: THEME.typography.fontFamily.mono,
       },
       fontSize: {
         title: THEME.typography.fontSize.title,

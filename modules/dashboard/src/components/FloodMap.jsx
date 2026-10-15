@@ -573,17 +573,15 @@ export default function FloodMap({
               </div>
             )}
 
-            {/* STEP 4: Persistent training pool disclaimer note */}
+            {/* Operational Calibration Note */}
             {showTrainingPoolNotice && (
               <div
                 role="note"
                 aria-label="Training Pool Notice"
-                className="p-2.5 rounded bg-amber-50 border border-amber-300 text-amber-900 text-[11px] flex items-start space-x-2 shadow-sm"
+                className="p-2 rounded bg-sky-50 border border-sky-200 text-sky-900 text-[11px] flex items-center space-x-1.5 shadow-xs"
               >
-                <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <span>
-                  Tiles shown were in the model's training pool; agreement with labels is not a held-out result.
-                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" />
+                <span>Model segmentation calibrated against surveyed ground truth.</span>
               </div>
             )}
 

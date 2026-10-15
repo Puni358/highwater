@@ -104,7 +104,7 @@ describe('Phase 4 Wiring Integration (T4.3 - T4.8)', () => {
 
     // ZoneDetails shows non-spatial warning
     expect(screen.getByText('Non-spatial staging area')).toBeInTheDocument();
-    expect(screen.getByText(/This zone does not have map boundary data and is not plotted on the map/i)).toBeInTheDocument();
+    expect(screen.getByText(/No geospatial boundary coordinates available/i)).toBeInTheDocument();
   });
 
   it('filters zones by risk level, updating list, status badge, and stats (T4.4, T4.8)', () => {

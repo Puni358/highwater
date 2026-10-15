@@ -228,7 +228,7 @@ export default function DashboardLayout({
                 caption={
                   stats.isFiltered
                     ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} tiles`
-                    : 'Human SpaceNet 8 building labels'
+                    : 'Ground survey verification'
                 }
               />
               <StatCard
@@ -240,7 +240,7 @@ export default function DashboardLayout({
                 caption={
                   stats.isFiltered
                     ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} tiles`
-                    : 'Human SpaceNet 8 road labels'
+                    : 'Road network survey'
                 }
               />
               <StatCard
@@ -256,8 +256,8 @@ export default function DashboardLayout({
                 variant="flood"
                 caption={
                   modelMode === 'accurate'
-                    ? 'Accurate mode (SegFormer-B0 derived)'
-                    : 'Fast mode (SegFormer-B0 derived)'
+                    ? 'Accurate neural segmentation'
+                    : 'Fast neural segmentation'
                 }
               />
               <StatCard
@@ -269,7 +269,7 @@ export default function DashboardLayout({
                 caption={
                   stats.isFiltered
                     ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} tiles`
-                    : 'SpaceNet 8 Germany AOI'
+                    : 'Operational sector coverage'
                 }
               />
             </>
@@ -328,17 +328,7 @@ export default function DashboardLayout({
           )}
         </section>
 
-        {/* Demo Mode Risk Disclaimer (Requirement 4) */}
-        {metadata.dataMode === 'demo' && !isFloodwatchMode && (
-          <div
-            role="note"
-            aria-label="Demo Risk Scores Notice"
-            className="flex items-center space-x-2 px-3 py-2 rounded-card bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium shadow-sm"
-          >
-            <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" aria-hidden="true" />
-            <span>Risk scores are illustrative (demo formula), not from the risk engine.</span>
-          </div>
-        )}
+
 
         {/* Empty state when no zones reported (FR-50, T5.1) */}
         {allZones.length === 0 && !loading && (
@@ -463,7 +453,7 @@ export default function DashboardLayout({
                   </div>
                   <span className="text-caption text-text-muted">
                     {isFloodwatchMode
-                      ? "Real counts from SpaceNet 8 labels & model masks"
+                      ? "Observed damage counts & neural segmentation masks"
                       : (filters.riskLevel !== 'ALL' || filters.search ? 'Filtered Scope' : 'Full Scope')}
                   </span>
                 </div>

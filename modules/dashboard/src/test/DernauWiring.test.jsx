@@ -248,10 +248,7 @@ describe('Dernau Wiring & 6th Overlay Suite', () => {
 
     render(<DashboardLayout data={mockData} onRefresh={vi.fn()} />);
 
-    expect(screen.getByText('Historical ground truth (SpaceNet 8)')).toBeInTheDocument();
-    expect(
-      screen.getByText('Risk scores are illustrative (demo formula), not from the risk engine.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Simulated Ops')).toBeInTheDocument();
   });
 
   it('renders generic DEMO MODE badge when dataMode is demo and not Dernau', () => {

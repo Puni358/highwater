@@ -143,11 +143,11 @@ export default function MapLegend({
         </div>
       )}
 
-      {/* 7. FloodWatch Observed Labels Swatch (SpaceNet 8) */}
+      {/* 7. FloodWatch Observed Labels Swatch */}
       {visibleLayers.floodGroundTruth && (
         <div className="space-y-1 pt-1 border-t border-border/50">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-text-muted text-[11px]">Observed (SpaceNet 8):</span>
+            <span className="font-semibold text-text-muted text-[11px]">Observed Labels:</span>
             <ProvenanceBadge value="observed" />
           </div>
           <div className="space-y-1 text-[11px]">

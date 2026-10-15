@@ -207,7 +207,7 @@ export default function ZoneDetails({
           <MapPinOff className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" aria-hidden="true" />
           <div>
             <span className="font-bold block">Non-spatial staging area</span>
-            <span>This zone does not have map boundary data and is not plotted on the map.</span>
+            <span>No geospatial boundary coordinates available; sector not plotted on the map.</span>
           </div>
         </div>
       )}

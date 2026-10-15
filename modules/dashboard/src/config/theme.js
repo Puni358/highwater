@@ -38,7 +38,8 @@ export const THEME = {
   },
   typography: {
     fontFamily: {
-      sans: ['ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'sans-serif'],
+      sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+      mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
     },
     fontSize: {
       title: '18px',

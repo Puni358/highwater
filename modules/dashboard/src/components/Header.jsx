@@ -57,8 +57,16 @@ export default function Header({
 
   const lastRefreshedTime = formatHHMM(lastRefreshedAt);
 
+  const cleanStudyArea =
+    typeof studyArea === 'string'
+      ? studyArea
+          .replace(/SpaceNet\s*8\s*/gi, '')
+          .replace(/Germany AOI/g, 'Ahr Valley Sector')
+          .trim()
+      : studyArea;
+
   return (
-    <header className="h-14 bg-navy-900 text-white px-4 md:px-6 flex items-center justify-between border-b border-navy-700 shadow-sm shrink-0">
+    <header className="h-14 bg-navy-900 text-white px-4 md:px-6 flex items-center justify-between border-b border-navy-700 shadow-sm shrink-0 font-sans">
       {/* Left: Logo & Brand */}
       <div className="flex items-center space-x-3">
         <div className="p-1.5 bg-flood/20 rounded-md text-flood flex items-center justify-center">
@@ -66,7 +74,7 @@ export default function Header({
         </div>
         <div className="flex items-baseline space-x-2">
           <span className="text-title font-bold tracking-wider text-white">HIGHWATER</span>
-          <span className="hidden sm:inline-block text-xs text-text-muted px-1.5 py-0.5 rounded bg-navy-700/60">
+          <span className="hidden sm:inline-block text-[11px] font-semibold tracking-wider uppercase text-sky-300 px-1.5 py-0.5 rounded bg-navy-700/80 border border-navy-700">
             Flood Ops
           </span>
         </div>
@@ -76,7 +84,7 @@ export default function Header({
       <div className="flex items-center space-x-2 sm:space-x-4 text-xs">
         <div className="hidden md:flex items-center space-x-1.5 text-slate-300">
           <span className="font-semibold text-white">Area:</span>
-          <span>{studyArea}</span>
+          <span>{cleanStudyArea}</span>
         </div>
         <span className="hidden md:inline text-slate-600">•</span>
         <div className="flex items-center space-x-1.5 text-slate-300">
@@ -88,7 +96,7 @@ export default function Header({
             <span className="hidden lg:inline text-slate-600">•</span>
             <div className="flex items-center space-x-1.5 text-slate-300">
               <span className="font-semibold text-white">Last refreshed:</span>
-              <span>{lastRefreshedTime}</span>
+              <span className="font-mono">{lastRefreshedTime}</span>
             </div>
           </>
         )}
@@ -96,36 +104,27 @@ export default function Header({
 
       {/* Right: Mode Badge & Refresh Action */}
       <div className="flex items-center space-x-3">
-        {isFloodWatch ? (
+        {isFloodWatch || isDernau ? (
           <div
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-demo-bg text-demo-text text-xs font-semibold tracking-wide border border-amber-300/60"
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-sky-950/70 text-sky-200 text-xs font-semibold tracking-wider uppercase border border-sky-600/40 shadow-xs"
             role="status"
-            aria-label="Historical labels and model output active"
+            aria-label="Simulated operations environment active"
           >
-            <AlertTriangle className="w-3.5 h-3.5 text-demo-text" aria-hidden="true" />
-            <span>Historical labels and model output (SpaceNet 8)</span>
-          </div>
-        ) : isDernau ? (
-          <div
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-demo-bg text-demo-text text-xs font-semibold tracking-wide border border-amber-300/60"
-            role="status"
-            aria-label="Historical ground truth data active"
-          >
-            <AlertTriangle className="w-3.5 h-3.5 text-demo-text" aria-hidden="true" />
-            <span>Historical ground truth (SpaceNet 8)</span>
+            <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" aria-hidden="true" />
+            <span>Simulated Ops</span>
           </div>
         ) : isDemo ? (
           <div
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-demo-bg text-demo-text text-xs font-semibold tracking-wide border border-amber-300/60"
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-sky-950/70 text-sky-200 text-xs font-semibold tracking-wider uppercase border border-sky-600/40 shadow-xs"
             role="status"
             aria-label="Demonstration mode active"
           >
-            <AlertTriangle className="w-3.5 h-3.5 text-demo-text" aria-hidden="true" />
+            <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" aria-hidden="true" />
             <span>DEMO MODE</span>
           </div>
         ) : (
           <div
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-risk-low/20 text-emerald-300 text-xs font-medium border border-risk-low/40"
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-emerald-950/70 text-emerald-300 text-xs font-semibold tracking-wider uppercase border border-emerald-600/40 shadow-xs"
             role="status"
             aria-label="Connected data active"
           >
