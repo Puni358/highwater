@@ -221,3 +221,46 @@ export async function getDashboardData(options = {}) {
 
 // Backwards compatibility alias
 export const fetchDashboardData = getDashboardData;
+
+export const DEFAULT_FLOOD_DETECT_URL = 'http://localhost:8001';
+
+/**
+ * Calls the local SegFormer offline model backend (Module 2) to detect flood damage across tile IDs.
+ *
+ * @param {string[]} tileIds List of tile IDs (e.g. ['0_36_59', '0_36_62'])
+ * @param {Object} [options]
+ * @param {string} [options.source='germany'] Imagery dataset source
+ * @param {number} [options.threshold=0.001] Flood detection threshold
+ * @param {string} [options.mode='fast'] Detection mode ('fast' | 'accurate')
+ * @param {string} [options.baseUrl] Backend URL (defaults to import.meta.env?.VITE_FLOOD_DETECT_URL or http://localhost:8001)
+ * @returns {Promise<Object>} Results map with predictions and metrics per tile
+ */
+export async function detectFloodTiles(tileIds, options = {}) {
+  const baseUrl = options.baseUrl || import.meta.env?.VITE_FLOOD_DETECT_URL || DEFAULT_FLOOD_DETECT_URL;
+  const cleanBase = baseUrl.replace(/\/+$/, '');
+  const url = `${cleanBase}/api/detect-tiles`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tiles: tileIds,
+      source: options.source || 'germany',
+      threshold: options.threshold !== undefined ? options.threshold : 0.001,
+      mode: options.mode || 'fast',
+    }),
+  });
+
+  if (!response.ok) {
+    let errDetail = `Server error ${response.status}: ${response.statusText}`;
+    try {
+      const errJson = await response.json();
+      errDetail = errJson.detail || errDetail;
+    } catch {
+      // ignore
+    }
+    throw new Error(`Flood detection API failed: ${errDetail}`);
+  }
+
+  return await response.json();
+}
