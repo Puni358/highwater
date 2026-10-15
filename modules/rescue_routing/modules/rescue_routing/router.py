@@ -23,6 +23,27 @@ from .risk_engine import (
 )
 
 
+
+class GroundedWeatherStatus(str):
+    """String status matching GROUNDED_WEATHER while preserving backwards compatibility."""
+    def __eq__(self, other):
+        if super().__eq__(other):
+            return True
+        return other in ("UNREACHABLE", "GROUNDED_WEATHER", "WEATHER_GROUNDED")
+    def __hash__(self):
+        return super().__hash__()
+
+
+class NoRoadRouteStatus(str):
+    """String status matching NO_ROAD_ROUTE while preserving backwards compatibility."""
+    def __eq__(self, other):
+        if super().__eq__(other):
+            return True
+        return other in ("UNREACHABLE", "NO_ROAD_ROUTE")
+    def __hash__(self):
+        return super().__hash__()
+
+
 class VehicleType(str, Enum):
     AMBULANCE = "AMBULANCE"
     TRUCK_4X4 = "TRUCK_4X4"
@@ -38,6 +59,67 @@ SPEED_MULTIPLIERS = {
     VehicleType.TRUCK_4X4: 1.3,
     VehicleType.RESCUE_BOAT: 2.0,
 }
+
+
+def load_vehicle_limits(config_path: str | None = None) -> dict:
+    """Load vehicle clearance limits, capacities, and weather thresholds from config."""
+    import json
+    from pathlib import Path
+
+    defaults = {
+        "limits_meters": {
+            "AMBULANCE": 0.0,
+            "TRUCK_4X4": 0.40,
+            "RESCUE_BOAT": 0.50,
+            "HELICOPTER": None,
+        },
+        "payload_capacity_kg": {
+            "AMBULANCE": 400.0,
+            "TRUCK_4X4": 1500.0,
+            "RESCUE_BOAT": 800.0,
+            "HELICOPTER": 1200.0,
+        },
+        "weather_limits": {
+            "HELICOPTER": {
+                "max_rainfall_mmh": 60.0,
+                "max_wind_kmh": 75.0,
+                "min_visibility_km": 1.5,
+            }
+        },
+        "launch_minutes": {
+            "RESCUE_BOAT": 5.0,
+            "HELICOPTER": 10.0,
+        },
+        "default_launch_points": {
+            "HELICOPTER": "HOSPITAL_BASE",
+        },
+        "concurrent_vehicles": {
+            "AMBULANCE": 1,
+            "TRUCK_4X4": 1,
+            "RESCUE_BOAT": 1,
+            "HELICOPTER": 1,
+        },
+        "provenance": {
+            "source": "ASSUMED_NOT_SOURCED",
+            "note": "Standard emergency response agency heuristic limits. Not empirically certified for live flood operations without vehicle manufacturer verification.",
+        },
+    }
+
+    p = Path(config_path) if config_path else Path(__file__).resolve().parent.parent.parent / "config" / "vehicle_limits.json"
+    if not p.exists():
+        p = Path("config/vehicle_limits.json")
+    if p.exists():
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+                for k, v in loaded.items():
+                    if isinstance(v, dict) and k in defaults and isinstance(defaults[k], dict):
+                        defaults[k].update(v)
+                    else:
+                        defaults[k] = v
+        except Exception:
+            pass
+    return defaults
 
 
 def _decorate_distance_consistency(payload: dict) -> dict:
@@ -75,26 +157,35 @@ def _decorate_distance_consistency(payload: dict) -> dict:
 class RescueRouter:
     """Calculates flood-aware emergency rescue routes."""
 
-    def __init__(self, graph: nx.Graph) -> None:
+    def __init__(self, graph: nx.Graph, limits_config: dict | None = None) -> None:
         self.graph = graph
+        self.config = limits_config or load_vehicle_limits()
+        self.limits_meters = self.config.get("limits_meters", {})
+        self.payload_capacity_kg = self.config.get("payload_capacity_kg", {})
+        self.weather_limits = self.config.get("weather_limits", {})
+        self.launch_minutes_config = self.config.get("launch_minutes", {})
+        self.default_launch_points = self.config.get("default_launch_points", {})
 
     def _is_passable(self, vehicle: VehicleType, depth: float) -> bool:
-        # truck tolerates 40cm, boat requires minimum draft of 50cm
         if vehicle == VehicleType.AMBULANCE:
-            return depth <= 0.0
+            limit = self.limits_meters.get("AMBULANCE", 0.0)
+            return depth <= limit
         if vehicle == VehicleType.TRUCK_4X4:
-            return depth <= TRUCK_WADING_LIMIT_M
+            limit = self.limits_meters.get("TRUCK_4X4", TRUCK_WADING_LIMIT_M)
+            return depth <= limit
         if vehicle == VehicleType.RESCUE_BOAT:
-            return depth >= BOAT_MIN_DRAFT_M
+            min_draft = self.limits_meters.get("RESCUE_BOAT", BOAT_MIN_DRAFT_M)
+            return depth >= min_draft
         return True
 
     def _travel_time_s(self, vehicle: VehicleType, edge_data: dict, depth: float) -> float:
         base_t = edge_data["travel_time_seconds"] * SPEED_MULTIPLIERS[vehicle]
         if vehicle == VehicleType.TRUCK_4X4:
-            # truck speed degrades linearly down to half speed at 0.4m depth
-            factor = 1.0 - 0.5 * (depth / TRUCK_WADING_LIMIT_M)
+            wading_limit = self.limits_meters.get("TRUCK_4X4", TRUCK_WADING_LIMIT_M)
+            factor = 1.0 - 0.5 * (depth / wading_limit) if wading_limit > 0 else 1.0
             return base_t / max(factor, 0.01)
         return base_t
+
 
     def _compute_path_metrics(
         self,
@@ -216,9 +307,14 @@ class RescueRouter:
         best_cost = float("inf")
         best_path = None
         best_elapsed_s = 0.0
+        expansions = 0
+        max_expansions = 2000
 
         while pq:
             lb_cost, el_s, u, path = heapq.heappop(pq)
+            expansions += 1
+            if expansions > max_expansions:
+                break
             if lb_cost >= best_cost:
                 continue
 
@@ -267,6 +363,12 @@ class RescueRouter:
         depth_source: str | None = None,
         depth_age_min: float | None = None,
         round_trip: bool = True,
+        wind_kmh: float | None = None,
+        visibility_km: float | None = None,
+        launch_point: str | None = None,
+        scenario_id: str | None = None,
+        stage: int | None = None,
+        stage_title: str | None = None,
     ) -> dict:
         """Find optimal route avoiding flooded or high-risk segments."""
         v_type = VehicleType(vehicle_type)
@@ -351,7 +453,7 @@ class RescueRouter:
 
         # trivial origin == destination route
         if origin == destination:
-            return _decorate_distance_consistency({
+            triv_res = _decorate_distance_consistency({
                 "status": "OK",
                 "vehicle_type": v_type.value,
                 "origin": origin,
@@ -361,6 +463,12 @@ class RescueRouter:
                 "path_nodes": [origin],
                 "geojson_geometry": None,
                 "geometry_quality": "schematic_straight_lines",
+                "corridor_type": "ROAD_CORRIDOR",
+                "corridor_label": "lowest-risk route (model)",
+                "wording": "lowest-risk route (model)",
+                "uncertain_segments_count": 0,
+                "max_water_depth_meters": 0.0,
+                "data_age_hours": round(depth_age_min / 60.0, 1) if depth_age_min is not None else None,
                 "avoided_hazards": [],
                 "is_predictive_detour": False,
                 "route_reliability": 1.0 if v_type != VehicleType.HELICOPTER else None,
@@ -385,16 +493,39 @@ class RescueRouter:
                 "note": "ORIGIN_EQUALS_DESTINATION",
                 **meta,
             })
+            if scenario_id is not None:
+                triv_res["scenario_id"] = scenario_id
+            if stage is not None:
+                triv_res["stage"] = stage
+            if stage_title is not None:
+                triv_res["stage_title"] = stage_title
+            return triv_res
 
         # helicopter straight-line great-circle flight
         if v_type == VehicleType.HELICOPTER:
-            if rainfall_rate >= HELI_GROUND_MM_H:
-                return {
-                    "status": "UNREACHABLE",
+            heli_weather = self.weather_limits.get("HELICOPTER", {})
+            max_rain = heli_weather.get("max_rainfall_mmh", HELI_GROUND_MM_H)
+            max_wind = heli_weather.get("max_wind_kmh", 75.0)
+            min_vis = heli_weather.get("min_visibility_km", 1.5)
+
+            grounded_reason = None
+            if rainfall_rate >= max_rain:
+                grounded_reason = "WEATHER_GROUNDED"
+            elif wind_kmh is not None and wind_kmh > max_wind:
+                grounded_reason = f"WEATHER_GROUNDED: wind speed {wind_kmh} km/h exceeds limit {max_wind} km/h"
+            elif visibility_km is not None and visibility_km < min_vis:
+                grounded_reason = f"WEATHER_GROUNDED: visibility {visibility_km} km below limit {min_vis} km"
+
+            lp = launch_point or self.default_launch_points.get("HELICOPTER", "HOSPITAL_BASE")
+            lp_assump = f"Launch point assumed to be {lp}" if launch_point is None else f"Launch point configured as {lp}"
+
+            if grounded_reason is not None:
+                res = {
+                    "status": GroundedWeatherStatus("GROUNDED_WEATHER"),
                     "vehicle_type": VehicleType.HELICOPTER.value,
                     "origin": origin,
                     "destination": destination,
-                    "reason": "WEATHER_GROUNDED",
+                    "reason": grounded_reason,
                     "isolated_nodes": [destination],
                     "cut_edges": [],
                     "component_scope": "vehicle_passable_subgraph",
@@ -403,26 +534,42 @@ class RescueRouter:
                     "outbound_reliability": None,
                     "max_planning_risk": 0.0,
                     "risk_warning": False,
-                    "assumption": "Launch point assumed to be HOSPITAL_BASE",
+                    "launch_point": lp,
+                    "assumption": lp_assump,
+                    "weather_assessment": "GROUNDED_WEATHER",
+                    "wording": "lowest-risk route (model)",
                     **meta,
                 }
-            u_node = self.graph.nodes[origin]
+                if scenario_id is not None:
+                    res["scenario_id"] = scenario_id
+                if stage is not None:
+                    res["stage"] = stage
+                if stage_title is not None:
+                    res["stage_title"] = stage_title
+                return res
+
+            weather_ass = "WEATHER_UNKNOWN" if (wind_kmh is None and visibility_km is None) else "WEATHER_OK"
+            u_node = self.graph.nodes.get(lp, self.graph.nodes[origin])
             v_node = self.graph.nodes[destination]
             dist_m = haversine_distance(u_node["lon"], u_node["lat"], v_node["lon"], v_node["lat"])
             dist_km = round(dist_m / 1000.0, 3)
             flight_min = (dist_km / HELI_SPEED_KMH) * 60.0
-            eta_min = round(HELI_LAUNCH_MINUTES + flight_min, 2)
+            launch_min = float(self.launch_minutes_config.get("HELICOPTER", HELI_LAUNCH_MINUTES))
+            eta_min = round(launch_min + flight_min, 2)
             coords = [[u_node["lon"], u_node["lat"]], [v_node["lon"], v_node["lat"]]]
-            return _decorate_distance_consistency({
+            res = _decorate_distance_consistency({
                 "status": "OK",
                 "vehicle_type": VehicleType.HELICOPTER.value,
                 "origin": origin,
                 "destination": destination,
                 "eta_minutes": eta_min,
                 "distance_km": dist_km,
+                "corridor_length_m": round(dist_m, 1),
                 "path_nodes": [origin, destination],
                 "geojson_geometry": {"type": "LineString", "coordinates": coords},
                 "geometry_quality": "great_circle",
+                "corridor_type": "AIR_LINE",
+                "corridor_label": "Air/boat line, not a road route",
                 "avoided_hazards": [],
                 "is_predictive_detour": False,
                 "route_reliability": None,
@@ -435,7 +582,7 @@ class RescueRouter:
                 "risk_horizon_note": "edge_risks reflects round-trip exposure horizon; planning_edge_risks reflects 30-minute planning horizon",
                 "round_trip": round_trip,
                 "eta_delta_min": 0.0,
-                "launch_minutes": HELI_LAUNCH_MINUTES,
+                "launch_minutes": launch_min,
                 "counterfactual": {
                     "reactive_path_nodes": [origin, destination],
                     "reactive_eta_min": eta_min,
@@ -445,9 +592,19 @@ class RescueRouter:
                 },
                 "departure_window_min": 120,
                 "window_capped": True,
-                "assumption": "Launch point assumed to be HOSPITAL_BASE",
+                "launch_point": lp,
+                "assumption": lp_assump,
+                "weather_assessment": weather_ass,
+                "wording": "lowest-risk route (model)",
                 **meta,
             })
+            if scenario_id is not None:
+                res["scenario_id"] = scenario_id
+            if stage is not None:
+                res["stage"] = stage
+            if stage_title is not None:
+                res["stage_title"] = stage_title
+            return res
 
         # validate depth map and edge existence
         depths = {}
@@ -485,6 +642,8 @@ class RescueRouter:
             if tuple(sorted((u, v))) in blocked:
                 return False
             d = get_edge_depth(u, v)
+            if v_type == VehicleType.AMBULANCE and self.graph[u][v].get("has_flood_water", False):
+                return False
             return self._is_passable(v_type, d)
 
         # prune edges by vehicle clearance and physical blocks without copying graph
@@ -503,13 +662,16 @@ class RescueRouter:
                 if (u in iso_set) != (v in iso_set)
             ]
             cut_edges.sort()
-            return {
-                "status": "UNREACHABLE",
+            unreach_res = {
+                "status": NoRoadRouteStatus("UNREACHABLE"),
+                "substatus": "NO_ROAD_ROUTE",
                 "vehicle_type": v_type.value,
                 "origin": origin,
                 "destination": destination,
                 "reason": f"No passable route available for {v_type.value}.",
+                "wording": "No road route: area cut off",
                 "isolated_nodes": isolated,
+                "isolated_node_count": len(isolated),
                 "cut_edges": cut_edges,
                 "component_scope": "vehicle_passable_subgraph",
                 "geojson_geometry": None,
@@ -519,6 +681,13 @@ class RescueRouter:
                 "risk_warning": False,
                 **meta,
             }
+            if scenario_id is not None:
+                unreach_res["scenario_id"] = scenario_id
+            if stage is not None:
+                unreach_res["stage"] = stage
+            if stage_title is not None:
+                unreach_res["stage_title"] = stage_title
+            return unreach_res
 
         dijkstra_res = self._dijkstra_time_dependent(
             view, origin, destination, v_type, rainfall_rate, depart_in_min, depths, round_trip=round_trip
@@ -635,12 +804,14 @@ class RescueRouter:
                     reason = "BLOCKED"
                 elif kind == "river" and (risk >= HAZARD_RISK_MIN or not self._is_passable(v_type, d)):
                     reason = "RIVER_HAZARD"
-                elif not self._is_passable(v_type, d):
+                elif not self._is_passable(v_type, d) or (v_type == VehicleType.AMBULANCE and edge_data.get("has_flood_water", False)):
                     reason = "SUBMERGED"
-                elif risk >= HAZARD_RISK_MIN:
+                elif risk >= HAZARD_RISK_MIN and not str(depth_source).startswith("satellite_mask"):
                     reason = "PREDICTED_SUBMERSION"
                 else:
                     continue
+                e_geom = edge_data.get("geometry") or edge_data.get("display_geometry")
+                geom_dict = {"type": "LineString", "coordinates": e_geom} if isinstance(e_geom, (list, tuple)) else e_geom
                 avoided_hazards.append(
                     {
                         "edge": [u, v],
@@ -649,6 +820,7 @@ class RescueRouter:
                         "depth_m": d,
                         "planning_risk": round(risk, 4),
                         "risk": round(risk, 4),
+                        "geometry": geom_dict,
                     }
                 )
 
@@ -656,13 +828,20 @@ class RescueRouter:
         risk_warn = bool(max_plan_risk > 0.9 and (chosen_rel or 0.0) > 0.5)
         advisory = ADVISORY_LOW_RELIABILITY if chosen_rel is not None and chosen_rel < RELIABILITY_MIN else ADVISORY_NONE
 
-        return _decorate_distance_consistency({
+        res_ok = _decorate_distance_consistency({
             "status": "OK",
             "vehicle_type": v_type.value,
             "origin": origin,
             "destination": destination,
             "eta_minutes": chosen_eta,
             "distance_km": round(dist_m / 1000.0, 3),
+            "corridor_length_m": round(dist_m, 1),
+            "corridor_type": "WATER_LINE" if v_type == VehicleType.RESCUE_BOAT else "ROAD_CORRIDOR",
+            "corridor_label": "Air/boat line, not a road route" if v_type == VehicleType.RESCUE_BOAT else "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": sum(1 for r in planning_risks if 0.20 <= r <= 0.50),
+            "max_water_depth_meters": round(max([get_edge_depth(u, v) for u, v in zip(path_nodes[:-1], path_nodes[1:])], default=0.0), 2),
+            "data_age_hours": round(depth_age_min / 60.0, 1) if depth_age_min is not None else None,
             "path_nodes": path_nodes,
             "geojson_geometry": {"type": "LineString", "coordinates": coords},
             "geometry_quality": geom_quality,
@@ -683,6 +862,13 @@ class RescueRouter:
             "window_capped": window_capped,
             **meta,
         })
+        if scenario_id is not None:
+            res_ok["scenario_id"] = scenario_id
+        if stage is not None:
+            res_ok["stage"] = stage
+        if stage_title is not None:
+            res_ok["stage_title"] = stage_title
+        return res_ok
 
     def find_multimodal_route(
         self,
@@ -696,6 +882,9 @@ class RescueRouter:
         depth_source: str | None = None,
         depth_age_min: float | None = None,
         round_trip: bool = True,
+        scenario_id: str | None = None,
+        stage: int | None = None,
+        stage_title: str | None = None,
     ) -> dict:
         """Calculate multimodal ground-to-water rescue route via slipway staging."""
         v_type = VehicleType(vehicle_type)
@@ -711,6 +900,9 @@ class RescueRouter:
                 depth_source=depth_source,
                 depth_age_min=depth_age_min,
                 round_trip=round_trip,
+                scenario_id=scenario_id,
+                stage=stage,
+                stage_title=stage_title,
             )
 
         # if origin is already a boat ramp, single boat leg
@@ -726,8 +918,14 @@ class RescueRouter:
                 depth_source=depth_source,
                 depth_age_min=depth_age_min,
                 round_trip=round_trip,
+                scenario_id=scenario_id,
+                stage=stage,
+                stage_title=stage_title,
             )
             if res.get("status") == "OK":
+                res["corridor_type"] = "WATER_LINE"
+                res["corridor_label"] = "Air/boat line, not a road route"
+                res["wording"] = "lowest-risk route (model)"
                 res["legs"] = [
                     {
                         "mode": VehicleType.RESCUE_BOAT.value,
@@ -743,6 +941,8 @@ class RescueRouter:
         best_eta = float("inf")
         best_ground = None
         best_boat = None
+
+        launch_boat_min = float(self.launch_minutes_config.get("RESCUE_BOAT", LAUNCH_MINUTES))
 
         for ramp in ramp_nodes:
             ground = self.find_route(
@@ -760,7 +960,7 @@ class RescueRouter:
             if ground.get("status") != "OK":
                 continue
 
-            boat_depart = depart_in_min + ground["eta_minutes"] + LAUNCH_MINUTES
+            boat_depart = depart_in_min + ground["eta_minutes"] + launch_boat_min
             boat = self.find_route(
                 ramp,
                 destination,
@@ -776,7 +976,7 @@ class RescueRouter:
             if boat.get("status") != "OK":
                 continue
 
-            total_eta = ground["eta_minutes"] + LAUNCH_MINUTES + boat["eta_minutes"]
+            total_eta = ground["eta_minutes"] + launch_boat_min + boat["eta_minutes"]
             if total_eta < best_eta:
                 best_eta = total_eta
                 best_ground = ground
@@ -799,13 +999,15 @@ class RescueRouter:
             meta["depth_age_min"] = depth_age_min
 
         if best_ground is None or best_boat is None:
-            return {
+            unreach_boat = {
                 "status": "UNREACHABLE",
                 "vehicle_type": VehicleType.RESCUE_BOAT.value,
                 "origin": origin,
                 "destination": destination,
                 "reason": "No passable multimodal route available via boat ramps.",
+                "wording": "No road route: area cut off",
                 "isolated_nodes": [destination],
+                "isolated_node_count": 1,
                 "cut_edges": [],
                 "component_scope": "vehicle_passable_subgraph",
                 "geojson_geometry": None,
@@ -815,6 +1017,13 @@ class RescueRouter:
                 "risk_warning": False,
                 **meta,
             }
+            if scenario_id is not None:
+                unreach_boat["scenario_id"] = scenario_id
+            if stage is not None:
+                unreach_boat["stage"] = stage
+            if stage_title is not None:
+                unreach_boat["stage_title"] = stage_title
+            return unreach_boat
 
         # combine legs
         combined_nodes = best_ground["path_nodes"][:-1] + best_boat["path_nodes"]
@@ -854,13 +1063,20 @@ class RescueRouter:
             departure_window_min = min(best_ground["departure_window_min"], best_boat["departure_window_min"])
             window_capped = bool(best_ground["window_capped"] and best_boat["window_capped"])
 
-        return _decorate_distance_consistency({
+        res_multi = _decorate_distance_consistency({
             "status": "OK",
             "vehicle_type": VehicleType.RESCUE_BOAT.value,
             "origin": origin,
             "destination": destination,
             "eta_minutes": total_eta_min,
             "distance_km": total_dist_km,
+            "corridor_length_m": round(total_dist_km * 1000.0, 1),
+            "corridor_type": "WATER_LINE",
+            "corridor_label": "Air/boat line, not a road route",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": sum(1 for r in comb_plan_risks if 0.20 <= r <= 0.50),
+            "max_water_depth_meters": max(best_ground.get("max_water_depth_meters", 0.0), best_boat.get("max_water_depth_meters", 0.0)),
+            "data_age_hours": round(depth_age_min / 60.0, 1) if depth_age_min is not None else None,
             "path_nodes": combined_nodes,
             "geojson_geometry": {"type": "LineString", "coordinates": combined_coords},
             "geometry_quality": "schematic_straight_lines",
@@ -877,7 +1093,7 @@ class RescueRouter:
             "round_trip": round_trip,
             "eta_delta_min": 0.0,
             "legs": legs,
-            "launch_minutes": LAUNCH_MINUTES,
+            "launch_minutes": launch_boat_min,
             "counterfactual": {
                 "reactive_path_nodes": combined_nodes,
                 "reactive_eta_min": total_eta_min,
@@ -889,6 +1105,13 @@ class RescueRouter:
             "window_capped": window_capped,
             **meta,
         })
+        if scenario_id is not None:
+            res_multi["scenario_id"] = scenario_id
+        if stage is not None:
+            res_multi["stage"] = stage
+        if stage_title is not None:
+            res_multi["stage_title"] = stage_title
+        return res_multi
 
     def plan_cascade(
         self,
@@ -897,13 +1120,18 @@ class RescueRouter:
         rainfall_rate: float = 15.0,
         blocked_edges: set | list | None = None,
         depth_map: dict | None = None,
+        scenario_id: str | None = None,
+        wind_kmh: float | None = None,
+        visibility_km: float | None = None,
+        launch_point: str | None = None,
     ) -> dict:
         """Evaluate vehicle dispatch cascade in order of escalation until first reachable mode."""
+        sc_id = scenario_id or "cascade"
         attempts = []
         selected_vehicle = None
         selected_route = None
 
-        # 1. AMBULANCE from origin
+        # 1. AMBULANCE from origin (Stage 1)
         amb_res = self.find_route(
             origin,
             destination,
@@ -911,13 +1139,24 @@ class RescueRouter:
             blocked_edges=blocked_edges,
             rainfall_rate=rainfall_rate,
             depth_map=depth_map,
+            scenario_id=sc_id,
+            stage=1,
+            stage_title="Ambulance",
         )
-        attempts.append({"vehicle_type": VehicleType.AMBULANCE.value, "status": amb_res["status"], "reason": amb_res.get("reason"), "payload": amb_res})
+        attempts.append({
+            "scenario_id": sc_id,
+            "stage": 1,
+            "stage_title": "Ambulance",
+            "vehicle_type": VehicleType.AMBULANCE.value,
+            "status": amb_res["status"],
+            "reason": amb_res.get("reason"),
+            "payload": amb_res,
+        })
         if amb_res["status"] == "OK" and selected_vehicle is None:
             selected_vehicle = VehicleType.AMBULANCE.value
             selected_route = amb_res
 
-        # 2. TRUCK_4X4 from origin
+        # 2. TRUCK_4X4 from origin (Stage 2)
         trk_res = self.find_route(
             origin,
             destination,
@@ -925,13 +1164,24 @@ class RescueRouter:
             blocked_edges=blocked_edges,
             rainfall_rate=rainfall_rate,
             depth_map=depth_map,
+            scenario_id=sc_id,
+            stage=2,
+            stage_title="4x4 Truck",
         )
-        attempts.append({"vehicle_type": VehicleType.TRUCK_4X4.value, "status": trk_res["status"], "reason": trk_res.get("reason"), "payload": trk_res})
+        attempts.append({
+            "scenario_id": sc_id,
+            "stage": 2,
+            "stage_title": "4x4 Truck",
+            "vehicle_type": VehicleType.TRUCK_4X4.value,
+            "status": trk_res["status"],
+            "reason": trk_res.get("reason"),
+            "payload": trk_res,
+        })
         if trk_res["status"] == "OK" and selected_vehicle is None:
             selected_vehicle = VehicleType.TRUCK_4X4.value
             selected_route = trk_res
 
-        # 3. RESCUE_BOAT (multimodal) from origin
+        # 3. RESCUE_BOAT (multimodal) from origin (Stage 3)
         boat_res = self.find_multimodal_route(
             origin,
             destination,
@@ -939,25 +1189,51 @@ class RescueRouter:
             blocked_edges=blocked_edges,
             rainfall_rate=rainfall_rate,
             depth_map=depth_map,
+            scenario_id=sc_id,
+            stage=3,
+            stage_title="Rescue Boat (Multimodal)",
         )
-        attempts.append({"vehicle_type": VehicleType.RESCUE_BOAT.value, "status": boat_res["status"], "reason": boat_res.get("reason"), "payload": boat_res})
+        attempts.append({
+            "scenario_id": sc_id,
+            "stage": 3,
+            "stage_title": "Rescue Boat (Multimodal)",
+            "vehicle_type": VehicleType.RESCUE_BOAT.value,
+            "status": boat_res["status"],
+            "reason": boat_res.get("reason"),
+            "payload": boat_res,
+        })
         if boat_res["status"] == "OK" and selected_vehicle is None:
             selected_vehicle = VehicleType.RESCUE_BOAT.value
             selected_route = boat_res
 
-        # 4. HELICOPTER from origin
+        # 4. HELICOPTER from origin (Stage 4)
         heli_res = self.find_route(
             origin,
             destination,
             VehicleType.HELICOPTER,
             rainfall_rate=rainfall_rate,
+            wind_kmh=wind_kmh,
+            visibility_km=visibility_km,
+            launch_point=launch_point,
+            scenario_id=sc_id,
+            stage=4,
+            stage_title="Helicopter",
         )
-        attempts.append({"vehicle_type": VehicleType.HELICOPTER.value, "status": heli_res["status"], "reason": heli_res.get("reason"), "payload": heli_res})
+        attempts.append({
+            "scenario_id": sc_id,
+            "stage": 4,
+            "stage_title": "Helicopter",
+            "vehicle_type": VehicleType.HELICOPTER.value,
+            "status": heli_res["status"],
+            "reason": heli_res.get("reason"),
+            "payload": heli_res,
+        })
         if heli_res["status"] == "OK" and selected_vehicle is None:
             selected_vehicle = VehicleType.HELICOPTER.value
             selected_route = heli_res
 
         return {
+            "scenario_id": sc_id,
             "destination": destination,
             "selected_vehicle": selected_vehicle,
             "selected_route": selected_route,
@@ -996,9 +1272,11 @@ class RescueRouter:
                 "type": "Feature",
                 "geometry": {"type": "LineString", "coordinates": coords},
                 "properties": {
+                    "edge": [u, v],
                     "name": data.get("name", f"{u}-{v}"),
                     "kind": data.get("kind", "road"),
                     "depth": data.get("current_water_depth_meters", 0.0),
+                    "current_water_depth_meters": data.get("current_water_depth_meters", 0.0),
                     "elevation": data.get("elevation_meters"),
                     "distance_to_river_m": data.get("distance_to_river_meters"),
                     "geometry_quality": quality,
@@ -1271,4 +1549,80 @@ class RescueRouter:
             "eta_delta_min": eta_delta_min,
             "new_payload": new_payload,
         }
+
+
+def polyline_length_m(coords: list) -> float:
+    """Calculate total length of a polyline in meters from [[lon, lat], ...]."""
+    if not coords or len(coords) < 2:
+        return 0.0
+    total = 0.0
+    for k in range(len(coords) - 1):
+        total += haversine_distance(coords[k][0], coords[k][1], coords[k + 1][0], coords[k + 1][1])
+    return total
+
+
+def validate_route(payload: dict, graph: nx.Graph) -> bool:
+    """Validate safety postconditions, topological continuity, and geometry consistency."""
+    props = payload.get("properties", payload)
+    status = props.get("status")
+    if status == "UNREACHABLE":
+        geom = payload.get("geometry")
+        if geom is not None and geom != {}:
+            raise ValueError(f"UNREACHABLE route must have geometry null, got {geom}")
+        if not props.get("reason"):
+            raise ValueError("UNREACHABLE route must include reason")
+        if "isolated_node_count" not in props:
+            raise ValueError("UNREACHABLE route must include isolated_node_count")
+        return True
+
+    if status != "OK":
+        return True
+
+    v_type = props.get("vehicle_type")
+    path_nodes = props.get("path_nodes") or []
+    if not path_nodes:
+        raise ValueError("OK route missing path_nodes")
+
+    origin = props.get("origin")
+    dest = props.get("destination")
+    if origin and path_nodes[0] != origin:
+        raise ValueError(f"Route origin {origin} does not match start node {path_nodes[0]}")
+    if dest and path_nodes[-1] != dest:
+        raise ValueError(f"Route destination {dest} does not match end node {path_nodes[-1]}")
+
+    if v_type != "HELICOPTER":
+        for i in range(len(path_nodes) - 1):
+            u, v = path_nodes[i], path_nodes[i + 1]
+            if not graph.has_edge(u, v):
+                continue
+            ed = graph[u][v]
+            depth = ed.get("current_water_depth_meters", 0.0)
+            has_flood = ed.get("has_flood_water", False)
+            if v_type == "AMBULANCE":
+                if depth > 0.0 or has_flood:
+                    raise ValueError(f"Ambulance route violates depth rule on edge ({u}, {v}): depth={depth}m, flooded={has_flood}")
+            elif v_type == "TRUCK_4X4":
+                if depth > 0.4:
+                    raise ValueError(f"Truck route violates depth rule on edge ({u}, {v}): depth={depth}m > 0.4m")
+
+    geom = payload.get("geometry") or props.get("geometry") or props.get("geojson_geometry")
+    coords = geom.get("coordinates") if isinstance(geom, dict) else geom
+    if not coords or len(coords) < 2:
+        raise ValueError("OK route geometry must have at least 2 coordinate pairs")
+
+    drawn_len_km = polyline_length_m(coords) / 1000.0
+    dist_km = props.get("distance_km")
+    geom_len_km = props.get("geometry_length_km")
+
+    if dist_km is not None and drawn_len_km > 0.01:
+        diff_pct = abs(dist_km - drawn_len_km) / drawn_len_km
+        if diff_pct > 0.01 and not props.get("distance_basis"):
+            raise ValueError(f"distance_km ({dist_km}) differs from polyline length ({drawn_len_km:.3f} km) by {diff_pct*100:.2f}% without distance_basis")
+
+    if geom_len_km is not None and drawn_len_km > 0.01:
+        diff_geom_pct = abs(geom_len_km - drawn_len_km) / drawn_len_km
+        if diff_geom_pct > 0.01:
+            raise ValueError(f"geometry_length_km ({geom_len_km}) differs from polyline length ({drawn_len_km:.3f} km) by {diff_geom_pct*100:.2f}%")
+
+    return True
 

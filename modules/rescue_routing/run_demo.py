@@ -575,6 +575,7 @@ def main():
     routes_path = "routes.json"
     with open(routes_path, "w", encoding="utf-8") as f:
         json.dump(out_payload, f, indent=2)
+        f.write("\n")
 
     print(f"{c['bold']}{c['green']}SUCCESS: Exported {len(features)} route features across {len(scenarios)} scenarios to {routes_path}{c['reset']}")
 

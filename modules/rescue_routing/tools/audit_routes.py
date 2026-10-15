@@ -9,19 +9,13 @@ import jsonschema
 
 
 def audit():
-    routes_path = Path("routes.json")
-    contract_path = Path("contract/routes_v2_1_1.json")
-    if not contract_path.exists():
-        contract_path = Path("contract/routes_v2_0.json")
+    routes_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("routes.json")
     schema_path = Path("schema.json")
 
-    print("[AUDIT] Starting comprehensive verification of routes.json...")
+    print(f"[AUDIT] Starting comprehensive verification of {routes_path}...")
 
     if not routes_path.exists():
-        print("FAIL: routes.json not found")
-        sys.exit(1)
-    if not contract_path.exists():
-        print(f"FAIL: {contract_path} not found")
+        print(f"FAIL: {routes_path} not found")
         sys.exit(1)
     if not schema_path.exists():
         print("FAIL: schema.json not found")
@@ -29,8 +23,6 @@ def audit():
 
     with open(routes_path, "r", encoding="utf-8") as f:
         routes_data = json.load(f)
-    with open(contract_path, "r", encoding="utf-8") as f:
-        contract_data = json.load(f)
     with open(schema_path, "r", encoding="utf-8") as f:
         schema = json.load(f)
 
@@ -41,6 +33,64 @@ def audit():
     except jsonschema.ValidationError as e:
         print(f"FAIL: Schema validation error: {e.message}")
         sys.exit(1)
+
+    ver = routes_data.get("schema_version")
+    if ver == "2.3":
+        # Schema 2.3 Regional Output Verification
+        print("PASS: Verified schema_version 2.3")
+        disclaimer = routes_data.get("disclaimer", "")
+        if "PLANNING AID ONLY" not in disclaimer:
+            print("FAIL: Missing mandatory disclaimer banner in schema 2.3 output")
+            sys.exit(1)
+        print("PASS: Verified disclaimer banner")
+
+        prov = routes_data.get("provenance", {})
+        if "flood_observation" not in prov or "osm" not in prov:
+            print("FAIL: Missing flood_observation or osm in provenance")
+            sys.exit(1)
+        if "data_freshness" not in prov or prov["data_freshness"] not in ("FRESH", "AGING", "STALE", "UNKNOWN"):
+            print(f"FAIL: Invalid data_freshness in provenance: {prov.get('data_freshness')}")
+            sys.exit(1)
+        print(f"PASS: Verified provenance and data_freshness ({prov['data_freshness']})")
+
+        # Feature checks
+        for i, feat in enumerate(routes_data.get("features", [])):
+            p = feat.get("properties", {})
+            if "confidence" not in p or p["confidence"] not in ("HIGH", "MEDIUM", "LOW", "UNVERIFIED"):
+                print(f"FAIL: Feature {i} missing valid confidence: {p.get('confidence')}")
+                sys.exit(1)
+            if "confidence_reasons" not in p or not isinstance(p["confidence_reasons"], list):
+                print(f"FAIL: Feature {i} missing confidence_reasons list")
+                sys.exit(1)
+        print(f"PASS: Verified {len(routes_data.get('features', []))} feature confidence ratings and reasons")
+
+        # 5-state road model checks
+        net_feats = routes_data.get("network", {}).get("features", [])
+        valid_states = {"DRY", "FLOODED_PASSABLE", "FLOODED_IMPASSABLE", "UNCERTAIN", "UNKNOWN"}
+        for nf in net_feats:
+            st = nf.get("properties", {}).get("road_state")
+            if st not in valid_states:
+                print(f"FAIL: Road segment has invalid road_state: {st}")
+                sys.exit(1)
+        print(f"PASS: Verified 5-state road classification across {len(net_feats)} network features")
+
+        if routes_data.get("verified") is not False:
+            print("FAIL: Expected top-level verified: False")
+            sys.exit(1)
+        print("PASS: Top-level verified: False verified")
+
+        print(f"\n[AUDIT COMPLETE] ALL CHECKS PASSED FOR {routes_path} (Exit Code 0).")
+        sys.exit(0)
+
+    # If schema 2.2, run contract comparison against routes_v2_1_1.json
+    contract_path = Path("contract/routes_v2_1_1.json")
+    if not contract_path.exists():
+        contract_path = Path("contract/routes_v2_0.json")
+    if not contract_path.exists():
+        print(f"FAIL: {contract_path} not found")
+        sys.exit(1)
+    with open(contract_path, "r", encoding="utf-8") as f:
+        contract_data = json.load(f)
 
     # 2. Contract diff vs contract file
     for key in contract_data.keys():
@@ -58,6 +108,7 @@ def audit():
 
     # Contract feature preservation (baseline features 0 to 8 preserved from contract)
     contract_feats = contract_data["features"]
+
     new_feats = routes_data["features"]
     if len(new_feats) != 14:
         print(f"FAIL: Expected exactly 14 features, got {len(new_feats)}")

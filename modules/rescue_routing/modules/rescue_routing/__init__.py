@@ -27,9 +27,16 @@ from .risk_engine import (
     ADVISORY_NO_SAFE_OPTION,
     STABILITY_MIN,
 )
-from .router import RescueRouter, VehicleType
+from .router import (
+    RescueRouter,
+    VehicleType,
+    validate_route,
+    load_vehicle_limits,
+    GroundedWeatherStatus,
+    NoRoadRouteStatus,
+)
 from .dispatcher import generate_tactical_briefing
-from .dispatch import assign_fleet
+from .dispatch import assign_fleet, compute_delivery_sorties_and_mix
 from .benchmark import (
     run_benchmark,
     WATER_LEVEL_RISE_RATE,
@@ -75,8 +82,13 @@ __all__ = [
     "STORM_ACCUMULATION_HORIZON_MIN",
     "RescueRouter",
     "VehicleType",
+    "validate_route",
+    "load_vehicle_limits",
+    "GroundedWeatherStatus",
+    "NoRoadRouteStatus",
     "generate_tactical_briefing",
     "assign_fleet",
+    "compute_delivery_sorties_and_mix",
     "run_benchmark",
     "estimate_needs",
     "build_priority_loading_plan",

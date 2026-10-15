@@ -65,17 +65,13 @@ def assign_fleet(
     m = len(fleet)
     if n == 0 or m == 0:
         unserved = []
-        tot_unmet = 0.0
         for inc in incidents:
             unserved.append({"incident": inc["id"], "reason": "NO_FEASIBLE_ASSET"})
-            tot_unmet += float(inc.get("required_kg", inc.get("people", 10) * 15.5))
         return {
             "policy": "One sortie per asset",
             "objective": "priority*reliability*people*delivered_share",
             "assignments": [],
             "unserved": unserved,
-            "partially_served": [],
-            "total_unmet_kg": round(tot_unmet, 1),
             "total_value": 0.0,
             "total_people_equivalents": 0.0,
             "total_eta_minutes": 0.0,
@@ -211,4 +207,87 @@ def assign_fleet(
         "total_eta_minutes": tot_eta,
         "note": "Incident sites are existing graph nodes; a bridgehead node is used as a demo incident.",
     }
+
+
+def compute_delivery_sorties_and_mix(
+    demanded_kg: float,
+    vehicle_etas: dict,
+    config: dict | None = None,
+) -> dict:
+    """Compute sorties, total delivery time per vehicle, earliest delivery time, and recommended mix."""
+    from .router import load_vehicle_limits
+    cfg = config or load_vehicle_limits()
+    payload_cap = cfg.get("payload_capacity_kg", {
+        "AMBULANCE": 400.0,
+        "TRUCK_4X4": 1500.0,
+        "RESCUE_BOAT": 800.0,
+        "HELICOPTER": 1200.0,
+    })
+    concurrent_counts = cfg.get("concurrent_vehicles", {
+        "AMBULANCE": 1,
+        "TRUCK_4X4": 1,
+        "RESCUE_BOAT": 1,
+        "HELICOPTER": 1,
+    })
+
+    per_vehicle = {}
+    earliest_time = float("inf")
+    best_vehicle = None
+
+    for v in ["AMBULANCE", "TRUCK_4X4", "RESCUE_BOAT", "HELICOPTER"]:
+        eta = vehicle_etas.get(v)
+        cap = float(payload_cap.get(v, 400.0))
+        conc = max(1, int(concurrent_counts.get(v, 1)))
+
+        if eta is None or eta == float("inf"):
+            per_vehicle[v] = {
+                "feasible": False,
+                "sorties": None,
+                "capacity_kg": cap,
+                "round_trip_min": None,
+                "total_delivery_time_min": None,
+                "reason": "Unreachable or grounded",
+            }
+            continue
+
+        sorties = math.ceil(demanded_kg / cap) if (demanded_kg > 0 and cap > 0) else 1
+        round_trip_min = round(2.0 * eta, 2)
+        total_time_min = round(math.ceil(sorties / float(conc)) * round_trip_min, 2)
+
+        per_vehicle[v] = {
+            "feasible": True,
+            "sorties": sorties,
+            "capacity_kg": cap,
+            "concurrent_vehicles": conc,
+            "one_way_eta_min": round(eta, 2),
+            "round_trip_min": round_trip_min,
+            "total_delivery_time_min": total_time_min,
+        }
+
+        if total_time_min < earliest_time:
+            earliest_time = total_time_min
+            best_vehicle = v
+
+    if best_vehicle is None:
+        rec_mix = {
+            "recommended_vehicle": None,
+            "reason": "No feasible vehicle routes found. Ground routes cut off and aerial/water assets unavailable.",
+            "earliest_complete_delivery_min": None,
+        }
+    else:
+        rec_mix = {
+            "recommended_vehicle": best_vehicle,
+            "reason": (
+                f"{best_vehicle} achieves earliest complete cargo delivery of {demanded_kg} kg in "
+                f"{earliest_time} min across {per_vehicle[best_vehicle]['sorties']} sorties with optimal operational stability."
+            ),
+            "earliest_complete_delivery_min": earliest_time,
+        }
+
+    return {
+        "demanded_kg": demanded_kg,
+        "per_vehicle": per_vehicle,
+        "recommendation": rec_mix,
+    }
+
 

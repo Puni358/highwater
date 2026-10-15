@@ -348,3 +348,37 @@ In accordance with freeze contract rules, no existing test was deleted, loosened
 
 5. **`test_manifest_integrity`**:
    - Computes SHA-256 checksums across all 19 files listed in `MANIFEST.sha256` and fails if any file is missing, altered, or out of sync.
+
+---
+
+## 9. Satellite Regional Verification & Safety Pixel Collision Results
+
+### A. Route Safety & Pixel Collision Verification (`tools/verify_route_safety.py`)
+- **Water Mask**: Ingests Sen1Floods11 satellite flood observation raster `data/satellite_raw/Spain_sample_flood.tif` (512x512 GeoTIFF, EPSG:4326).
+- **Route LineString Collision Assertion**:
+  - Intersects all generated Ambulance LineString geometries against satellite water pixels (`pixel == 1`).
+  - Confirms exactly **0.00%** flooded pixel collision (0 flooded pixels crossed) across all active Ambulance routes.
+- **Avoided Hazards Intersection Assertion**:
+  - Verifies that every road segment recorded under `avoided_hazards` actually intersects observed satellite floodwater (`water_pixel_hits > 0`).
+  - Guarantees zero false-positive road closures under satellite observation.
+
+### B. Multi-Modal Fleet Dispatch for Satellite Region
+- **Vehicle Constraints**:
+  - `AMBULANCE`: Strictly 0.0m water depth (enforced at both edge level and raster pixel collision level).
+  - `TRUCK_4X4`: Permits wading up to 0.4m depth.
+  - `HELICOPTER`: Automatically assigned to `FLOOD_ZONE_ALPHA` as surface corridors are completely severed by floodwater.
+- **Tactical Military Briefings**: Crisp 2-sentence operational briefings generated across all regional scenarios, feature properties, and dispatch assignments (`briefing` and `briefing_source`).
+
+### C. Multi-Layer GeoJSON Visual Package
+- Exported `data/visual_package_orihuela.geojson` containing 1,706 features across 3 layers:
+  1. `Satellite Flood Extent`: Polygonized satellite flood boundary (`#2980b9`, opacity 0.45).
+  2. `Filtered Road Network`: Dry roads styled green (`#2ecc71`), submerged roads styled red (`#e74c3c`).
+  3. `Optimal Vehicle Routes`: LineStrings styled with vehicle mode, ETA, and tactical briefings.
+
+### D. Automated Test Suite Output
+```text
+test_region.py ..........                                                [ 16%]
+test_router.py ..........................................s.......        [100%]
+================= 59 passed, 1 skipped, 10 warnings in 38.17s =================
+```
+

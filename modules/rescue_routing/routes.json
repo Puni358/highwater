@@ -12,9 +12,9 @@
     "benchmark": "synthetic",
     "population": "synthetic_demo",
     "input_files": {
-      "data/zaragoza_network.json": "70f76ad1904484ef24a1f79f3c06ecab421a020992ec14da9b15b5c3e5cdfdf8",
-      "data/synthetic_depth_map.json": "51d6cf1bcdd37f51d6317a91fb2a2883d0fa1dad61b72f3e39214c08ba3ca810",
-      "data/population_zones.json": "90ac73fb4d50085b391a756b634da8384caa341e0f8e2719ae7e02b9297ecfd6"
+      "data/zaragoza_network.json": "58600c43b091efe7bda5ec5ae641a6e85b9b509b6e6d3b75284dfdee438bdd15",
+      "data/synthetic_depth_map.json": "b7dbe3427aaa8312ab811af50738b7735753c4397be4c46465a1a530666d3983",
+      "data/population_zones.json": "a9447951203f58d0de3e2dac83d9c6ccfd8110c410b7ec95cbb9d2c64695bcd0"
     },
     "deterministic_seed": 42
   },
@@ -58,6 +58,13 @@
         "destination": "ZONE_NORTH_RESIDENTIAL",
         "eta_minutes": 5.89,
         "distance_km": 3.926,
+        "corridor_length_m": 3926.3,
+        "corridor_type": "ROAD_CORRIDOR",
+        "corridor_label": "lowest-risk route (model)",
+        "wording": "lowest-risk route (model)",
+        "uncertain_segments_count": 0,
+        "max_water_depth_meters": 0.0,
+        "data_age_hours": null,
         "path_nodes": [
           "HOSPITAL_BASE",
           "JUNCTION_PARAISO",
@@ -149,6 +156,13 @@
         "destination": "ZONE_NORTH_RESIDENTIAL",
         "eta_minutes": 6.58,
         "distance_km": 4.385,
+        "corridor_length_m": 4385.3,
+        "corridor_type": "ROAD_CORRIDOR",
+        "corridor_label": "lowest-risk route (model)",
+        "wording": "lowest-risk route (model)",
+        "uncertain_segments_count": 0,
+        "max_water_depth_meters": 0.0,
+        "data_age_hours": null,
         "path_nodes": [
           "HOSPITAL_BASE",
           "JUNCTION_PARAISO",
@@ -167,7 +181,8 @@
             "reason": "PREDICTED_SUBMERSION",
             "depth_m": 0.0,
             "planning_risk": 0.6682,
-            "risk": 0.6682
+            "risk": 0.6682,
+            "geometry": null
           },
           {
             "edge": [
@@ -178,7 +193,8 @@
             "reason": "PREDICTED_SUBMERSION",
             "depth_m": 0.0,
             "planning_risk": 0.9802,
-            "risk": 0.9802
+            "risk": 0.9802,
+            "geometry": null
           },
           {
             "edge": [
@@ -189,7 +205,8 @@
             "reason": "PREDICTED_SUBMERSION",
             "depth_m": 0.0,
             "planning_risk": 0.832,
-            "risk": 0.832
+            "risk": 0.832,
+            "geometry": null
           }
         ],
         "is_predictive_detour": true,
@@ -272,6 +289,13 @@
         "destination": "ZONE_NORTH_RESIDENTIAL",
         "eta_minutes": 6.58,
         "distance_km": 4.385,
+        "corridor_length_m": 4385.3,
+        "corridor_type": "ROAD_CORRIDOR",
+        "corridor_label": "lowest-risk route (model)",
+        "wording": "lowest-risk route (model)",
+        "uncertain_segments_count": 0,
+        "max_water_depth_meters": 0.0,
+        "data_age_hours": null,
         "path_nodes": [
           "HOSPITAL_BASE",
           "JUNCTION_PARAISO",
@@ -290,7 +314,8 @@
             "reason": "SUBMERGED",
             "depth_m": 0.8,
             "planning_risk": 0.0006,
-            "risk": 0.0006
+            "risk": 0.0006,
+            "geometry": null
           }
         ],
         "is_predictive_detour": false,
@@ -343,13 +368,16 @@
       "geometry": null,
       "properties": {
         "status": "UNREACHABLE",
+        "substatus": "NO_ROAD_ROUTE",
         "vehicle_type": "AMBULANCE",
         "origin": "HOSPITAL_BASE",
         "destination": "ZONE_ISLAND_COMMUNITY",
         "reason": "No passable route available for AMBULANCE.",
+        "wording": "No road route: area cut off",
         "isolated_nodes": [
           "ZONE_ISLAND_COMMUNITY"
         ],
+        "isolated_node_count": 1,
         "cut_edges": [
           [
             "BOAT_RAMP_SOUTH",
@@ -384,13 +412,16 @@
       "geometry": null,
       "properties": {
         "status": "UNREACHABLE",
+        "substatus": "NO_ROAD_ROUTE",
         "vehicle_type": "TRUCK_4X4",
         "origin": "HOSPITAL_BASE",
         "destination": "ZONE_ISLAND_COMMUNITY",
         "reason": "No passable route available for TRUCK_4X4.",
+        "wording": "No road route: area cut off",
         "isolated_nodes": [
           "ZONE_ISLAND_COMMUNITY"
         ],
+        "isolated_node_count": 1,
         "cut_edges": [
           [
             "BOAT_RAMP_SOUTH",
@@ -442,6 +473,13 @@
         "destination": "ZONE_ISLAND_COMMUNITY",
         "eta_minutes": 5.35,
         "distance_km": 0.669,
+        "corridor_length_m": 669.1,
+        "corridor_type": "WATER_LINE",
+        "corridor_label": "Air/boat line, not a road route",
+        "wording": "lowest-risk route (model)",
+        "uncertain_segments_count": 0,
+        "max_water_depth_meters": 2.0,
+        "data_age_hours": null,
         "path_nodes": [
           "BOAT_RAMP_SOUTH",
           "ZONE_ISLAND_COMMUNITY"
@@ -491,15 +529,18 @@
       "geometry": null,
       "properties": {
         "status": "UNREACHABLE",
+        "substatus": "NO_ROAD_ROUTE",
         "vehicle_type": "RESCUE_BOAT",
         "origin": "BOAT_RAMP_SOUTH",
         "destination": "ZONE_ISLAND_COMMUNITY",
         "reason": "No passable route available for RESCUE_BOAT.",
+        "wording": "No road route: area cut off",
         "isolated_nodes": [
           "RIVER_CHANNEL_MID",
           "ZONE_ISLAND_COMMUNITY",
           "ZONE_NORTH_RESIDENTIAL"
         ],
+        "isolated_node_count": 3,
         "cut_edges": [
           [
             "BOAT_RAMP_SOUTH",
@@ -556,11 +597,14 @@
         "destination": "ZONE_ISLAND_COMMUNITY",
         "eta_minutes": 11.19,
         "distance_km": 3.584,
+        "corridor_length_m": 3583.8,
         "path_nodes": [
           "HOSPITAL_BASE",
           "ZONE_ISLAND_COMMUNITY"
         ],
         "geometry_quality": "great_circle",
+        "corridor_type": "AIR_LINE",
+        "corridor_label": "Air/boat line, not a road route",
         "avoided_hazards": [],
         "is_predictive_detour": false,
         "route_reliability": null,
@@ -586,17 +630,20 @@
         },
         "departure_window_min": 120,
         "window_capped": true,
+        "launch_point": "HOSPITAL_BASE",
         "assumption": "Launch point assumed to be HOSPITAL_BASE",
+        "weather_assessment": "WEATHER_UNKNOWN",
+        "wording": "lowest-risk route (model)",
         "rainfall_mmh": 15.0,
         "blocked_edges": [],
         "depth_source": "scenario",
         "data_freshness": "UNKNOWN",
         "geometry_length_km": 3.584,
-        "surface_access_severed": true,
-        "standing_water_note": "Scenario-imposed depth, not derived from rainfall.",
+        "scenario_id": "scenario_3b_total_isolation_airdrop",
         "stage": 5,
         "stage_title": "Helicopter",
-        "scenario_id": "scenario_3b_total_isolation_airdrop"
+        "surface_access_severed": true,
+        "standing_water_note": "Scenario-imposed depth, not derived from rainfall."
       }
     },
     {
@@ -633,6 +680,13 @@
         "destination": "ZONE_NORTH_RESIDENTIAL",
         "eta_minutes": 6.58,
         "distance_km": 4.385,
+        "corridor_length_m": 4385.3,
+        "corridor_type": "ROAD_CORRIDOR",
+        "corridor_label": "lowest-risk route (model)",
+        "wording": "lowest-risk route (model)",
+        "uncertain_segments_count": 0,
+        "max_water_depth_meters": 0.0,
+        "data_age_hours": 0.8,
         "path_nodes": [
           "HOSPITAL_BASE",
           "JUNCTION_PARAISO",
@@ -651,7 +705,8 @@
             "reason": "SUBMERGED",
             "depth_m": 0.85,
             "planning_risk": 0.0006,
-            "risk": 0.0006
+            "risk": 0.0006,
+            "geometry": null
           }
         ],
         "is_predictive_detour": false,
@@ -705,13 +760,16 @@
       "geometry": null,
       "properties": {
         "status": "UNREACHABLE",
+        "substatus": "NO_ROAD_ROUTE",
         "vehicle_type": "AMBULANCE",
         "origin": "HOSPITAL_BASE",
         "destination": "ZONE_ISLAND_COMMUNITY",
         "reason": "No passable route available for AMBULANCE.",
+        "wording": "No road route: area cut off",
         "isolated_nodes": [
           "ZONE_ISLAND_COMMUNITY"
         ],
+        "isolated_node_count": 1,
         "cut_edges": [
           [
             "BOAT_RAMP_SOUTH",
@@ -735,9 +793,9 @@
         "blocked_edges": [],
         "depth_source": "depth_map",
         "data_freshness": "UNKNOWN",
+        "scenario_id": "scenario_5_full_cascade",
         "stage": 1,
-        "stage_title": "Ambulance",
-        "scenario_id": "scenario_5_full_cascade"
+        "stage_title": "Ambulance"
       }
     },
     {
@@ -745,13 +803,16 @@
       "geometry": null,
       "properties": {
         "status": "UNREACHABLE",
+        "substatus": "NO_ROAD_ROUTE",
         "vehicle_type": "TRUCK_4X4",
         "origin": "HOSPITAL_BASE",
         "destination": "ZONE_ISLAND_COMMUNITY",
         "reason": "No passable route available for TRUCK_4X4.",
+        "wording": "No road route: area cut off",
         "isolated_nodes": [
           "ZONE_ISLAND_COMMUNITY"
         ],
+        "isolated_node_count": 1,
         "cut_edges": [
           [
             "BOAT_RAMP_SOUTH",
@@ -775,9 +836,9 @@
         "blocked_edges": [],
         "depth_source": "depth_map",
         "data_freshness": "UNKNOWN",
+        "scenario_id": "scenario_5_full_cascade",
         "stage": 2,
-        "stage_title": "4x4 Truck",
-        "scenario_id": "scenario_5_full_cascade"
+        "stage_title": "4x4 Truck"
       }
     },
     {
@@ -814,6 +875,13 @@
         "destination": "ZONE_ISLAND_COMMUNITY",
         "eta_minutes": 21.3,
         "distance_km": 3.719,
+        "corridor_length_m": 3719.0,
+        "corridor_type": "WATER_LINE",
+        "corridor_label": "Air/boat line, not a road route",
+        "wording": "lowest-risk route (model)",
+        "uncertain_segments_count": 0,
+        "max_water_depth_meters": 2.0,
+        "data_age_hours": null,
         "path_nodes": [
           "HOSPITAL_BASE",
           "JUNCTION_PARAISO",
@@ -919,9 +987,9 @@
         "depth_source": "depth_map",
         "data_freshness": "UNKNOWN",
         "geometry_length_km": 3.719,
+        "scenario_id": "scenario_5_full_cascade",
         "stage": 3,
-        "stage_title": "Rescue Boat",
-        "scenario_id": "scenario_5_full_cascade"
+        "stage_title": "Rescue Boat"
       }
     },
     {
@@ -933,9 +1001,11 @@
         "origin": "HOSPITAL_BASE",
         "destination": "ZONE_ISLAND_COMMUNITY",
         "reason": "No passable multimodal route available via boat ramps.",
+        "wording": "No road route: area cut off",
         "isolated_nodes": [
           "ZONE_ISLAND_COMMUNITY"
         ],
+        "isolated_node_count": 1,
         "cut_edges": [],
         "component_scope": "vehicle_passable_subgraph",
         "route_reliability": null,
@@ -951,9 +1021,9 @@
         ],
         "depth_source": "depth_map",
         "data_freshness": "UNKNOWN",
+        "scenario_id": "scenario_5_full_cascade",
         "stage": 4,
-        "stage_title": "Rescue Boat (River Blocked)",
-        "scenario_id": "scenario_5_full_cascade"
+        "stage_title": "Rescue Boat (River Blocked)"
       }
     },
     {
@@ -978,11 +1048,14 @@
         "destination": "ZONE_ISLAND_COMMUNITY",
         "eta_minutes": 11.19,
         "distance_km": 3.584,
+        "corridor_length_m": 3583.8,
         "path_nodes": [
           "HOSPITAL_BASE",
           "ZONE_ISLAND_COMMUNITY"
         ],
         "geometry_quality": "great_circle",
+        "corridor_type": "AIR_LINE",
+        "corridor_label": "Air/boat line, not a road route",
         "avoided_hazards": [],
         "is_predictive_detour": false,
         "route_reliability": null,
@@ -1008,7 +1081,10 @@
         },
         "departure_window_min": 120,
         "window_capped": true,
+        "launch_point": "HOSPITAL_BASE",
         "assumption": "Launch point assumed to be HOSPITAL_BASE",
+        "weather_assessment": "WEATHER_UNKNOWN",
+        "wording": "lowest-risk route (model)",
         "rainfall_mmh": 45.0,
         "blocked_edges": [
           [
@@ -1019,10 +1095,10 @@
         "depth_source": "scenario",
         "data_freshness": "UNKNOWN",
         "geometry_length_km": 3.584,
-        "surface_access_severed": true,
+        "scenario_id": "scenario_5_full_cascade",
         "stage": 5,
         "stage_title": "Helicopter",
-        "scenario_id": "scenario_5_full_cascade"
+        "surface_access_severed": true
       }
     }
   ],
@@ -1179,9 +1255,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "HOSPITAL_BASE",
+            "JUNCTION_PARAISO"
+          ],
           "name": "Hospital - Plaza Paraiso",
           "kind": "road",
           "depth": 0.0,
+          "current_water_depth_meters": 0.0,
           "elevation": 216.0,
           "distance_to_river_m": 1500.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1203,9 +1284,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "JUNCTION_PARAISO",
+            "JUNCTION_CENTRO"
+          ],
           "name": "Plaza Paraiso - Centro",
           "kind": "road",
           "depth": 0.0,
+          "current_water_depth_meters": 0.0,
           "elevation": 208.5,
           "distance_to_river_m": 800.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1227,9 +1313,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "JUNCTION_PARAISO",
+            "PUENTE_SANTIAGO_SOUTH"
+          ],
           "name": "Plaza Paraiso - Puente de Santiago South",
           "kind": "road",
           "depth": 0.0,
+          "current_water_depth_meters": 0.0,
           "elevation": 210.0,
           "distance_to_river_m": 600.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1251,9 +1342,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "JUNCTION_CENTRO",
+            "PUENTE_PIEDRA_SOUTH"
+          ],
           "name": "Centro - Puente de Piedra South",
           "kind": "road",
           "depth": 0.0,
+          "current_water_depth_meters": 0.0,
           "elevation": 201.5,
           "distance_to_river_m": 150.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1275,9 +1371,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "JUNCTION_CENTRO",
+            "BOAT_RAMP_SOUTH"
+          ],
           "name": "Centro - Boat Ramp South",
           "kind": "road",
           "depth": 0.0,
+          "current_water_depth_meters": 0.0,
           "elevation": 199.5,
           "distance_to_river_m": 100.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1299,9 +1400,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "PUENTE_PIEDRA_SOUTH",
+            "PUENTE_PIEDRA_NORTH"
+          ],
           "name": "Puente de Piedra",
           "kind": "bridge",
           "depth": 0.0,
+          "current_water_depth_meters": 0.0,
           "elevation": 198.0,
           "distance_to_river_m": 0.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1323,9 +1429,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "PUENTE_PIEDRA_NORTH",
+            "ZONE_NORTH_RESIDENTIAL"
+          ],
           "name": "Puente de Piedra North - North Residential",
           "kind": "road",
           "depth": 0.0,
+          "current_water_depth_meters": 0.0,
           "elevation": 199.5,
           "distance_to_river_m": 250.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1347,9 +1458,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "PUENTE_SANTIAGO_SOUTH",
+            "PUENTE_SANTIAGO_NORTH"
+          ],
           "name": "Puente de Santiago",
           "kind": "bridge",
           "depth": 0.0,
+          "current_water_depth_meters": 0.0,
           "elevation": 208.0,
           "distance_to_river_m": 0.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1371,9 +1487,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "PUENTE_SANTIAGO_NORTH",
+            "ZONE_NORTH_RESIDENTIAL"
+          ],
           "name": "Puente de Santiago North - North Residential",
           "kind": "road",
           "depth": 0.0,
+          "current_water_depth_meters": 0.0,
           "elevation": 204.5,
           "distance_to_river_m": 500.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1395,9 +1516,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "ZONE_NORTH_RESIDENTIAL",
+            "ZONE_ISLAND_COMMUNITY"
+          ],
           "name": "North Residential - Island Causeway",
           "kind": "causeway",
           "depth": 0.0,
+          "current_water_depth_meters": 0.0,
           "elevation": 195.0,
           "distance_to_river_m": 20.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1419,9 +1545,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "ZONE_NORTH_RESIDENTIAL",
+            "RIVER_CHANNEL_MID"
+          ],
           "name": "River Channel Mid - North Residential (River)",
           "kind": "river",
           "depth": 2.0,
+          "current_water_depth_meters": 2.0,
           "elevation": 194.0,
           "distance_to_river_m": 0.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1443,9 +1574,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "ZONE_ISLAND_COMMUNITY",
+            "BOAT_RAMP_SOUTH"
+          ],
           "name": "Boat Ramp - Island Community (River)",
           "kind": "river",
           "depth": 2.0,
+          "current_water_depth_meters": 2.0,
           "elevation": 194.0,
           "distance_to_river_m": 0.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1467,9 +1603,14 @@
           ]
         },
         "properties": {
+          "edge": [
+            "ZONE_ISLAND_COMMUNITY",
+            "RIVER_CHANNEL_MID"
+          ],
           "name": "Island Community - River Channel Mid (River)",
           "kind": "river",
           "depth": 2.0,
+          "current_water_depth_meters": 2.0,
           "elevation": 194.0,
           "distance_to_river_m": 0.0,
           "geometry_quality": "schematic_straight_lines"
@@ -1536,6 +1677,13 @@
             "destination": "ZONE_NORTH_RESIDENTIAL",
             "eta_minutes": 5.89,
             "distance_km": 3.926,
+            "corridor_length_m": 3926.3,
+            "corridor_type": "ROAD_CORRIDOR",
+            "corridor_label": "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 0.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -1631,6 +1779,13 @@
             "destination": "ZONE_ISLAND_COMMUNITY",
             "eta_minutes": 9.1,
             "distance_km": 4.666,
+            "corridor_length_m": 4665.6,
+            "corridor_type": "ROAD_CORRIDOR",
+            "corridor_label": "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 0.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -1684,7 +1839,8 @@
                 "reason": "RIVER_HAZARD",
                 "depth_m": 2.0,
                 "planning_risk": 0.0025,
-                "risk": 0.0025
+                "risk": 0.0025,
+                "geometry": null
               }
             ],
             "is_predictive_detour": false,
@@ -1746,6 +1902,13 @@
             "destination": "ZONE_ISLAND_COMMUNITY",
             "eta_minutes": 21.3,
             "distance_km": 3.719,
+            "corridor_length_m": 3719.0,
+            "corridor_type": "WATER_LINE",
+            "corridor_label": "Air/boat line, not a road route",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 2.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -1910,6 +2073,13 @@
             "destination": "ZONE_NORTH_RESIDENTIAL",
             "eta_minutes": 5.89,
             "distance_km": 3.926,
+            "corridor_length_m": 3926.3,
+            "corridor_type": "ROAD_CORRIDOR",
+            "corridor_label": "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 0.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -2005,6 +2175,13 @@
             "destination": "ZONE_ISLAND_COMMUNITY",
             "eta_minutes": 9.1,
             "distance_km": 4.666,
+            "corridor_length_m": 4665.6,
+            "corridor_type": "ROAD_CORRIDOR",
+            "corridor_label": "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 0.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -2058,7 +2235,8 @@
                 "reason": "RIVER_HAZARD",
                 "depth_m": 2.0,
                 "planning_risk": 0.0095,
-                "risk": 0.0095
+                "risk": 0.0095,
+                "geometry": null
               }
             ],
             "is_predictive_detour": false,
@@ -2120,6 +2298,13 @@
             "destination": "ZONE_ISLAND_COMMUNITY",
             "eta_minutes": 21.3,
             "distance_km": 3.719,
+            "corridor_length_m": 3719.0,
+            "corridor_type": "WATER_LINE",
+            "corridor_label": "Air/boat line, not a road route",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 2.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -2284,6 +2469,13 @@
             "destination": "ZONE_NORTH_RESIDENTIAL",
             "eta_minutes": 6.58,
             "distance_km": 4.385,
+            "corridor_length_m": 4385.3,
+            "corridor_type": "ROAD_CORRIDOR",
+            "corridor_label": "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 0.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -2373,6 +2565,13 @@
             "destination": "ZONE_ISLAND_COMMUNITY",
             "eta_minutes": 9.1,
             "distance_km": 4.666,
+            "corridor_length_m": 4665.6,
+            "corridor_type": "ROAD_CORRIDOR",
+            "corridor_label": "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 0.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -2426,7 +2625,8 @@
                 "reason": "RIVER_HAZARD",
                 "depth_m": 2.0,
                 "planning_risk": 0.0356,
-                "risk": 0.0356
+                "risk": 0.0356,
+                "geometry": null
               }
             ],
             "is_predictive_detour": false,
@@ -2488,6 +2688,13 @@
             "destination": "ZONE_ISLAND_COMMUNITY",
             "eta_minutes": 21.3,
             "distance_km": 3.719,
+            "corridor_length_m": 3719.0,
+            "corridor_type": "WATER_LINE",
+            "corridor_label": "Air/boat line, not a road route",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 2.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -2652,6 +2859,13 @@
             "destination": "ZONE_NORTH_RESIDENTIAL",
             "eta_minutes": 6.58,
             "distance_km": 4.385,
+            "corridor_length_m": 4385.3,
+            "corridor_type": "ROAD_CORRIDOR",
+            "corridor_label": "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 0.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -2695,7 +2909,8 @@
                 "reason": "PREDICTED_SUBMERSION",
                 "depth_m": 0.0,
                 "planning_risk": 0.6682,
-                "risk": 0.6682
+                "risk": 0.6682,
+                "geometry": null
               },
               {
                 "edge": [
@@ -2706,7 +2921,8 @@
                 "reason": "PREDICTED_SUBMERSION",
                 "depth_m": 0.0,
                 "planning_risk": 0.9802,
-                "risk": 0.9802
+                "risk": 0.9802,
+                "geometry": null
               },
               {
                 "edge": [
@@ -2717,7 +2933,8 @@
                 "reason": "PREDICTED_SUBMERSION",
                 "depth_m": 0.0,
                 "planning_risk": 0.832,
-                "risk": 0.832
+                "risk": 0.832,
+                "geometry": null
               }
             ],
             "is_predictive_detour": true,
@@ -2775,6 +2992,13 @@
             "destination": "ZONE_ISLAND_COMMUNITY",
             "eta_minutes": 9.99,
             "distance_km": 5.125,
+            "corridor_length_m": 5124.6,
+            "corridor_type": "ROAD_CORRIDOR",
+            "corridor_label": "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 0.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -2823,7 +3047,8 @@
                 "reason": "PREDICTED_SUBMERSION",
                 "depth_m": 0.0,
                 "planning_risk": 0.9129,
-                "risk": 0.9129
+                "risk": 0.9129,
+                "geometry": null
               },
               {
                 "edge": [
@@ -2834,7 +3059,8 @@
                 "reason": "RIVER_HAZARD",
                 "depth_m": 2.0,
                 "planning_risk": 0.1246,
-                "risk": 0.1246
+                "risk": 0.1246,
+                "geometry": null
               }
             ],
             "is_predictive_detour": true,
@@ -2895,6 +3121,13 @@
             "destination": "ZONE_ISLAND_COMMUNITY",
             "eta_minutes": 21.3,
             "distance_km": 3.719,
+            "corridor_length_m": 3719.0,
+            "corridor_type": "WATER_LINE",
+            "corridor_label": "Air/boat line, not a road route",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 2.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -3059,6 +3292,13 @@
             "destination": "ZONE_NORTH_RESIDENTIAL",
             "eta_minutes": 6.58,
             "distance_km": 4.385,
+            "corridor_length_m": 4385.3,
+            "corridor_type": "ROAD_CORRIDOR",
+            "corridor_label": "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 0.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -3102,7 +3342,8 @@
                 "reason": "PREDICTED_SUBMERSION",
                 "depth_m": 0.0,
                 "planning_risk": 0.9983,
-                "risk": 0.9983
+                "risk": 0.9983,
+                "geometry": null
               },
               {
                 "edge": [
@@ -3113,7 +3354,8 @@
                 "reason": "PREDICTED_SUBMERSION",
                 "depth_m": 0.0,
                 "planning_risk": 0.9999,
-                "risk": 0.9999
+                "risk": 0.9999,
+                "geometry": null
               },
               {
                 "edge": [
@@ -3124,7 +3366,8 @@
                 "reason": "PREDICTED_SUBMERSION",
                 "depth_m": 0.0,
                 "planning_risk": 0.9993,
-                "risk": 0.9993
+                "risk": 0.9993,
+                "geometry": null
               }
             ],
             "is_predictive_detour": true,
@@ -3182,6 +3425,13 @@
             "destination": "ZONE_ISLAND_COMMUNITY",
             "eta_minutes": 9.99,
             "distance_km": 5.125,
+            "corridor_length_m": 5124.6,
+            "corridor_type": "ROAD_CORRIDOR",
+            "corridor_label": "lowest-risk route (model)",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 0,
+            "max_water_depth_meters": 0.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -3230,7 +3480,8 @@
                 "reason": "PREDICTED_SUBMERSION",
                 "depth_m": 0.0,
                 "planning_risk": 0.9997,
-                "risk": 0.9997
+                "risk": 0.9997,
+                "geometry": null
               },
               {
                 "edge": [
@@ -3241,7 +3492,8 @@
                 "reason": "RIVER_HAZARD",
                 "depth_m": 2.0,
                 "planning_risk": 0.3543,
-                "risk": 0.3543
+                "risk": 0.3543,
+                "geometry": null
               }
             ],
             "is_predictive_detour": true,
@@ -3302,6 +3554,13 @@
             "destination": "ZONE_ISLAND_COMMUNITY",
             "eta_minutes": 21.3,
             "distance_km": 3.719,
+            "corridor_length_m": 3719.0,
+            "corridor_type": "WATER_LINE",
+            "corridor_label": "Air/boat line, not a road route",
+            "wording": "lowest-risk route (model)",
+            "uncertain_segments_count": 1,
+            "max_water_depth_meters": 2.0,
+            "data_age_hours": null,
             "path_nodes": [
               "HOSPITAL_BASE",
               "JUNCTION_PARAISO",
@@ -3552,7 +3811,7 @@
     "note": "Incident sites are existing graph nodes; a bridgehead node is used as a demo incident."
   },
   "benchmark": {
-    "disclaimer": "Synthetic benchmark on a 2-route network; demonstrates mechanism, not real-world performance.",
+    "disclaimer": "simulated floods generated by a model related to the router's risk model; not validated against real events",
     "scenarios_count": 1000,
     "seed": 42,
     "predictive_reduces_stranding": true,
@@ -4159,6 +4418,8 @@
     },
     "sensitivity": {
       "overall_pct_unchanged": 89.7,
+      "most_sensitive_constant": "BASE_RIVER_ELEVATION_M",
+      "most_sensitive_pct_unchanged": 64.1,
       "constants": {
         "RAINFALL_COEFFICIENT": {
           "-20%": {

@@ -101,3 +101,84 @@ All baseline keys, feature properties, feature indices (0 to 15), and scenario I
 
 6. **Verification Flag**:
    - Added top-level `"verified": false` to `routes.json` and `schema.json`.
+
+---
+
+## 7. Satellite Regional Pipeline & Leaflet Integration (Schema 2.3)
+
+### Overview
+The rescue routing engine has been upgraded to support satellite-driven regional deployments (Schema 2.3). The live satellite deployment for the Orihuela (Sen1Floods11) flood event is published in `routes_satellite_live.json`, and a pre-packaged multi-layer GIS file is exported to `data/visual_package_orihuela.geojson`.
+
+### Multi-Modal Fleet Routing
+1. **AMBULANCE**: Strictly constrained to 0.0m water depth. 100% dry road routing verified against the satellite raster with 0% flood pixel collision.
+2. **TRUCK_4X4**: Permits shallow submerged crossings up to 0.4m depth.
+3. **RESCUE_BOAT & HELICOPTER**: Automatically triggered when surface transit corridors are severed. For isolated sectors (e.g. `FLOOD_ZONE_ALPHA`), the engine executes cascade dispatch and assigns rotary aviation (`HELICOPTER`) with tactical briefings.
+4. **Tactical Military Dispatch Briefings**: Generated for every scenario, route feature, and fleet dispatch assignment (`briefing` and `briefing_source`), detailing corridor clearance, ETA, distance, and operational directives.
+
+### How Person 1 Loads `routes_satellite_live.json` into Leaflet
+Person 1 can render the satellite deployment alongside the existing Zaragoza demo in Leaflet using the following workflow:
+
+```javascript
+// 1. Fetch both payloads
+const zaragozaData = await fetch('/routes.json').then(r => r.json());
+const satelliteData = await fetch('/routes_satellite_live.json').then(r => r.json());
+
+// 2. Region Switcher Layer Group
+const activeRegionGroup = L.layerGroup().addTo(map);
+
+function loadRegion(payload) {
+  activeRegionGroup.clearLayers();
+
+  // A. Render Satellite Inundation Extent (Polygon/MultiPolygon)
+  if (payload.flood_extent && payload.flood_extent.coordinates.length > 0) {
+    L.geoJSON(payload.flood_extent, {
+      style: { color: '#2980b9', fillColor: '#3498db', fillOpacity: 0.45, weight: 1 }
+    }).bindPopup('<b>Satellite Flood Extent (Sen1Floods11)</b>').addTo(activeRegionGroup);
+  }
+
+  // B. Render Road Network (Green = Dry, Red = Submerged)
+  if (payload.network && payload.network.features) {
+    L.geoJSON(payload.network, {
+      style: (feature) => ({
+        color: (feature.properties.depth > 0 || feature.properties.has_flood_water) ? '#e74c3c' : '#2ecc71',
+        weight: (feature.properties.depth > 0) ? 3 : 1.5,
+        opacity: 0.8
+      })
+    }).bindPopup((l) => `<b>${l.feature.properties.name}</b><br>Depth: ${l.feature.properties.depth}m`).addTo(activeRegionGroup);
+  }
+
+  // C. Render Active Scenario / Route LineStrings
+  payload.features.forEach((feat) => {
+    if (feat.geometry && feat.properties.status === 'OK') {
+      const isHeli = feat.properties.vehicle_type === 'HELICOPTER';
+      L.geoJSON(feat, {
+        style: {
+          color: isHeli ? '#e67e22' : '#f39c12',
+          weight: 4,
+          dashArray: isHeli ? '6, 8' : null
+        }
+      }).bindPopup(`
+        <b>${feat.properties.vehicle_type} (${feat.properties.scenario_id})</b><br>
+        ETA: ${feat.properties.eta_minutes.toFixed(1)} min | Distance: ${feat.properties.distance_km.toFixed(2)} km<br>
+        <i>${feat.properties.briefing}</i>
+      `).addTo(activeRegionGroup);
+    }
+  });
+
+  // D. Center map on region features
+  const bounds = L.geoJSON(payload.features.filter(f => f.geometry)).getBounds();
+  if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
+}
+```
+
+### Standalone GeoJSON Package for geojson.io / QGIS
+The pipeline exports `data/visual_package_orihuela.geojson` containing 3 pre-styled layers:
+- **Layer 1 ("Satellite Flood Extent")**: Polygonized water surface boundaries with fill opacity.
+- **Layer 2 ("Filtered Road Network")**: Dry roads styled green (`#2ecc71`), submerged roads styled red (`#e74c3c`).
+- **Layer 3 ("Optimal Vehicle Routes")**: High-visibility vehicle tracks with ETA, distance, and tactical briefings.
+
+### Automated Safety Verification Tool
+Run `python tools/verify_route_safety.py` to verify:
+- 0% of Ambulance route pixels pass through satellite floodwater (`Spain_sample_flood.tif == 1`).
+- Every road listed under `avoided_hazards` intersects observed satellite floodwater (0 false-positive road closures).
+

@@ -3,7 +3,23 @@
 import math
 
 ON_SCENE_DWELL_MIN = 15.0  # assumed on-scene emergency dwell duration before return transit
-BASE_RIVER_ELEVATION_M = 194.0  # river surface baseline elevation in zaragoza sector
+
+def _load_base_river_elevation_m() -> float:
+    """Read baseline river elevation from Zaragoza network dataset."""
+    try:
+        from pathlib import Path
+        import json
+        p = Path("data/zaragoza_network.json")
+        if not p.exists():
+            p = Path(__file__).resolve().parent.parent.parent / "data" / "zaragoza_network.json"
+        if p.exists():
+            with open(p, "r", encoding="utf-8") as f:
+                return float(json.load(f).get("meta", {}).get("base_river_elevation_m", 194.0))
+    except Exception:
+        pass
+    return 194.0
+
+BASE_RIVER_ELEVATION_M = _load_base_river_elevation_m()
 RAINFALL_COEFFICIENT = 0.38  # tuned hydraulic head growth rate per mm/h of rainfall
 ELEVATION_COEFFICIENT = 0.70  # tuned risk reduction rate per meter of elevation clearance
 RIVER_DISTANCE_COEFFICIENT = 0.005  # flood attenuation factor per meter distance from river channel
@@ -42,11 +58,13 @@ def calculate_edge_risk(
     rainfall_mmh: float,
     horizon_min: float = 30.0,
     kind: str = "road",
+    base_river_elevation_m: float | None = None,
 ) -> float:
     """Calculate flood submersion or river flow hazard for an edge within the transit horizon."""
     if kind == "river":
         return calculate_river_flow_hazard(rainfall_mmh, horizon_min)
     effective_rain = rainfall_mmh * (horizon_min / 30.0)
+    base_elev = base_river_elevation_m if base_river_elevation_m is not None else BASE_RIVER_ELEVATION_M
     if elevation_m is None:
         z = (
             RAINFALL_COEFFICIENT * effective_rain
@@ -56,7 +74,7 @@ def calculate_edge_risk(
     else:
         z = (
             RAINFALL_COEFFICIENT * effective_rain
-            - ELEVATION_COEFFICIENT * (elevation_m - BASE_RIVER_ELEVATION_M)
+            - ELEVATION_COEFFICIENT * (elevation_m - base_elev)
             - RIVER_DISTANCE_COEFFICIENT * distance_to_river_m
             - RISK_THRESHOLD_BIAS
         )
