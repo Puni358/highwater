@@ -429,3 +429,102 @@ def test_reproject_coordinates_accuracy():
         assert abs(old_lonlat.y - new_lonlat.y) < 1e-6
 
 
+def test_derive_flood_extent_with_contour_geojson_success():
+    aoi = box(7.000, 50.500, 7.020, 50.520)
+    utm_epsg, fwd, inv = proc.to_utm_transformer(aoi)
+
+    # 2 contour polygons: one with value=7.5 (>= 7.0), one with value=5.5 (< 7.0)
+    contour_geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"value": 7.5},
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[7.005, 50.505], [7.010, 50.505], [7.010, 50.510], [7.005, 50.510], [7.005, 50.505]]],
+                },
+            },
+            {
+                "type": "Feature",
+                "properties": {"value": 5.5},
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[7.012, 50.512], [7.015, 50.512], [7.015, 50.515], [7.012, 50.515], [7.012, 50.512]]],
+                },
+            },
+        ],
+    }
+
+    extent = proc.derive_flood_extent([], fwd, contour_geojson=contour_geojson, contour_threshold=7.0)
+    assert extent is not None
+    assert extent.is_valid
+    assert not extent.is_empty
+    # The extent should cover the polygon with value=7.5
+    test_pt = proc._reproject(Point(7.007, 50.507), fwd)
+    assert extent.contains(test_pt)
+    # The extent should NOT cover the polygon with value=5.5
+    low_pt = proc._reproject(Point(7.013, 50.513), fwd)
+    assert not extent.contains(low_pt)
+
+
+def test_derive_flood_extent_contour_fallback_when_below_threshold():
+    aoi = box(7.000, 50.500, 7.020, 50.520)
+    utm_epsg, fwd, inv = proc.to_utm_transformer(aoi)
+
+    # All contour features below threshold
+    contour_geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"value": 4.0},
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[7.005, 50.505], [7.010, 50.505], [7.010, 50.510], [7.005, 50.510], [7.005, 50.505]]],
+                },
+            }
+        ],
+    }
+
+    flooded_b = proc.Feature(
+        id="fb1", kind="building", flooded=True, geometry=Point(7.006, 50.506).buffer(0.0001)
+    )
+    # Should fall back to features when no contour polygon meets threshold
+    extent = proc.derive_flood_extent([flooded_b], fwd, contour_geojson=contour_geojson, contour_threshold=7.0)
+    assert extent is not None
+    assert extent.is_valid
+    assert extent.area > 0
+
+
+def test_derive_flood_extent_contour_malformed_and_edge_cases():
+    aoi = box(7.000, 50.500, 7.020, 50.520)
+    utm_epsg, fwd, inv = proc.to_utm_transformer(aoi)
+
+    flooded_b = proc.Feature(
+        id="fb1", kind="building", flooded=True, geometry=Point(7.006, 50.506).buffer(0.0001)
+    )
+
+    # 1. Non-dict contour input
+    ext1 = proc.derive_flood_extent([flooded_b], fwd, contour_geojson="invalid", contour_threshold=7.0)
+    assert ext1 is not None
+
+    # 2. Malformed geometry and non-numeric value in features
+    malformed_geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {"type": "Feature", "properties": {"value": "not-a-number"}, "geometry": {"type": "Polygon", "coordinates": []}},
+            {"type": "Feature", "properties": {"value": 8.0}, "geometry": None},
+            {"type": "Feature", "properties": None, "geometry": {"type": "Point", "coordinates": [7.0, 50.0]}},
+            "not-even-a-dict",
+        ],
+    }
+    ext2 = proc.derive_flood_extent([flooded_b], fwd, contour_geojson=malformed_geojson, contour_threshold=7.0)
+    assert ext2 is not None
+    assert ext2.is_valid
+
+    # 3. Invalid threshold type
+    ext3 = proc.derive_flood_extent([flooded_b], fwd, contour_geojson=malformed_geojson, contour_threshold="abc")
+    assert ext3 is not None
+
+

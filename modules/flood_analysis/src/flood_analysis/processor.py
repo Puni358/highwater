@@ -15,6 +15,7 @@ import pyproj
 import shapely
 from shapely.geometry import box, shape, mapping
 from shapely.ops import unary_union
+from shapely.strtree import STRtree
 from shapely.validation import make_valid
 
 GRID_CELL_SIZE_M = 300.0
@@ -34,6 +35,7 @@ class Feature:
     kind: str  # "building" or "road"
     flooded: bool
     geometry: object  # shapely geometry in EPSG:4326
+    hazard_value: float = None
 
 
 def load_tile_features(raw_dir, tile_ids):
@@ -244,8 +246,57 @@ def _reproject(geom, transformer):
     return shapely.transform(geom, lambda c: np.column_stack(transformer.transform(c[:, 0], c[:, 1])))
 
 
-def derive_flood_extent(features, fwd):
-    """Union of flooded building polygons and buffered flooded road lines, in UTM."""
+def derive_flood_extent(features, fwd, contour_geojson=None, contour_threshold=None):
+    """Union of flooded building polygons and buffered flooded road lines, in UTM.
+    Optionally derives extent from contour GeoJSON polygons with value >= contour_threshold.
+    """
+    if contour_geojson and contour_threshold is not None:
+        try:
+            threshold_val = float(contour_threshold)
+        except (ValueError, TypeError):
+            threshold_val = None
+
+        if threshold_val is not None and isinstance(contour_geojson, dict):
+            polys = []
+            feats = contour_geojson.get("features", [])
+            if isinstance(feats, list):
+                for feat in feats:
+                    if not isinstance(feat, dict):
+                        continue
+                    props = feat.get("properties") or {}
+                    raw_val = props.get("value")
+                    if raw_val is None:
+                        continue
+                    try:
+                        val = float(raw_val)
+                    except (ValueError, TypeError):
+                        continue
+                    if val >= threshold_val:
+                        geom_data = feat.get("geometry")
+                        if not geom_data:
+                            continue
+                        try:
+                            geom = shape(geom_data)
+                        except Exception:
+                            continue
+                        if geom is None or geom.is_empty:
+                            continue
+                        if not geom.is_valid:
+                            geom = make_valid(geom)
+                        g_utm = _reproject(geom, fwd)
+                        if g_utm is not None and not g_utm.is_empty:
+                            if not g_utm.is_valid:
+                                g_utm = make_valid(g_utm)
+                            if g_utm.geom_type in ("Polygon", "MultiPolygon"):
+                                polys.append(g_utm)
+                            else:
+                                polys.append(g_utm.buffer(0))
+            if polys:
+                merged = unary_union(polys)
+                if not merged.is_valid:
+                    merged = make_valid(merged)
+                return merged.simplify(1.0, preserve_topology=True)
+
     polys = []
     for f in features:
         if not f.flooded:
@@ -292,6 +343,9 @@ def build_zones(features, aoi, fwd, inv, flood_extent_utm, cell_size_m=GRID_CELL
         row = min(max(0, int((c.y - miny) // cell_size_m)), nrows - 1)
         buildings_by_cell.setdefault((row, col), []).append((f, g))
 
+    r_geoms = [g for _, g in roads_utm]
+    r_tree = STRtree(r_geoms) if r_geoms else None
+
     zones = []
     zi = 0
     for row in range(nrows):
@@ -301,7 +355,13 @@ def build_zones(features, aoi, fwd, inv, flood_extent_utm, cell_size_m=GRID_CELL
             cell = box(cx0, cy0, cx1, cy1)
 
             cell_buildings = buildings_by_cell.get((row, col), [])
-            cell_roads = [(f, g) for f, g in roads_utm if g.intersects(cell)]
+
+            if r_tree is not None:
+                r_indices = r_tree.query(cell, predicate="intersects")
+                cell_roads = [roads_utm[i] for i in r_indices]
+            else:
+                cell_roads = [(f, g) for f, g in roads_utm if g.intersects(cell)]
+
             if not cell_buildings and not cell_roads:
                 continue
 
@@ -352,32 +412,45 @@ def features_to_geojson(features, kind, inv):
     for f in features:
         if f.kind != kind:
             continue
+        props = {"id": f.id, "flooded": bool(f.flooded)}
+        if f.hazard_value is not None:
+            props["hazard_value"] = round(float(f.hazard_value), 3)
         feats.append(
             {
                 "type": "Feature",
-                "properties": {"id": f.id, "flooded": bool(f.flooded)},
+                "properties": props,
                 "geometry": mapping(f.geometry),
             }
         )
     return {"type": "FeatureCollection", "features": feats}
 
 
-def flood_extent_to_geojson(flood_extent_utm, inv):
+def flood_extent_to_geojson(flood_extent_utm, inv, hazard="flood"):
     if flood_extent_utm is None or flood_extent_utm.is_empty:
         return {"type": "FeatureCollection", "features": []}
     geom_lonlat = _reproject(flood_extent_utm, inv)
     geoms = [geom_lonlat] if geom_lonlat.geom_type == "Polygon" else list(geom_lonlat.geoms)
     feats = []
+    source = (
+        "derived_from_shaking_exposed_buildings_roads"
+        if hazard == "earthquake"
+        else "derived_from_labelled_flooded_buildings_roads"
+    )
+    label_class = "derived_shaking_extent" if hazard == "earthquake" else "derived_flood_extent"
     for i, g in enumerate(geoms):
         if g.is_empty:
             continue
+        props = {
+            "source": source,
+            "label_class": label_class,
+        }
+        if hazard == "earthquake":
+            props["hazard"] = "earthquake"
+            props["event_id"] = "us6000jllz"
         feats.append(
             {
                 "type": "Feature",
-                "properties": {
-                    "source": "derived_from_labelled_flooded_buildings_roads",
-                    "label_class": "derived_flood_extent",
-                },
+                "properties": props,
                 "geometry": mapping(g),
             }
         )

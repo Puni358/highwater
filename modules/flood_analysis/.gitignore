@@ -1,5 +1,6 @@
 data/raw/
 data/raw_floodnet/
+data/raw_eq/
 .venv/
 __pycache__/
 *.pyc
