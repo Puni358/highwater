@@ -148,7 +148,7 @@ export const DEFAULT_MAP_ZOOM = 12;
  * @param {object} [floodGeoJSON]
  * @returns {[[number, number], [number, number]]}
  */
-export function computeDataBounds(zones = [], floodGeoJSON = null) {
+export function computeDataBounds(zones = [], floodGeoJSON = null, extraGeoJSONs = []) {
   let minLat = Infinity;
   let maxLat = -Infinity;
   let minLng = Infinity;
@@ -162,6 +162,28 @@ export function computeDataBounds(zones = [], floodGeoJSON = null) {
       minLng = Math.min(minLng, lng);
       maxLng = Math.max(maxLng, lng);
       count++;
+    }
+  };
+
+  const processCollection = (fc) => {
+    if (!fc || !Array.isArray(fc.features)) return;
+    for (const f of fc.features) {
+      const geom = f?.geometry;
+      if (!geom?.coordinates) continue;
+      if (geom.type === 'LineString') {
+        for (const pt of geom.coordinates) {
+          if (Array.isArray(pt) && pt.length >= 2) update(pt[0], pt[1]);
+        }
+      } else if (geom.type === 'Polygon' || geom.type === 'MultiPolygon') {
+        const rings = geom.type === 'Polygon' ? geom.coordinates : geom.coordinates.flat(1);
+        for (const ring of rings) {
+          if (Array.isArray(ring)) {
+            for (const pt of ring) {
+              if (Array.isArray(pt) && pt.length >= 2) update(pt[0], pt[1]);
+            }
+          }
+        }
+      }
     }
   };
 
@@ -182,20 +204,13 @@ export function computeDataBounds(zones = [], floodGeoJSON = null) {
     }
   }
 
-  if (floodGeoJSON && Array.isArray(floodGeoJSON.features)) {
-    for (const f of floodGeoJSON.features) {
-      if (f.geometry?.coordinates) {
-        const rings = f.geometry.type === 'Polygon' ? f.geometry.coordinates : f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates.flat(1) : [];
-        for (const ring of rings) {
-          if (Array.isArray(ring)) {
-            for (const pt of ring) {
-              if (Array.isArray(pt) && pt.length >= 2) {
-                update(pt[0], pt[1]);
-              }
-            }
-          }
-        }
-      }
+  if (floodGeoJSON) {
+    processCollection(floodGeoJSON);
+  }
+
+  if (Array.isArray(extraGeoJSONs)) {
+    for (const extra of extraGeoJSONs) {
+      if (extra) processCollection(extra);
     }
   }
 

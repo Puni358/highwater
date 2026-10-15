@@ -14,10 +14,12 @@ import FacilityLayer from '../features/map/FacilityLayer.jsx';
 import RoadLayer from '../features/map/RoadLayer.jsx';
 import RouteLayer from '../features/map/RouteLayer.jsx';
 import BuildingLayer from '../features/map/BuildingLayer.jsx';
+import FloodWatchObservedLayer from '../features/map/FloodWatchObservedLayer.jsx';
+import FloodWatchPredictedLayer from '../features/map/FloodWatchPredictedLayer.jsx';
 import LayerErrorBoundary from '../features/map/LayerErrorBoundary.jsx';
 import MapLegend from './MapLegend.jsx';
 import MapControls from './MapControls.jsx';
-import { AlertTriangle, RotateCcw, PanelRightClose, PanelRightOpen, Info } from 'lucide-react';
+import { AlertTriangle, RotateCcw, PanelRightClose, PanelRightOpen, Info, ExternalLink } from 'lucide-react';
 
 /**
  * MapController
@@ -31,9 +33,11 @@ export function MapController({
   resetTrigger = 0,
   dataBounds = null,
   onMapReady = null,
+  selectedTileBounds = null,
 }) {
   const map = useMap();
   const prevSelectedIdRef = useRef(null);
+  const prevTileBoundsRef = useRef(null);
   const initialFitDoneRef = useRef(false);
 
   useEffect(() => {
@@ -63,6 +67,14 @@ export function MapController({
       map.fitBounds(dataBounds, { padding: [30, 30] });
     }
   }, [dataBounds, map]);
+
+  // Fit bounds to selected tile
+  useEffect(() => {
+    if (selectedTileBounds && selectedTileBounds !== prevTileBoundsRef.current) {
+      prevTileBoundsRef.current = selectedTileBounds;
+      map.flyToBounds(selectedTileBounds, { padding: [40, 40], maxZoom: 16, duration: 1.2 });
+    }
+  }, [selectedTileBounds, map]);
 
   // Reset extent handler returns to fitted bounds (FR-15, T3.6, Requirement 2)
   useEffect(() => {
@@ -125,8 +137,20 @@ export default function FloodMap({
   facilities = null,
   routes = [],
   buildingsExposed = null,
+  floodGroundTruth = null,
+  floodPredictedFast = null,
+  floodPredictedAccurate = null,
   selectedZoneId = null,
-  visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false, buildings: false },
+  visibleLayers = {
+    flood: true,
+    risk: true,
+    roads: true,
+    facilities: true,
+    routes: false,
+    buildings: false,
+    floodGroundTruth: true,
+    floodPredicted: true,
+  },
   onToggleLayer = () => {},
   onZoneSelect,
   droppedCount = 0,
@@ -136,14 +160,33 @@ export default function FloodMap({
   layerErrors: externalLayerErrors = {},
   isFromCache = false,
   cachedAt = null,
+  modelMode: modelModeProp,
+  onChangeModelMode,
+  selectedTileId: selectedTileIdProp,
+  onSelectTile,
   children, // For custom/injected test layers
 }) {
   const [internalReset, setInternalReset] = useState(0);
   const [layerErrors, setLayerErrors] = useState({});
   const [internalTilesOffline, setInternalTilesOffline] = useState(false);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [internalModelMode, setInternalModelMode] = useState('fast');
+  const [internalSelectedTileId, setInternalSelectedTileId] = useState('ALL');
   const tilesOfflineRef = useRef(false);
   const mapInstanceRef = useRef(null);
+
+  const activeModelMode = modelModeProp !== undefined ? modelModeProp : internalModelMode;
+  const activeSelectedTileId = selectedTileIdProp !== undefined ? selectedTileIdProp : internalSelectedTileId;
+
+  const handleChangeModelMode = useCallback((mode) => {
+    if (onChangeModelMode) onChangeModelMode(mode);
+    setInternalModelMode(mode);
+  }, [onChangeModelMode]);
+
+  const handleSelectTile = useCallback((tileId) => {
+    if (onSelectTile) onSelectTile(tileId);
+    setInternalSelectedTileId(tileId);
+  }, [onSelectTile]);
 
   const isTilesOffline = tilesOfflineProp !== null ? tilesOfflineProp : internalTilesOffline;
   const activeReset = resetTrigger || internalReset;
@@ -178,9 +221,88 @@ export default function FloodMap({
     return () => clearTimeout(timer);
   }, [isPanelCollapsed]);
 
+  // Extract all distinct tile IDs across FloodWatch sources
+  const availableTiles = useMemo(() => {
+    const tileSet = new Set();
+    const addFromCollection = (fc) => {
+      if (fc && Array.isArray(fc.features)) {
+        for (const f of fc.features) {
+          if (f.properties?.tile_id) tileSet.add(f.properties.tile_id);
+        }
+      }
+    };
+    addFromCollection(floodGroundTruth);
+    addFromCollection(floodPredictedFast);
+    addFromCollection(floodPredictedAccurate);
+    if (Array.isArray(riskZones)) {
+      for (const z of riskZones) {
+        if (z.zoneId && (z.zoneId.startsWith('0_') || z.zoneId.includes('_'))) {
+          tileSet.add(z.zoneId);
+        }
+      }
+    }
+    return Array.from(tileSet).sort();
+  }, [floodGroundTruth, floodPredictedFast, floodPredictedAccurate, riskZones]);
+
+  const hasFloodWatch = useMemo(() => {
+    return Boolean(
+      floodGroundTruth ||
+      floodPredictedFast ||
+      floodPredictedAccurate ||
+      availableTiles.length > 0 ||
+      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_DATA_SOURCE === 'mock-floodwatch')
+    );
+  }, [floodGroundTruth, floodPredictedFast, floodPredictedAccurate, availableTiles.length]);
+
   const dataBounds = useMemo(() => {
-    return computeDataBounds(riskZones, floodGeoJSON);
-  }, [riskZones, floodGeoJSON]);
+    return computeDataBounds(riskZones, floodGeoJSON, [
+      floodGroundTruth,
+      floodPredictedFast,
+      floodPredictedAccurate,
+    ]);
+  }, [riskZones, floodGeoJSON, floodGroundTruth, floodPredictedFast, floodPredictedAccurate]);
+
+  // Compute bounding box for the selected tile
+  const selectedTileBounds = useMemo(() => {
+    if (!activeSelectedTileId || activeSelectedTileId === 'ALL') return null;
+
+    // Check riskZones first
+    const matchingZone = riskZones.find((z) => z.zoneId === activeSelectedTileId);
+    if (matchingZone && matchingZone.hasGeometry && matchingZone.geometry?.coordinates) {
+      const ring = matchingZone.geometry.coordinates[0];
+      const latLngs = ring.map(toLatLng);
+      return L.latLngBounds(latLngs);
+    }
+
+    // Otherwise compute from features
+    const allFeatures = [
+      ...(floodGroundTruth?.features || []),
+      ...(floodPredictedFast?.features || []),
+      ...(floodPredictedAccurate?.features || []),
+    ].filter((f) => f.properties?.tile_id === activeSelectedTileId);
+
+    const latLngs = [];
+    for (const f of allFeatures) {
+      const geom = f.geometry;
+      if (!geom?.coordinates) continue;
+      if (geom.type === 'LineString') {
+        for (const pt of geom.coordinates) {
+          latLngs.push(toLatLng(pt));
+        }
+      } else if (geom.type === 'Polygon' || geom.type === 'MultiPolygon') {
+        const rings = geom.type === 'Polygon' ? geom.coordinates : geom.coordinates.flat(1);
+        for (const ring of rings) {
+          for (const pt of ring) {
+            latLngs.push(toLatLng(pt));
+          }
+        }
+      }
+    }
+    if (latLngs.length > 0) {
+      return L.latLngBounds(latLngs);
+    }
+    return null;
+  }, [activeSelectedTileId, riskZones, floodGroundTruth, floodPredictedFast, floodPredictedAccurate]);
 
   const tileUrl = import.meta.env.VITE_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   const tileAttribution = import.meta.env.VITE_TILE_ATTRIBUTION || '© OpenStreetMap contributors';
@@ -204,6 +326,25 @@ export default function FloodMap({
   if (blockedRoads?.error) combinedLayerErrors.roads = blockedRoads.error;
   if (facilities?.error) combinedLayerErrors.facilities = facilities.error;
   if (buildingsExposed?.error) combinedLayerErrors.buildings = buildingsExposed.error;
+  if (floodGroundTruth?.error) combinedLayerErrors.floodGroundTruth = floodGroundTruth.error;
+  if (floodPredictedFast?.error) combinedLayerErrors.floodPredictedFast = floodPredictedFast.error;
+  if (floodPredictedAccurate?.error) combinedLayerErrors.floodPredictedAccurate = floodPredictedAccurate.error;
+
+  const activePredictedData = activeModelMode === 'accurate' ? floodPredictedAccurate : floodPredictedFast;
+
+  // STEP 4: Persistent training-pool honesty note condition
+  const showTrainingPoolNotice = useMemo(() => {
+    if (!visibleLayers.floodPredicted || !activePredictedData?.features) return false;
+    return activePredictedData.features.some((f) => {
+      if (activeSelectedTileId && activeSelectedTileId !== 'ALL' && f.properties?.tile_id !== activeSelectedTileId) {
+        return false;
+      }
+      return f.properties?.in_training_pool === true;
+    });
+  }, [visibleLayers.floodPredicted, activePredictedData, activeSelectedTileId]);
+
+  // STEP 5: Optional FloodWatch backend URL link
+  const floodwatchUrl = typeof import.meta !== 'undefined' ? (import.meta.env?.VITE_FLOODWATCH_URL || '') : '';
 
   return (
     <div className="flex flex-col lg:flex-row w-full h-full min-h-[440px] overflow-hidden font-sans bg-card relative">
@@ -229,6 +370,7 @@ export default function FloodMap({
             resetTrigger={activeReset}
             dataBounds={dataBounds}
             onMapReady={handleMapReady}
+            selectedTileBounds={selectedTileBounds}
           />
 
           {/* Reset Extent Button Control directly on map (unobtrusive under zoom controls) */}
@@ -295,6 +437,32 @@ export default function FloodMap({
               onError={(err) => handleLayerError('buildings', err)}
             >
               <BuildingLayer data={buildingsExposed} />
+            </LayerErrorBoundary>
+          )}
+
+          {/* 7. FloodWatch Observed Ground Truth Layer (SpaceNet 8) */}
+          {visibleLayers.floodGroundTruth && (
+            <LayerErrorBoundary
+              layerName="floodGroundTruth"
+              onError={(err) => handleLayerError('floodGroundTruth', err)}
+            >
+              <FloodWatchObservedLayer
+                data={floodGroundTruth}
+                selectedTileId={activeSelectedTileId}
+              />
+            </LayerErrorBoundary>
+          )}
+
+          {/* 8. FloodWatch Model Output Layer (fast or accurate) */}
+          {visibleLayers.floodPredicted && (
+            <LayerErrorBoundary
+              layerName="floodPredicted"
+              onError={(err) => handleLayerError('floodPredicted', err)}
+            >
+              <FloodWatchPredictedLayer
+                data={activePredictedData}
+                selectedTileId={activeSelectedTileId}
+              />
             </LayerErrorBoundary>
           )}
 
@@ -400,15 +568,55 @@ export default function FloodMap({
               </div>
             )}
 
+            {/* STEP 4: Persistent training pool disclaimer note */}
+            {showTrainingPoolNotice && (
+              <div
+                role="note"
+                aria-label="Training Pool Notice"
+                className="p-2.5 rounded bg-amber-50 border border-amber-300 text-amber-900 text-[11px] flex items-start space-x-2 shadow-sm"
+              >
+                <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <span>
+                  Tiles shown were in the model's training pool; agreement with labels is not a held-out result.
+                </span>
+              </div>
+            )}
+
             {/* Layer Controls Switch Panel */}
             <MapControls
               visibleLayers={visibleLayers}
               onToggleLayer={onToggleLayer}
               onResetExtent={handleResetExtent}
+              modelMode={activeModelMode}
+              onChangeModelMode={handleChangeModelMode}
+              availableTiles={availableTiles}
+              selectedTileId={activeSelectedTileId}
+              onSelectTile={handleSelectTile}
+              hasFloodWatch={hasFloodWatch}
             />
 
             {/* Dynamic Map Legend */}
-            <MapLegend visibleLayers={visibleLayers} />
+            <MapLegend
+              visibleLayers={visibleLayers}
+              modelMode={activeModelMode}
+            />
+
+            {/* STEP 5: Optional Link to FloodWatch Analysis */}
+            {floodwatchUrl && (
+              <div className="p-2.5 rounded bg-white border border-border text-[11px] shadow-sm space-y-1">
+                <div className="font-semibold text-text">FloodWatch Analysis</div>
+                <a
+                  href={floodwatchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open FloodWatch tile analysis (localhost:8000)"
+                  className="inline-flex items-center space-x-1.5 text-xs text-sky-700 hover:text-navy-900 font-medium underline underline-offset-2"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <span>Open FloodWatch tile analysis (localhost:8000)</span>
+                </a>
+              </div>
+            )}
 
             {/* Provenance & Data Notes */}
             <div className="p-2.5 rounded bg-white border border-border text-[11px] text-text-muted space-y-1 shadow-sm">

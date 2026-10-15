@@ -8,6 +8,7 @@ import ProvenanceBadge from './ProvenanceBadge.jsx';
  */
 export default function MapLegend({
   visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false, buildings: false },
+  modelMode = 'fast',
 }) {
   const hasActiveLayers = Object.values(visibleLayers).some(Boolean);
 
@@ -139,6 +140,54 @@ export default function MapLegend({
             <span className="text-text">Flooded Buildings</span>
           </div>
           <ProvenanceBadge value="observed" />
+        </div>
+      )}
+
+      {/* 7. FloodWatch Observed Labels Swatch (SpaceNet 8) */}
+      {visibleLayers.floodGroundTruth && (
+        <div className="space-y-1 pt-1 border-t border-border/50">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-text-muted text-[11px]">Observed (SpaceNet 8):</span>
+            <ProvenanceBadge value="observed" />
+          </div>
+          <div className="space-y-1 text-[11px]">
+            <div className="flex items-center space-x-1.5">
+              <div
+                className="w-3.5 h-3.5 rounded border"
+                style={{
+                  backgroundColor: THEME.colors.floodwatchObservedBuilding,
+                  borderColor: THEME.colors.floodwatchObservedBuildingBorder,
+                  opacity: 0.75,
+                }}
+              />
+              <span className="text-text">Observed Buildings</span>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <div
+                className="w-4 h-1 rounded"
+                style={{ backgroundColor: THEME.colors.floodwatchObservedRoad }}
+              />
+              <span className="text-text">Observed Flooded Roads</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. FloodWatch Model Output Swatch (derived) */}
+      {visibleLayers.floodPredicted && (
+        <div className="flex items-center justify-between pt-1 border-t border-border/50">
+          <div className="flex items-center space-x-2">
+            <div
+              className="w-3.5 h-3.5 rounded"
+              style={{
+                backgroundColor: THEME.colors.floodwatchPredicted,
+                opacity: 0.65,
+                border: `1.5px dashed ${THEME.colors.floodwatchPredictedBorder}`,
+              }}
+            />
+            <span className="text-text">Model Output ({modelMode === 'accurate' ? 'Accurate' : 'Fast'})</span>
+          </div>
+          <ProvenanceBadge value="derived" />
         </div>
       )}
 

@@ -51,7 +51,11 @@ export default function DashboardLayout({
     facilities: true,
     routes: false,
     buildings: false,
+    floodGroundTruth: true,
+    floodPredicted: true,
   });
+  const [modelMode, setModelMode] = useState('fast');
+  const [selectedTileId, setSelectedTileId] = useState('ALL');
 
   // 2. Filter & Sort state
   const [filters, setFilters] = useState({ search: '', riskLevel: 'ALL' });
@@ -97,6 +101,38 @@ export default function DashboardLayout({
   const selectedZone = useMemo(() => {
     return allZones.find((z) => z.zoneId === selectedZoneId) || null;
   }, [allZones, selectedZoneId]);
+
+  const availableTiles = useMemo(() => {
+    const tileSet = new Set();
+    const addFromCollection = (fc) => {
+      if (fc && Array.isArray(fc.features)) {
+        for (const f of fc.features) {
+          if (f.properties?.tile_id) tileSet.add(f.properties.tile_id);
+        }
+      }
+    };
+    addFromCollection(data?.floodGroundTruth);
+    addFromCollection(data?.floodPredictedFast);
+    addFromCollection(data?.floodPredictedAccurate);
+    if (Array.isArray(allZones)) {
+      for (const z of allZones) {
+        if (z.zoneId && (z.zoneId.startsWith('0_') || z.zoneId.includes('_'))) {
+          tileSet.add(z.zoneId);
+        }
+      }
+    }
+    return Array.from(tileSet).sort();
+  }, [data?.floodGroundTruth, data?.floodPredictedFast, data?.floodPredictedAccurate, allZones]);
+
+  const hasFloodWatch = useMemo(() => {
+    return Boolean(
+      data?.floodGroundTruth ||
+      data?.floodPredictedFast ||
+      data?.floodPredictedAccurate ||
+      availableTiles.length > 0 ||
+      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_DATA_SOURCE === 'mock-floodwatch')
+    );
+  }, [data?.floodGroundTruth, data?.floodPredictedFast, data?.floodPredictedAccurate, availableTiles.length]);
 
   // Handlers
   const handleToggleLayer = useCallback((layerKey) => {
@@ -244,7 +280,7 @@ export default function DashboardLayout({
                     <span>Geospatial Flood Extent & Priority Zones</span>
                   </div>
                   <span className="text-xs text-text-muted bg-white px-2 py-0.5 rounded border border-border">
-                    {allZones.length} Zones • 6 Map Layers
+                    {allZones.length} Zones • {hasFloodWatch ? '8' : '6'} Map Layers
                   </span>
                 </div>
 
@@ -257,6 +293,9 @@ export default function DashboardLayout({
                     facilities={data?.facilities}
                     routes={data?.routes || []}
                     buildingsExposed={data?.buildingsExposed}
+                    floodGroundTruth={data?.floodGroundTruth}
+                    floodPredictedFast={data?.floodPredictedFast}
+                    floodPredictedAccurate={data?.floodPredictedAccurate}
                     selectedZoneId={selectedZoneId}
                     visibleLayers={visibleLayers}
                     onToggleLayer={handleToggleLayer}
@@ -267,6 +306,10 @@ export default function DashboardLayout({
                     layerErrors={data?.layerErrors}
                     isFromCache={metadata.isFromCache}
                     cachedAt={metadata.cachedAt}
+                    modelMode={modelMode}
+                    onChangeModelMode={setModelMode}
+                    selectedTileId={selectedTileId}
+                    onSelectTile={setSelectedTileId}
                   />
                 </div>
               </section>
@@ -495,6 +538,12 @@ export default function DashboardLayout({
                   visibleLayers={visibleLayers}
                   onToggleLayer={handleToggleLayer}
                   onResetExtent={handleResetExtent}
+                  modelMode={modelMode}
+                  onChangeModelMode={setModelMode}
+                  availableTiles={availableTiles}
+                  selectedTileId={selectedTileId}
+                  onSelectTile={setSelectedTileId}
+                  hasFloodWatch={hasFloodWatch}
                 />
               )}
             </div>

@@ -24,6 +24,12 @@ export const THEME = {
     selected: '#0B1F33',
     buildingFlooded: '#B45309', // WCAG AA compliant (5.02:1 with white text)
     buildingFloodedBorder: '#92400E',
+    floodwatchObservedBuilding: '#D97706',
+    floodwatchObservedBuildingBorder: '#B45309',
+    floodwatchObservedRoad: '#EA580C',
+    floodwatchObservedRoadBorder: '#C2410C',
+    floodwatchPredicted: '#0284C7',
+    floodwatchPredictedBorder: '#0369A1',
     demo: {
       text: '#965300', // WCAG AA compliant (5.39:1 on #FFF3D6)
       specText: '#B26A00', // Base design token from design.md
