@@ -14,7 +14,7 @@ export default function MapLegend({
 
   if (!hasActiveLayers) {
     return (
-      <div className="bg-card/95 backdrop-blur-sm border border-border rounded-card p-2.5 shadow-md text-xs text-text-muted">
+      <div className="bg-plate border border-hairline rounded p-2.5 shadow-xs text-xs text-ink-muted">
         <span>No map overlays active</span>
       </div>
     );
@@ -24,7 +24,7 @@ export default function MapLegend({
     <div
       role="region"
       aria-label="Map Legend"
-      className="bg-card/95 backdrop-blur-sm border border-border rounded-card p-3 shadow-md text-xs space-y-2.5 max-w-[240px] font-sans"
+      className="bg-plate border border-hairline rounded p-3 shadow-xs text-xs space-y-2.5 max-w-[240px] font-sans text-ink"
     >
       <div className="font-bold text-navy-900 border-b border-border pb-1">
         Active Map Overlays

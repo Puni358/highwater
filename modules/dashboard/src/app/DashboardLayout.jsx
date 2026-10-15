@@ -16,7 +16,6 @@ import EmptyState from '../components/states/EmptyState.jsx';
 import {
   Droplets,
   AlertOctagon,
-  AlertTriangle,
   Home,
   Ban,
   MapPin,
@@ -29,10 +28,13 @@ import { selectSummaryStats } from '../features/dashboard/dashboardSelectors.js'
 import { filterZones, sortZones } from '../features/zones/zoneUtils.js';
 
 /**
- * DashboardLayout
- * Structural layout container supporting desktop, tablet, and mobile viewports.
- * Manages central UI state: selectedZoneId, visibleLayers, filters, sortBy (architecture.md Section 4).
- * Single source of truth for selection across map, zone list, and inspection details.
+ * DashboardLayout (Survey Plate Master Layout)
+ * Cartographic Survey Sheet with:
+ * - Title Block Header
+ * - Verifiable Survey Statistics
+ * - Geospatial Survey Map Plate with 2D / 3D Relief Projection & Docked Side Panel
+ * - Inspection & Priority Zone Details Row (Tablet & Desktop)
+ * - Sector Priority Directory & Analytical Charts
  */
 export default function DashboardLayout({
   data,
@@ -41,7 +43,6 @@ export default function DashboardLayout({
   onRefresh,
   lastRefreshedAt = null,
 }) {
-  // 1. Single source of truth for selection and layer visibility (architecture.md section 4)
   const [selectedZoneId, setSelectedZoneId] = useState(() => {
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search);
@@ -69,18 +70,15 @@ export default function DashboardLayout({
     return 'ALL';
   });
 
-  // 2. Filter & Sort state
   const [filters, setFilters] = useState({ search: '', riskLevel: 'ALL' });
   const [sortBy, setSortBy] = useState('priority');
 
-  // 3. Mobile drawer state (T5.4)
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [mobileDrawerTab, setMobileDrawerTab] = useState('list'); // 'list' | 'details' | 'controls'
 
   const metadata = data?.metadata || {};
   const allZones = data?.zones || [];
 
-  // Invalidate map size whenever drawer opens or closes (T5.4)
   useEffect(() => {
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
@@ -88,14 +86,12 @@ export default function DashboardLayout({
     return () => clearTimeout(timer);
   }, [isMobileDrawerOpen]);
 
-  // If a zone is selected on mobile, auto-switch drawer tab to 'details'
   useEffect(() => {
     if (selectedZoneId) {
       setMobileDrawerTab('details');
     }
   }, [selectedZoneId]);
 
-  // 4. Derived collections (memoised, no duplicate state per architecture.md)
   const filteredZones = useMemo(() => {
     return filterZones(allZones, filters);
   }, [allZones, filters]);
@@ -104,12 +100,10 @@ export default function DashboardLayout({
     return sortZones(filteredZones, sortBy);
   }, [filteredZones, sortBy]);
 
-  // Summary stats follow the filtered set per T4.8 filter policy
   const stats = useMemo(() => {
     return selectSummaryStats(data, filteredZones);
   }, [data, filteredZones]);
 
-  // Selected zone object
   const selectedZone = useMemo(() => {
     return allZones.find((z) => z.zoneId === selectedZoneId) || null;
   }, [allZones, selectedZoneId]);
@@ -154,7 +148,6 @@ export default function DashboardLayout({
     );
   }, [metadata.dataSource, allZones]);
 
-  // Handlers
   const handleToggleLayer = useCallback((layerKey) => {
     setVisibleLayers((prev) => ({
       ...prev,
@@ -172,8 +165,8 @@ export default function DashboardLayout({
   }, []);
 
   return (
-    <div className="min-h-screen bg-surface text-text flex flex-col overflow-x-hidden font-sans relative">
-      {/* 1. Header */}
+    <div className="min-h-screen bg-paper text-ink flex flex-col overflow-x-hidden font-sans relative">
+      {/* 1. Cartographic Title Block Header */}
       <Header
         studyArea={metadata.studyArea}
         timestamp={metadata.generatedAt}
@@ -185,16 +178,16 @@ export default function DashboardLayout({
         lastRefreshedAt={lastRefreshedAt || metadata.lastRefreshedAt}
       />
 
-      {/* Main Content Area */}
+      {/* Main Survey Workspace */}
       <main className="flex-1 p-3 sm:p-4 lg:p-6 max-w-7xl w-full mx-auto space-y-4 lg:space-y-6">
-        {/* Cached snapshot banner when network fetch failed and offline cache is used */}
+        {/* Cached Snapshot Notice */}
         <CachedBanner
           isFromCache={metadata.isFromCache}
           cachedAt={metadata.cachedAt}
           onRefresh={onRefresh}
         />
 
-        {/* Stale data banner (T5.2, FR-51) - suppressed when dataMode is "demo" or when cached banner is shown */}
+        {/* Stale Survey Data Notice */}
         {!metadata.isFromCache && (
           <StaleBanner
             generatedAt={metadata.generatedAt}
@@ -203,7 +196,7 @@ export default function DashboardLayout({
           />
         )}
 
-        {/* Error notification banner if applicable (FR-50) */}
+        {/* System Error Notification */}
         {error && (
           <ErrorState
             error={error}
@@ -212,7 +205,7 @@ export default function DashboardLayout({
           />
         )}
 
-        {/* 2. Stat Cards Grid */}
+        {/* 2. Key Operational Metrics */}
         <section
           aria-label="Key Operational Metrics"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
@@ -228,7 +221,7 @@ export default function DashboardLayout({
                 caption={
                   stats.isFiltered
                     ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} tiles`
-                    : 'Ground survey verification'
+                    : 'Annotated labels (SpaceNet 8)'
                 }
               />
               <StatCard
@@ -328,33 +321,30 @@ export default function DashboardLayout({
           )}
         </section>
 
-
-
-        {/* Empty state when no zones reported (FR-50, T5.1) */}
+        {/* Empty state when no zones reported */}
         {allZones.length === 0 && !loading && (
           <EmptyState onRefresh={onRefresh} loading={loading} />
         )}
 
-        {/* 3. Primary Workspace: Map & Side Panel (Responsive) */}
+        {/* 3. Primary Workspace: Map & Inspection Details */}
         {allZones.length > 0 && (
           <>
             <div className="space-y-4 lg:space-y-6">
-              {/* Primary Map Workspace: Unobstructed Map with Docked Side Panel */}
+              {/* Primary Map Workspace: Unobstructed Map Plate with Docked Side Panel */}
               <section
                 aria-label="Flood Map View"
-                className="w-full bg-card border border-border rounded-card shadow-sm overflow-hidden flex flex-col h-[65vh] min-h-[480px] lg:h-[620px]"
+                className="w-full bg-plate border border-hairline rounded overflow-hidden flex flex-col h-[65vh] min-h-[480px] lg:h-[640px]"
               >
-                <div className="px-4 py-3 border-b border-border bg-slate-50/50 flex items-center justify-between shrink-0">
-                  <div className="flex items-center space-x-2 text-text font-semibold text-sm">
-                    <MapPin className="w-4 h-4 text-flood" aria-hidden="true" />
+                <div className="px-4 py-2.5 border-b border-hairline bg-paper flex items-center justify-between shrink-0">
+                  <div className="flex items-center space-x-2 text-ink font-serif font-bold text-sm">
+                    <MapPin className="w-4 h-4 text-ink-muted" aria-hidden="true" />
                     <span>Geospatial Flood Extent & Priority Zones</span>
                   </div>
-                  <span className="text-xs text-text-muted bg-white px-2 py-0.5 rounded border border-border">
+                  <span className="text-xs text-ink-muted bg-plate px-2 py-0.5 rounded border border-hairline">
                     {allZones.length} Zones • {hasFloodWatch ? '8' : '6'} Map Layers
                   </span>
                 </div>
 
-                {/* Live Leaflet Map Container with Docked Side Panel */}
                 <div className="flex-1 relative w-full h-full min-h-0">
                   <FloodMap
                     floodGeoJSON={data?.floodExtent}
@@ -389,7 +379,6 @@ export default function DashboardLayout({
                 aria-label="Layer Controls and Zone Details"
                 className="hidden sm:grid sm:grid-cols-2 gap-4 lg:gap-6 items-start"
               >
-                {/* Zone Details Inspection Panel (FR-20, FR-21, T4.5) */}
                 <ZoneDetails
                   zone={selectedZone}
                   timestamp={metadata.generatedAt}
@@ -397,7 +386,6 @@ export default function DashboardLayout({
                   isTestFixture={metadata.dataMode === 'demo' && !isFloodwatchMode}
                 />
 
-                {/* Aerial Reconnaissance Survey Needed List */}
                 <SurveyNeededList
                   zones={allZones}
                   onSelectZone={handleZoneSelect}
@@ -407,23 +395,22 @@ export default function DashboardLayout({
             </div>
 
             {/* 4. Secondary Workspace: Zone Directory & Analytical Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
-              {/* Zone Directory Container (Col span 6 on desktop) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start no-print">
+              {/* Zone Directory Container */}
               <section
                 aria-label="Zone Priority Directory"
-                className="lg:col-span-6 bg-card border border-border rounded-card shadow-sm p-4 space-y-3"
+                className="lg:col-span-6 bg-plate border border-hairline rounded p-4 space-y-3"
               >
-                <div className="flex items-center justify-between pb-2 border-b border-border">
-                  <div className="flex items-center space-x-2 text-text font-semibold text-sm">
-                    <ListFilter className="w-4 h-4 text-navy-700" aria-hidden="true" />
+                <div className="flex items-center justify-between pb-2 border-b border-hairline">
+                  <div className="flex items-center space-x-2 text-ink font-serif font-bold text-sm">
+                    <ListFilter className="w-4 h-4 text-ink-muted" aria-hidden="true" />
                     <span>Zone Priority Directory</span>
                   </div>
-                  <span className="text-caption text-text-muted">
+                  <span className="text-caption text-ink-muted">
                     Click row to inspect & pan map
                   </span>
                 </div>
 
-                {/* Filter and Sort Controls (FR-22, FR-23, T4.4, T4.8) */}
                 <FilterBar
                   filters={filters}
                   sortBy={sortBy}
@@ -433,7 +420,6 @@ export default function DashboardLayout({
                   filteredCount={filteredZones.length}
                 />
 
-                {/* Interactive Zone List with auto-scroll and selection (FR-24, FR-26) */}
                 <ZoneList
                   zones={sortedZones}
                   selectedZoneId={selectedZoneId}
@@ -441,24 +427,23 @@ export default function DashboardLayout({
                 />
               </section>
 
-              {/* Analytical Charts Container (Col span 6 on desktop) */}
+              {/* Analytical Charts */}
               <section
                 aria-label={isFloodwatchMode ? "Observed and Model Feature Analytics" : "Impact Analytics and Risk Charts"}
-                className="lg:col-span-6 bg-card border border-border rounded-card shadow-sm p-4 space-y-3"
+                className="lg:col-span-6 bg-plate border border-hairline rounded p-4 space-y-3"
               >
-                <div className="flex items-center justify-between pb-2 border-b border-border">
-                  <div className="flex items-center space-x-2 text-text font-semibold text-sm">
-                    <BarChart2 className="w-4 h-4 text-navy-700" aria-hidden="true" />
+                <div className="flex items-center justify-between pb-2 border-b border-hairline">
+                  <div className="flex items-center space-x-2 text-ink font-serif font-bold text-sm">
+                    <BarChart2 className="w-4 h-4 text-ink-muted" aria-hidden="true" />
                     <span>{isFloodwatchMode ? "Feature Analytics" : "Impact Analytics"}</span>
                   </div>
-                  <span className="text-caption text-text-muted">
+                  <span className="text-caption text-ink-muted">
                     {isFloodwatchMode
                       ? "Observed damage counts & neural segmentation masks"
                       : (filters.riskLevel !== 'ALL' || filters.search ? 'Filtered Scope' : 'Full Scope')}
                   </span>
                 </div>
 
-                {/* Charts Grid: Risk Distribution & Top Impacted Zones (FR-30, FR-31, T4.9) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RiskDistributionChart zones={filteredZones} isFloodwatchMode={isFloodwatchMode} />
                   <ImpactChart zones={filteredZones} isFloodwatchMode={isFloodwatchMode} />
@@ -469,50 +454,47 @@ export default function DashboardLayout({
         )}
       </main>
 
-      {/* Floating Drawer Trigger for Mobile (< 640px) (T5.4) */}
-      <div className="sm:hidden fixed bottom-4 right-4 z-[1000]">
+      {/* Floating Drawer Trigger for Mobile (< 640px) */}
+      <div className="sm:hidden fixed bottom-4 right-4 z-[1000] no-print">
         <button
           type="button"
           onClick={() => setIsMobileDrawerOpen(true)}
           aria-label="Open mobile inspection drawer"
-          className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-full bg-navy-900 text-white font-semibold text-xs shadow-lg hover:bg-navy-700 active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-flood"
+          className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-full bg-ink text-paper font-semibold text-xs shadow-lg transition focus:outline-none cursor-pointer"
         >
           <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
           <span>Filters & Details</span>
           {selectedZone && (
             <span
-              className="w-2 h-2 rounded-full bg-flood"
+              className="w-2 h-2 rounded-full bg-paper"
               title="Zone selected"
             />
           )}
         </button>
       </div>
 
-      {/* Mobile Drawer Overlay and Sheet (T5.4) */}
+      {/* Mobile Drawer Overlay and Sheet */}
       {isMobileDrawerOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Mobile Navigation and Inspection Drawer"
-          className="fixed inset-0 z-[1001] flex flex-col justify-end"
+          className="fixed inset-0 z-[1001] flex flex-col justify-end no-print"
         >
-          {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-navy-900/50 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-ink/40 transition-opacity"
             onClick={() => setIsMobileDrawerOpen(false)}
             aria-hidden="true"
           />
 
-          {/* Drawer Sheet */}
-          <div className="relative bg-surface border-t border-border rounded-t-2xl shadow-2xl max-h-[85vh] flex flex-col z-[1002] w-full">
-            {/* Header & Close Button */}
-            <div className="p-3 bg-white border-b border-border rounded-t-2xl flex items-center justify-between shrink-0">
+          <div className="relative bg-paper border-t border-hairline rounded-t-2xl shadow-2xl max-h-[85vh] flex flex-col z-[1002] w-full text-ink">
+            <div className="p-3 bg-plate border-b border-hairline rounded-t-2xl flex items-center justify-between shrink-0">
               <div className="flex items-center space-x-2">
-                <span className="font-bold text-sm text-navy-900">
+                <span className="font-serif font-bold text-sm text-ink">
                   Operational Inspector
                 </span>
                 {selectedZone && (
-                  <span className="text-[11px] text-text-muted">
+                  <span className="text-[11px] text-ink-muted">
                     ({selectedZone.name})
                   </span>
                 )}
@@ -521,21 +503,20 @@ export default function DashboardLayout({
                 type="button"
                 onClick={() => setIsMobileDrawerOpen(false)}
                 aria-label="Close mobile drawer"
-                className="p-1.5 rounded-full text-text-muted hover:text-text hover:bg-slate-100 transition min-w-[36px] min-h-[36px] flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-navy-900"
+                className="p-1.5 rounded-full text-ink-muted hover:text-ink hover:bg-hairline/40 transition min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Mobile Tab Navigation */}
-            <div className="flex border-b border-border bg-slate-50 shrink-0 text-xs font-semibold">
+            <div className="flex border-b border-hairline bg-plate shrink-0 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setMobileDrawerTab('list')}
-                className={`flex-1 py-2.5 text-center border-b-2 transition ${
+                className={`flex-1 py-2.5 text-center border-b-2 transition cursor-pointer ${
                   mobileDrawerTab === 'list'
-                    ? 'border-navy-900 text-navy-900 bg-white'
-                    : 'border-transparent text-text-muted hover:text-text'
+                    ? 'border-ink text-ink bg-paper'
+                    : 'border-transparent text-ink-muted hover:text-ink'
                 }`}
               >
                 Zones & Filters
@@ -543,10 +524,10 @@ export default function DashboardLayout({
               <button
                 type="button"
                 onClick={() => setMobileDrawerTab('details')}
-                className={`flex-1 py-2.5 text-center border-b-2 transition ${
+                className={`flex-1 py-2.5 text-center border-b-2 transition cursor-pointer ${
                   mobileDrawerTab === 'details'
-                    ? 'border-navy-900 text-navy-900 bg-white'
-                    : 'border-transparent text-text-muted hover:text-text'
+                    ? 'border-ink text-ink bg-paper'
+                    : 'border-transparent text-ink-muted hover:text-ink'
                 }`}
               >
                 Inspection Details
@@ -554,17 +535,16 @@ export default function DashboardLayout({
               <button
                 type="button"
                 onClick={() => setMobileDrawerTab('controls')}
-                className={`flex-1 py-2.5 text-center border-b-2 transition ${
+                className={`flex-1 py-2.5 text-center border-b-2 transition cursor-pointer ${
                   mobileDrawerTab === 'controls'
-                    ? 'border-navy-900 text-navy-900 bg-white'
-                    : 'border-transparent text-text-muted hover:text-text'
+                    ? 'border-ink text-ink bg-paper'
+                    : 'border-transparent text-ink-muted hover:text-ink'
                 }`}
               >
                 Map Layers
               </button>
             </div>
 
-            {/* Tab Panels */}
             <div className="p-4 overflow-y-auto space-y-3 flex-1">
               {mobileDrawerTab === 'list' && (
                 <div className="space-y-3">
@@ -622,6 +602,59 @@ export default function DashboardLayout({
           </div>
         </div>
       )}
+
+      {/* PRINT SITUATION REPORT SHEET (Rendered only on print) */}
+      <div className="hidden print-only p-8 text-black bg-white space-y-6">
+        <div className="border-b-2 border-black pb-4">
+          <h1 className="text-2xl font-serif font-bold uppercase tracking-wider">
+            HIGHWATER • Cartographic Flood Survey Situation Report
+          </h1>
+          <div className="flex justify-between text-xs mt-2 font-mono">
+            <span>Area of Interest: {metadata.studyArea || 'Not specified'}</span>
+            <span>Generated: {metadata.generatedAt || 'N/A'}</span>
+            <span>Data Source: {metadata.source || 'SpaceNet 8 / FloodWatch SegFormer-B0'}</span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="font-serif font-bold text-sm uppercase">1. Key Operational Findings</h2>
+          <div className="grid grid-cols-4 gap-4 text-xs border border-black p-3 font-mono">
+            <div>Observed Flooded Buildings: <strong>{stats.observedBuildingsCount ?? 'N/A'}</strong></div>
+            <div>Observed Flooded Roads: <strong>{stats.observedRoadsCount ?? 'N/A'}</strong></div>
+            <div>Model Mask Pixels: <strong>{stats.modelMaskPixelsFast?.toLocaleString('en-US') ?? 'N/A'} px</strong></div>
+            <div>Monitored Tiles: <strong>{stats.activeZoneCount ?? 'N/A'}</strong></div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="font-serif font-bold text-sm uppercase">2. Honest Model Calibration Caveat</h2>
+          <p className="text-xs leading-relaxed border-l-2 border-black pl-3 italic">
+            Predicted-versus-observed agreement is not a held-out evaluation result. The training pool incorporates the German Ahr valley AOI flooded features. Tiles 0_15_63, 0_15_65, 0_15_68, and 0_20_66 are not in the training pool.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="font-serif font-bold text-sm uppercase">3. Survey Sectors Register</h2>
+          <table className="w-full text-xs text-left border-collapse font-mono">
+            <thead>
+              <tr className="border-b border-black">
+                <th className="py-1">Sector / Tile ID</th>
+                <th className="py-1">Observed Flooded Count</th>
+                <th className="py-1">Training Pool Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allZones.slice(0, 15).map((z) => (
+                <tr key={z.zoneId} className="border-b border-gray-300">
+                  <td className="py-1">{z.name} ({z.zoneId})</td>
+                  <td className="py-1">{z.observed_flooded_count ?? z.exposedBuildings ?? 'N/A'}</td>
+                  <td className="py-1">{z.in_training_pool ? 'In Training Pool' : 'Not in Pool'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
