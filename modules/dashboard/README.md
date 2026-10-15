@@ -200,6 +200,59 @@ All operational states captured from headless Chrome test runs:
 
 ---
 
+## 7. Mesh Sync (Local Network)
+
+HighWater includes an isolated, zero-internet **Mesh Sync** capability designed for emergency deployment when municipal cellular networks or ISP infrastructure are severed. Multiple field devices (laptops, rugged tablets, and responder smartphones) connected to a common local hotspot can exchange ground-truth survey observations in real time without external connectivity.
+
+### Dependencies
+The lightweight WebSocket relay requires the `ws` package:
+```bash
+# ws is installed in modules/dashboard/package.json
+npm install ws
+```
+
+### 1. Running the Mesh Relay Server
+Start the in-memory WebSocket relay on port `8787` (bound to `0.0.0.0`):
+```bash
+node scripts/mesh-relay.mjs
+```
+The relay will output:
+```
+[Mesh Relay] HighWater local mesh relay listening on ws://0.0.0.0:8787
+[Mesh Relay] In-memory mode active. Zero external dependencies / no internet required.
+```
+
+### 2. Running the Dashboard for Local Devices
+Launch the dashboard Vite development server exposed to your local network:
+```bash
+npm run dev -- --host 0.0.0.0
+```
+Vite will output the Network URL (e.g., `http://192.168.1.50:5173/`).
+
+### 3. Opening on Field Phones & Tablets
+1. Connect field devices (e.g., responder phone or tablet) to the same Wi-Fi router or portable mobile hotspot as the host laptop.
+2. Locate the laptop's LAN IP address on Windows via `ipconfig` (e.g., `192.168.1.50`).
+3. Open mobile browser and navigate to:
+   ```
+   http://<LAPTOP_LAN_IP>:5173
+   ```
+   *(Example: `http://192.168.1.50:5173`)*
+4. The dashboard automatically discovers the mesh relay at `ws://<LAPTOP_LAN_IP>:8787` (or uses `VITE_MESH_RELAY_URL` if explicitly set).
+5. The Header badge will update to `Mesh active - N peers connected` with accessible `aria-live="polite"` announcements.
+
+### Windows Firewall Configuration Note
+If mobile devices cannot connect to the laptop:
+- Ensure incoming TCP connections on port **5173** (Vite HTTP) and port **8787** (WebSocket Relay) are allowed through Windows Defender Firewall.
+- When prompted upon launching Node, check "Allow access on Private networks".
+
+### Known Limitations
+- **In-memory storage**: The relay retains survey updates in RAM; there is no SQL or disk database.
+- **No authentication / encryption**: Designed strictly for trusted tactical LAN/hotspot operation during disconnected emergencies.
+- **Ephemeral session state**: Updates are cleared when the relay process terminates or restarts.
+- **Base map internet dependency**: Base map satellite or street raster tiles require internet access (or browser cache). All geospatial feature overlays (flooded sectors, critical facilities, blocked routes) and field survey records render completely offline.
+
+---
+
 ## 8. Integration Questions for Module Owners
 
 Per PRD.md section 6, agreements with module owners are required before live API switch:

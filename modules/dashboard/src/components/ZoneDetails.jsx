@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import RiskBadge from './RiskBadge.jsx';
 import ProvenanceBadge from './ProvenanceBadge.jsx';
 import { AlertCircle, CheckCircle, Ban, HelpCircle, X, ShieldAlert, MapPinOff } from 'lucide-react';
@@ -42,6 +42,44 @@ function getAccessibilityDisplay(accessibility) {
 }
 
 /**
+ * Maps field survey status enum to human-friendly badge styles and icons
+ */
+function getSurveyStatusConfig(surveyStatus) {
+  switch (surveyStatus) {
+    case 'flooded':
+      return {
+        label: 'Flooded',
+        icon: AlertCircle,
+        style: 'text-risk-high bg-red-50 border-red-200',
+      };
+    case 'clear':
+      return {
+        label: 'Clear',
+        icon: CheckCircle,
+        style: 'text-risk-low bg-emerald-50 border-emerald-200',
+      };
+    case 'unsure':
+    default:
+      return {
+        label: 'Unsure',
+        icon: HelpCircle,
+        style: 'text-text-muted bg-surface border-border',
+      };
+  }
+}
+
+function formatSurveyTime(isoString) {
+  if (!isoString) return '';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    return d.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+  } catch {
+    return isoString;
+  }
+}
+
+/**
  * ZoneDetails component (FR-20, FR-21, T4.5)
  * Displays in-depth assessment data for the selected zone.
  * Strictly adheres to rules.md:
@@ -54,7 +92,14 @@ export default function ZoneDetails({
   timestamp = null,
   onClearSelection,
   isTestFixture = false,
+  meshUpdates = [],
+  onSendSurveyUpdate = null,
 }) {
+  const [surveyStatus, setSurveyStatus] = useState('flooded');
+  const [surveyNote, setSurveyNote] = useState('');
+  const [surveyAuthor, setSurveyAuthor] = useState('');
+  const [formError, setFormError] = useState(null);
+
   if (!zone) {
     return (
       <div
@@ -75,6 +120,10 @@ export default function ZoneDetails({
       </div>
     );
   }
+
+  const zoneUpdates = Array.isArray(meshUpdates)
+    ? meshUpdates.filter((u) => u && String(u.zoneId) === String(zone.zoneId))
+    : [];
 
   const access = getAccessibilityDisplay(zone.accessibility);
   const AccessIcon = access.icon;
@@ -358,6 +407,160 @@ export default function ZoneDetails({
             None reported
           </p>
         )}
+      </div>
+
+      {/* Field Survey Section (Mesh Sync) */}
+      <div className="pt-3 border-t border-border space-y-2.5">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-semibold text-text">Field survey</h4>
+          <span className="text-[10px] text-text-muted font-mono">
+            {zoneUpdates.length} {zoneUpdates.length === 1 ? 'record' : 'records'}
+          </span>
+        </div>
+
+        {/* Existing updates for selected zone */}
+        {zoneUpdates.length > 0 ? (
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {zoneUpdates.map((u) => {
+              const statusCfg = getSurveyStatusConfig(u.surveyStatus);
+              const StatusIcon = statusCfg.icon;
+              return (
+                <div
+                  key={u.id}
+                  className="p-2 rounded bg-surface border border-border text-xs space-y-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span
+                      className={`inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${statusCfg.style}`}
+                    >
+                      <StatusIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
+                      <span>{statusCfg.label}</span>
+                    </span>
+                    <ProvenanceBadge value="observed" />
+                  </div>
+                  <p className="text-xs text-ink break-words">{u.note}</p>
+                  <div className="flex items-center justify-between text-[10px] text-text-muted">
+                    <span className="font-medium">{u.author || 'Field user'}</span>
+                    <span className="font-mono">{formatSurveyTime(u.createdAt)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-xs text-text-muted italic">
+            No field surveys recorded for this zone yet.
+          </p>
+        )}
+
+        {/* Keyboard-accessible Field Survey Form */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const trimmed = surveyNote.trim();
+            if (!trimmed) {
+              setFormError('Note cannot be empty');
+              return;
+            }
+            if (surveyNote.length > 280) {
+              setFormError('Note exceeds 280 characters');
+              return;
+            }
+
+            if (onSendSurveyUpdate) {
+              onSendSurveyUpdate({
+                zoneId: zone.zoneId,
+                surveyStatus,
+                note: trimmed,
+                author: surveyAuthor.trim() || 'Field user',
+              });
+            }
+
+            setSurveyNote('');
+            setFormError(null);
+          }}
+          className="space-y-2 pt-2 border-t border-hairline"
+        >
+          <div>
+            <label
+              htmlFor={`survey-status-${zone.zoneId}`}
+              className="block text-[11px] font-medium text-text mb-0.5"
+            >
+              Survey status
+            </label>
+            <select
+              id={`survey-status-${zone.zoneId}`}
+              name="surveyStatus"
+              value={surveyStatus}
+              onChange={(e) => setSurveyStatus(e.target.value)}
+              className="w-full text-xs bg-paper text-ink border border-control-border rounded px-2 py-1.5 focus:ring-2 focus:ring-ink focus:outline-none"
+            >
+              <option value="flooded">Flooded</option>
+              <option value="clear">Clear</option>
+              <option value="unsure">Unsure</option>
+            </select>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-0.5">
+              <label
+                htmlFor={`survey-note-${zone.zoneId}`}
+                className="block text-[11px] font-medium text-text"
+              >
+                Observation note
+              </label>
+              <span
+                className={`text-[10px] font-mono ${
+                  surveyNote.length > 280 ? 'text-risk-high font-bold' : 'text-text-muted'
+                }`}
+              >
+                {surveyNote.length}/280
+              </span>
+            </div>
+            <textarea
+              id={`survey-note-${zone.zoneId}`}
+              name="note"
+              rows={2}
+              value={surveyNote}
+              onChange={(e) => {
+                setSurveyNote(e.target.value);
+                if (formError) setFormError(null);
+              }}
+              placeholder="Enter ground observation (max 280 chars)..."
+              className="w-full text-xs bg-paper text-ink border border-control-border rounded px-2 py-1.5 focus:ring-2 focus:ring-ink focus:outline-none resize-none"
+            />
+            {formError && (
+              <p className="text-[11px] text-risk-high mt-0.5" role="alert">
+                {formError}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor={`survey-author-${zone.zoneId}`}
+              className="block text-[11px] font-medium text-text mb-0.5"
+            >
+              Author
+            </label>
+            <input
+              id={`survey-author-${zone.zoneId}`}
+              name="author"
+              type="text"
+              value={surveyAuthor}
+              onChange={(e) => setSurveyAuthor(e.target.value)}
+              placeholder="Field user"
+              className="w-full text-xs bg-paper text-ink border border-control-border rounded px-2 py-1.5 focus:ring-2 focus:ring-ink focus:outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full text-xs font-medium py-1.5 px-3 rounded border border-control-border bg-paper hover:bg-hairline/40 text-ink transition focus:ring-2 focus:ring-ink focus:outline-none cursor-pointer"
+          >
+            Submit Field Survey
+          </button>
+        </form>
       </div>
 
       {/* Footer metadata */}

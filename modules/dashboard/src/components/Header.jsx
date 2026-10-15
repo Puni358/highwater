@@ -15,6 +15,8 @@ export default function Header({
   onRefresh,
   loading = false,
   lastRefreshedAt = null,
+  meshStatus = 'offline',
+  meshPeerCount = 0,
 }) {
   const activeSource = dataSource || (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_DATA_SOURCE : null);
 
@@ -138,6 +140,17 @@ export default function Header({
             Connected data
           </div>
         )}
+
+        {/* Mesh Network Status Badge */}
+        <div
+          className="px-2.5 py-1 rounded border border-control-border bg-paper text-ink font-mono text-[11px] font-semibold tracking-wider"
+          role="status"
+          aria-live="polite"
+        >
+          {meshStatus === 'active'
+            ? `Mesh active - ${meshPeerCount} peers connected`
+            : 'Mesh offline'}
+        </div>
 
         {/* Print Situation Report Button */}
         <button

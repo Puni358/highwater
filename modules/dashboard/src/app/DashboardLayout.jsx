@@ -13,6 +13,7 @@ import CachedBanner from '../components/CachedBanner.jsx';
 import SurveyNeededList from '../components/SurveyNeededList.jsx';
 import ErrorState from '../components/states/ErrorState.jsx';
 import EmptyState from '../components/states/EmptyState.jsx';
+import { useMeshSync } from '../hooks/useMeshSync.js';
 import {
   Droplets,
   AlertOctagon,
@@ -82,6 +83,14 @@ export default function DashboardLayout({
 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [mobileDrawerTab, setMobileDrawerTab] = useState('list'); // 'list' | 'details' | 'controls'
+
+  // Field survey peer-to-peer sync via local WebSocket mesh relay
+  const {
+    updates: meshUpdates,
+    sendUpdate: sendMeshUpdate,
+    peerCount: meshPeerCount,
+    status: meshStatus,
+  } = useMeshSync();
 
   const [customAreaSlice, setCustomAreaSlice] = useState(null);
   const iframeRef = useRef(null);
@@ -255,6 +264,8 @@ export default function DashboardLayout({
         onRefresh={onRefresh}
         loading={loading}
         lastRefreshedAt={lastRefreshedAt || metadata.lastRefreshedAt}
+        meshStatus={meshStatus}
+        meshPeerCount={meshPeerCount}
       />
 
       {/* Main Survey Workspace */}
@@ -465,7 +476,7 @@ export default function DashboardLayout({
                   </div>
                 </div>
 
-                <div className="flex-1 relative w-full h-full min-h-0">
+                <div className="flex-1 relative w-full h-full min-h-[520px]">
                   {(!isTestEnv && activeMapPlate === 'iframe') ? (
                     <iframe
                       ref={iframeRef}
@@ -517,6 +528,8 @@ export default function DashboardLayout({
                   timestamp={metadata.generatedAt}
                   onClearSelection={() => setSelectedZoneId(null)}
                   isTestFixture={metadata.dataMode === 'demo' && !isFloodwatchMode}
+                  meshUpdates={meshUpdates}
+                  onSendSurveyUpdate={sendMeshUpdate}
                 />
 
                 <SurveyNeededList
@@ -707,6 +720,8 @@ export default function DashboardLayout({
                     timestamp={metadata.generatedAt}
                     onClearSelection={() => setSelectedZoneId(null)}
                     isTestFixture={metadata.dataMode === 'demo' && !isFloodwatchMode}
+                    meshUpdates={meshUpdates}
+                    onSendSurveyUpdate={sendMeshUpdate}
                   />
                   <SurveyNeededList
                     zones={activeZones}
