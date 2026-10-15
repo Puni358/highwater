@@ -19,7 +19,7 @@ import FloodWatchPredictedLayer from '../features/map/FloodWatchPredictedLayer.j
 import LayerErrorBoundary from '../features/map/LayerErrorBoundary.jsx';
 import MapLegend from './MapLegend.jsx';
 import MapControls from './MapControls.jsx';
-import { AlertTriangle, RotateCcw, PanelRightClose, PanelRightOpen, Info, ExternalLink } from 'lucide-react';
+import { AlertTriangle, RotateCcw, PanelRightClose, PanelRightOpen, Info, ExternalLink, Search } from 'lucide-react';
 
 const LazyReliefView = lazy(() => import('./ReliefView.jsx'));
 
@@ -97,15 +97,26 @@ export function MapController({
     };
   }, [map]);
 
+  // Ensure map size is fully measured and invalidated on mount / layout resolution
+  useEffect(() => {
+    map.invalidateSize();
+    const t1 = setTimeout(() => map.invalidateSize(), 100);
+    const t2 = setTimeout(() => map.invalidateSize(), 300);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [map]);
+
   // Fit bounds from loaded data
   useEffect(() => {
     if (dataBounds && !initialFitDoneRef.current) {
       initialFitDoneRef.current = true;
       if (selectedTileBounds) {
         prevTileBoundsRef.current = selectedTileBounds;
-        map.fitBounds(selectedTileBounds, { padding: [30, 30], maxZoom: 17 });
+        map.fitBounds(selectedTileBounds, { padding: [45, 45], maxZoom: 17 });
       } else {
-        map.fitBounds(dataBounds, { padding: [30, 30] });
+        map.fitBounds(dataBounds, { padding: [45, 45] });
       }
     }
   }, [dataBounds, selectedTileBounds, map]);
@@ -223,6 +234,28 @@ export default function FloodMap({
   const [internalBasemapMode, setInternalBasemapMode] = useState('plate');
   const [coords, setCoords] = useState({ lat: '50.5342° N', lng: '7.0421° E', zoom: 14 });
   const [scaleDistance, setScaleDistance] = useState('250 m');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const q = (searchTerm || '').trim().toLowerCase();
+      if (!q) return;
+
+      const match = (zones || []).find((z) => {
+        const id = String(z.zoneId || z.id || '').toLowerCase();
+        const name = String(z.name || '').toLowerCase();
+        return id === q || id.endsWith(q) || id.includes(q) || name.includes(q);
+      });
+
+      if (match && onZoneSelect) {
+        onZoneSelect(match.zoneId || match.id);
+        if (onSelectTile) {
+          onSelectTile(match.zoneId || match.id);
+        }
+      }
+    }
+  };
 
   const tilesOfflineRef = useRef(false);
   const mapInstanceRef = useRef(null);
@@ -444,6 +477,20 @@ export default function FloodMap({
               3D Relief Projection
             </button>
           </div>
+
+          {/* Map Viewport Search Bar */}
+          <div className="relative inline-flex items-center">
+            <Search className="w-3.5 h-3.5 text-ink-muted absolute left-2 pointer-events-none" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search"
+              aria-label="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="pl-7 pr-2 py-1 text-xs bg-paper text-ink border border-control-border rounded w-28 sm:w-36 focus:w-48 focus:ring-2 focus:ring-ink focus:outline-none transition-all placeholder:text-ink-muted"
+            />
+          </div>
         </div>
 
         {/* Dynamic Margin Coordinates from Active Map View */}
@@ -457,30 +504,24 @@ export default function FloodMap({
       </div>
 
       {/* Main View Area: Map Viewport + Docked Side Panel */}
-      <div className="flex-1 flex flex-col lg:flex-row w-full min-h-0 overflow-hidden relative">
+      <div className="flex-1 flex flex-col lg:flex-row w-full h-full min-h-[480px] overflow-hidden relative">
         {/* Unobstructed Viewport */}
-        <div className="relative flex-1 h-[420px] lg:h-full w-full min-w-0 overflow-hidden bg-slate-200">
+        <div className="relative flex-1 h-full min-h-[480px] w-full min-w-0 overflow-hidden bg-slate-200">
           {viewMode === '3d' ? (
-            <Suspense
-              fallback={
-                <div className="w-full h-full flex items-center justify-center bg-paper text-xs text-ink-muted font-serif">
-                  Initializing 3D cartographic relief projection...
-                </div>
-              }
-            >
-              <LazyReliefView
-                zones={riskZones}
-                selectedZoneId={selectedZoneId}
-                onSelectZone={onZoneSelect}
-                groundTruthData={floodGroundTruth}
-                modelMode={activeModelMode}
+            <div className="w-full h-full relative min-h-[480px]">
+              <iframe
+                src="https://sachit0706.github.io/germany-3d-rescue-map/"
+                title="Germany 3D Rescue Map"
+                className="w-full h-full border-0 min-h-[480px]"
+                allowFullScreen
               />
-            </Suspense>
+            </div>
           ) : (
             <MapContainer
               center={DEFAULT_MAP_CENTER}
               zoom={DEFAULT_MAP_ZOOM}
               className="w-full h-full z-0 bg-slate-200"
+              style={{ width: '100%', height: '100%', minHeight: '480px' }}
               scrollWheelZoom={true}
             >
               <TileLayer
