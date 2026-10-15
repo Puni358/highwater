@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
+import fs from 'node:fs';
+import path from 'node:path';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MapContainer } from 'react-leaflet';
 import FloodMap from '../components/FloodMap.jsx';
@@ -333,5 +335,86 @@ describe('FloodWatch Layers & Unobstructed Map Integration (Step 6)', () => {
     expect(screen.getByText('Model output, not observed flooding')).toBeInTheDocument();
     expect(screen.getByText(/Tile ID:/i)).toBeInTheDocument();
     expect(screen.getByText('0_41_58')).toBeInTheDocument();
+  });
+
+  describe('Mock Data Validation & Ground Truth Integrity', () => {
+    const mockDir = path.resolve(__dirname, '../../public/mock-data-floodwatch');
+
+    it('validates public/mock-data-floodwatch/zones.json integrity', () => {
+      const rawText = fs.readFileSync(path.join(mockDir, 'zones.json'), 'utf-8');
+      const data = JSON.parse(rawText);
+
+      expect(data.data_mode).toBe('demo');
+      expect(Array.isArray(data.zones)).toBe(true);
+      expect(data.zones).toHaveLength(14);
+
+      const notInPool = new Set(['0_15_63', '0_15_68', '0_15_65', '0_20_66']);
+
+      let prevCount = Infinity;
+
+      for (const zone of data.zones) {
+        // No risk scores or thresholds
+        expect(zone.risk_level).toBe('UNKNOWN');
+        expect(zone.risk_score).toBeNull();
+
+        // No invented / derived fields
+        expect(zone.needs_survey).toBeUndefined();
+        expect(zone.flooded_percent).toBeUndefined();
+        expect(zone.flooded_area_km2).toBeUndefined();
+        expect(zone.total_buildings).toBeUndefined();
+        expect(zone.accessibility).toBeUndefined();
+
+        // Real counts
+        expect(typeof zone.observed_flooded_count).toBe('number');
+        expect(zone.observed_flooded_count).toBeGreaterThanOrEqual(0);
+        expect(typeof zone.exposed_buildings).toBe('number');
+        expect(zone.exposed_buildings).toBeGreaterThanOrEqual(0);
+
+        // Reasons strictly mention real counts
+        expect(Array.isArray(zone.reasons)).toBe(true);
+        expect(zone.reasons.length).toBeGreaterThan(0);
+        for (const r of zone.reasons) {
+          expect(r.toLowerCase()).not.toContain('risk score');
+          expect(r.toLowerCase()).not.toContain('needs survey');
+        }
+
+        // Real GeoTIFF bounds geometry
+        expect(zone.geometry).toBeDefined();
+        expect(zone.geometry.type).toBe('Polygon');
+        expect(zone.geometry.coordinates[0]).toHaveLength(5);
+
+        // Strict training pool status
+        if (notInPool.has(zone.zone_id)) {
+          expect(zone.in_training_pool).toBe(false);
+          expect(zone.reasons).toContain('Not in the training pool');
+        } else {
+          expect(zone.in_training_pool).toBe(true);
+          expect(zone.reasons).toContain('In model training pool');
+        }
+
+        // Sorted descending by observed_flooded_count
+        expect(zone.observed_flooded_count).toBeLessThanOrEqual(prevCount);
+        prevCount = zone.observed_flooded_count;
+      }
+    });
+
+    it('adapts all 822 ground truth features with zero dropped features', () => {
+      const rawText = fs.readFileSync(path.join(mockDir, 'flood_extent_groundtruth.geojson'), 'utf-8');
+      const fc = JSON.parse(rawText);
+
+      expect(fc.features).toHaveLength(822);
+
+      const dropped = [];
+      const adapted = adaptFloodWatchCollection(fc, (reason) => dropped.push(reason), 'observed');
+
+      expect(dropped).toHaveLength(0);
+      expect(adapted.features).toHaveLength(822);
+
+      // Verify that MultiPolygon and MultiLineString features are retained
+      const multiPolygons = adapted.features.filter((f) => f.geometry.type === 'MultiPolygon');
+      const multiLines = adapted.features.filter((f) => f.geometry.type === 'MultiLineString');
+      expect(multiPolygons.length).toBeGreaterThan(0);
+      expect(multiLines.length).toBeGreaterThan(0);
+    });
   });
 });
