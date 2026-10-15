@@ -85,8 +85,14 @@ async function capture(url, width, height, filename) {
       deviceScaleFactor: 1,
       mobile: width < 600,
     });
-    // Wait for Leaflet map and data to settle
-    await sleep(3500);
+    // Wait for Leaflet map, flyToBounds, and data to settle
+    await sleep(4500);
+
+    // Ensure page is positioned at the top to frame map and metrics
+    try {
+      await cdp.send('Runtime.evaluate', { expression: 'window.scrollTo(0, 0)' });
+      await sleep(500);
+    } catch {}
 
     const shot = await cdp.send('Page.captureScreenshot', { format: 'png' });
     const outPath = path.join(SCREENSHOT_DIR, filename);
@@ -100,7 +106,13 @@ async function capture(url, width, height, filename) {
 }
 
 async function run() {
-  const mode = process.argv[2] || 'before'; // 'before' | 'after'
+  const mode = process.argv[2] || 'tile_0_41_58'; // 'before' | 'after' | 'tile_0_41_58'
+  if (mode === 'tile_0_41_58' || mode === 'tile') {
+    console.log('Capturing tile 0_41_58 screenshot at 1280px...');
+    await capture('http://127.0.0.1:5173/?dataSource=mock-floodwatch&tile=0_41_58', 1280, 900, 'tile_0_41_58_1280px.png');
+    console.log('Capture complete.');
+    return;
+  }
   console.log(`Capturing ${mode} screenshots...`);
   
   await capture('http://127.0.0.1:5173/', 1280, 900, `${mode}_1280px.png`);

@@ -56,7 +56,12 @@ export const API_RESOURCE_PATHS = {
  * @returns {Promise<Object>}
  */
 export async function getDashboardData(options = {}) {
-  const dataSource = options.dataSource || import.meta.env?.VITE_DATA_SOURCE || 'mock';
+  const querySource =
+    typeof window !== 'undefined' && window.location?.search
+      ? new URLSearchParams(window.location.search).get('dataSource') ||
+        new URLSearchParams(window.location.search).get('source')
+      : null;
+  const dataSource = options.dataSource || querySource || import.meta.env?.VITE_DATA_SOURCE || 'mock';
   const baseUrl = options.baseUrl ?? (import.meta.env?.VITE_API_BASE_URL || '');
   const isApi = dataSource === 'api';
   const isDernau = dataSource === 'mock-dernau';

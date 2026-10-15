@@ -64,15 +64,20 @@ export function MapController({
   useEffect(() => {
     if (dataBounds && !initialFitDoneRef.current) {
       initialFitDoneRef.current = true;
-      map.fitBounds(dataBounds, { padding: [30, 30] });
+      if (selectedTileBounds) {
+        prevTileBoundsRef.current = selectedTileBounds;
+        map.fitBounds(selectedTileBounds, { padding: [30, 30], maxZoom: 17 });
+      } else {
+        map.fitBounds(dataBounds, { padding: [30, 30] });
+      }
     }
-  }, [dataBounds, map]);
+  }, [dataBounds, selectedTileBounds, map]);
 
   // Fit bounds to selected tile
   useEffect(() => {
     if (selectedTileBounds && selectedTileBounds !== prevTileBoundsRef.current) {
       prevTileBoundsRef.current = selectedTileBounds;
-      map.flyToBounds(selectedTileBounds, { padding: [40, 40], maxZoom: 16, duration: 1.2 });
+      map.flyToBounds(selectedTileBounds, { padding: [30, 30], maxZoom: 17, duration: 1.2 });
     }
   }, [selectedTileBounds, map]);
 

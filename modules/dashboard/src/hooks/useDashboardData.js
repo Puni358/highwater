@@ -8,8 +8,14 @@ import { adaptDashboardData } from '../data/dataAdapter.js';
  * @returns {string}
  */
 export function getActiveCacheKey(customSource) {
+  const querySource =
+    typeof window !== 'undefined' && window.location?.search
+      ? new URLSearchParams(window.location.search).get('dataSource') ||
+        new URLSearchParams(window.location.search).get('source')
+      : null;
   const activeSource =
     customSource ||
+    querySource ||
     (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_DATA_SOURCE : null) ||
     'mock';
   return `highwater_cache_${activeSource}`;
@@ -55,10 +61,19 @@ export function useDashboardData(options) {
   const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
   const inFlightRef = useRef(false);
 
-  const dataSource = options?.dataSource;
+  const querySource =
+    typeof window !== 'undefined' && window.location?.search
+      ? new URLSearchParams(window.location.search).get('dataSource') ||
+        new URLSearchParams(window.location.search).get('source')
+      : null;
+  const effectiveOptions = querySource && !options?.dataSource
+    ? { ...options, dataSource: querySource }
+    : options;
+
+  const dataSource = effectiveOptions?.dataSource;
   const cacheKey = getActiveCacheKey(dataSource);
-  const optionsRef = useRef(options);
-  optionsRef.current = options;
+  const optionsRef = useRef(effectiveOptions);
+  optionsRef.current = effectiveOptions;
 
   const loadData = useCallback(async () => {
     if (inFlightRef.current) return;
