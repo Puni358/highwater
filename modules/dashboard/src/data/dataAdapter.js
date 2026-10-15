@@ -299,6 +299,40 @@ export function adaptDashboardData(raw) {
     buildingsExposed = raw.rawBuildingsExposed;
   }
 
+  // FloodWatch exported layers (STEP 2)
+  let floodGroundTruth = null;
+  if (raw.rawGroundTruth?.error) {
+    layerErrors.floodGroundTruth = raw.rawGroundTruth.error;
+    floodGroundTruth = { error: raw.rawGroundTruth.error, type: 'FeatureCollection', features: null };
+  } else if (raw.rawGroundTruth) {
+    floodGroundTruth = adaptFloodWatchCollection(raw.rawGroundTruth, (reason) => {
+      droppedFeatureCount += 1;
+      warnings.push(`Dropped groundtruth feature: ${reason}`);
+    }, 'observed');
+  }
+
+  let floodPredictedFast = null;
+  if (raw.rawPredictedFast?.error) {
+    layerErrors.floodPredictedFast = raw.rawPredictedFast.error;
+    floodPredictedFast = { error: raw.rawPredictedFast.error, type: 'FeatureCollection', features: null };
+  } else if (raw.rawPredictedFast) {
+    floodPredictedFast = adaptFloodWatchCollection(raw.rawPredictedFast, (reason) => {
+      droppedFeatureCount += 1;
+      warnings.push(`Dropped predicted fast feature: ${reason}`);
+    }, 'derived');
+  }
+
+  let floodPredictedAccurate = null;
+  if (raw.rawPredictedAccurate?.error) {
+    layerErrors.floodPredictedAccurate = raw.rawPredictedAccurate.error;
+    floodPredictedAccurate = { error: raw.rawPredictedAccurate.error, type: 'FeatureCollection', features: null };
+  } else if (raw.rawPredictedAccurate) {
+    floodPredictedAccurate = adaptFloodWatchCollection(raw.rawPredictedAccurate, (reason) => {
+      droppedFeatureCount += 1;
+      warnings.push(`Dropped predicted accurate feature: ${reason}`);
+    }, 'derived');
+  }
+
   return {
     metadata,
     zones,
@@ -307,8 +341,101 @@ export function adaptDashboardData(raw) {
     facilities,
     routes,
     buildingsExposed,
+    floodGroundTruth,
+    floodPredictedFast,
+    floodPredictedAccurate,
     layerErrors,
     droppedFeatureCount,
     warnings,
+  };
+}
+
+/**
+ * Adapts a single FloodWatch feature (observed ground truth or predicted flood polygon).
+ * Validates coordinates and closed rings using existing helpers.
+ * Explicitly passes: provenance, tile_id, mode, mask_pixels, in_training_pool, feature_type.
+ * Missing fields remain null (never inferred or defaulted).
+ *
+ * @param {object} f Raw GeoJSON feature
+ * @param {function} [onDropped] Callback invoked when feature is dropped
+ * @param {string|null} [defaultProvenance] Fallback provenance if not present on feature
+ * @returns {object|null} Adapted feature or null if dropped
+ */
+export function adaptFloodWatchFeature(f, onDropped = () => {}, defaultProvenance = null) {
+  if (!f || typeof f !== 'object' || !f.geometry) {
+    onDropped('Missing feature or geometry');
+    return null;
+  }
+
+  const { type, coordinates } = f.geometry;
+
+  if (type === 'Polygon') {
+    const ring = coordinates?.[0];
+    if (!ring || !isClosedRing(ring)) {
+      onDropped(`Unclosed polygon ring on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+    if (!ring.every(isValidLngLat)) {
+      onDropped(`Invalid polygon coordinates on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+  } else if (type === 'LineString') {
+    if (!Array.isArray(coordinates) || coordinates.length < 2) {
+      onDropped(`Invalid LineString coordinate array on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+    if (!coordinates.every(isValidLngLat)) {
+      onDropped(`Invalid LineString coordinates on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+  } else {
+    onDropped(`Unsupported geometry type ${type} on ${f.properties?.feature_id || 'feature'}`);
+    return null;
+  }
+
+  const p = f.properties || {};
+
+  return {
+    type: 'Feature',
+    id: f.id !== undefined ? f.id : (p.feature_id !== undefined ? p.feature_id : null),
+    geometry: f.geometry,
+    properties: {
+      feature_id: p.feature_id !== undefined ? p.feature_id : null,
+      provenance: p.provenance !== undefined ? p.provenance : (defaultProvenance || null),
+      tile_id: p.tile_id !== undefined ? p.tile_id : null,
+      mode: p.mode !== undefined ? p.mode : null,
+      mask_pixels: p.mask_pixels !== undefined ? p.mask_pixels : null,
+      in_training_pool: p.in_training_pool !== undefined ? p.in_training_pool : null,
+      feature_type: p.feature_type !== undefined ? p.feature_type : null,
+      source: p.source !== undefined ? p.source : null,
+      flooded: p.flooded !== undefined ? p.flooded : null,
+      model_class: p.model_class !== undefined ? p.model_class : null,
+    },
+  };
+}
+
+/**
+ * Adapts a FloodWatch FeatureCollection.
+ * @param {object} fc Raw FeatureCollection
+ * @param {function} [onDropped] Callback
+ * @param {string|null} [defaultProvenance] Fallback provenance if not present on feature
+ * @returns {object}
+ */
+export function adaptFloodWatchCollection(fc, onDropped = () => {}, defaultProvenance = null) {
+  if (!fc) return { type: 'FeatureCollection', features: [] };
+  if (fc.error) return { type: 'FeatureCollection', features: null, error: fc.error };
+  const rawFeatures = Array.isArray(fc.features) ? fc.features : [];
+  const validFeatures = [];
+
+  for (const f of rawFeatures) {
+    const adapted = adaptFloodWatchFeature(f, onDropped, defaultProvenance);
+    if (adapted) {
+      validFeatures.push(adapted);
+    }
+  }
+
+  return {
+    type: 'FeatureCollection',
+    features: validFeatures,
   };
 }

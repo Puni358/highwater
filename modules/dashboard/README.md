@@ -26,7 +26,7 @@ cp .env.example .env
 Configured environment variables:
 | Variable | Default | Purpose |
 |---|---|---|
-| `VITE_DATA_SOURCE` | `mock` | Data source switcher (`mock`, `mock-dernau`, or `api`) |
+| `VITE_DATA_SOURCE` | `mock` | Data source switcher (`mock`, `mock-dernau`, `mock-floodwatch`, or `api`) |
 | `VITE_API_BASE_URL` | `http://localhost:8000/api` | Backend API base URL when in `api` mode |
 | `VITE_REFRESH_INTERVAL_MS` | `30000` | Auto-refresh poll interval in milliseconds |
 | `VITE_STALE_MINUTES` | `60` | Age threshold for displaying stale-data warning banner |
@@ -71,7 +71,7 @@ Service (dashboardApi) -> Adapter (dataAdapter) -> Hook (useDashboardData) -> Se
 
 ### Mock Fixtures & Demonstration Datasets
 
-The dashboard supports two independent fixture datasets configured via `VITE_DATA_SOURCE`:
+The dashboard supports three independent fixture datasets configured via `VITE_DATA_SOURCE`:
 
 #### 1. Synthetic Fixtures (`VITE_DATA_SOURCE=mock`, default)
 Located in `public/mock-data/`:
@@ -97,6 +97,21 @@ Located in `public/mock-data-dernau/`:
   - Stat cards visibly clarify: Flooded area as derived from labelled flooded buildings/roads (not a measured water boundary), Blocked roadways as roads labelled flooded in ground truth, and designated test cases explicitly disclosed.
   - Illustrative risk score disclaimer banner displayed.
   - Fitted coordinate bounds automatically computed to encompass Dernau AOI geometry.
+
+#### 3. FloodWatch SegFormer-B0 Demonstration Dataset (`VITE_DATA_SOURCE=mock-floodwatch`)
+Located in `public/mock-data-floodwatch/`:
+- **Source & Attribution**: SpaceNet 8 Germany AOI flood labels and local offline SegFormer-B0 inference predictions exported by FloodWatch.
+- **Contract-Perfect Resources**:
+  - `flood_extent_groundtruth.geojson`: 822 features (SpaceNet 8 human annotations: building polygons and road lines labelled flooded). Provenance: `"observed"`.
+  - `flood_extent_predicted_fast.geojson`: 146 flood polygons produced by SegFormer-B0 fast mode inference. Provenance: `"derived"`.
+  - `flood_extent_predicted_accurate.geojson`: 255 flood polygons produced by SegFormer-B0 sliding-window accurate mode inference. Provenance: `"derived"`.
+  - `zones.json`: 14 Germany AOI demonstration tile zones (`0_41_58`, `0_27_68`, `0_15_63`, etc.).
+- **Adapter Validation & Integrity**:
+  - Adapted via `adaptFloodWatchCollection` and `adaptFloodWatchFeature` in `src/data/dataAdapter.js`.
+  - Validates RFC 7946 EPSG:4326 `[lng, lat]` coordinates and closed exterior polygon rings; invalid geometries are safely skipped and logged in dropped feature alerts.
+  - Explicitly preserves `provenance`, `tile_id`, `mode`, `mask_pixels`, `in_training_pool`, and `feature_type`, leaving missing fields `null` (never defaulted).
+- **Training Pool Transparency**:
+  - Every tile with flood damage in this demonstration was in the SegFormer-B0 model's training pool. The dashboard explicitly discloses that agreement between observed and predicted layers is not a held-out test result. No machine learning evaluation metrics (IoU, recall) are calculated on the frontend.
 
 ---
 
