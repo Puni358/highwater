@@ -47,5 +47,34 @@ describe('Charts (T4.9, FR-30, FR-31)', () => {
       expect(screen.getByText('Top Impacted Zones (Exposed Buildings)')).toBeInTheDocument();
       expect(screen.getByText('No building exposure data available')).toBeInTheDocument();
     });
+
+    it('renders relabeled "Observed Flooded Buildings per Tile" in mock-floodwatch mode', () => {
+      const floodwatchZones = [
+        { zoneId: '0_41_58', name: 'Tile 0_41_58', riskLevel: 'UNKNOWN', exposedBuildings: 169, observed_flooded_count: 181 },
+        { zoneId: '0_23_62', name: 'Tile 0_23_62', riskLevel: 'UNKNOWN', exposedBuildings: 94, observed_flooded_count: 101 },
+      ];
+      render(<ImpactChart zones={floodwatchZones} isFloodwatchMode={true} />);
+
+      expect(screen.getByText('Observed Flooded Buildings per Tile')).toBeInTheDocument();
+      expect(screen.getByText('Reporting: 2 tiles')).toBeInTheDocument();
+      expect(screen.getByRole('img', { name: /Horizontal bar chart showing observed flooded buildings per tile/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('FloodWatch Mode Charts (Real counts, zero risk inference)', () => {
+    const floodwatchZones = [
+      { zoneId: '0_41_58', name: 'Tile 0_41_58', riskLevel: 'UNKNOWN', exposedBuildings: 169, observed_flooded_count: 181 },
+      { zoneId: '0_23_62', name: 'Tile 0_23_62', riskLevel: 'UNKNOWN', exposedBuildings: 94, observed_flooded_count: 101 },
+    ];
+
+    it('renders "Observed Flooded Features per Tile" with axis labels and real counts', () => {
+      render(<RiskDistributionChart zones={floodwatchZones} isFloodwatchMode={true} />);
+
+      expect(screen.getByText('Observed Flooded Features per Tile')).toBeInTheDocument();
+      expect(screen.getByText('Total: 282 features')).toBeInTheDocument();
+      expect(screen.getByRole('img', { name: /Bar chart showing observed flooded features per tile/i })).toBeInTheDocument();
+      // Should NOT contain risk classification labels
+      expect(screen.queryByText('Risk Classification Distribution')).not.toBeInTheDocument();
+    });
   });
 });

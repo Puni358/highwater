@@ -42,7 +42,13 @@ export default function DashboardLayout({
   lastRefreshedAt = null,
 }) {
   // 1. Single source of truth for selection and layer visibility (architecture.md section 4)
-  const [selectedZoneId, setSelectedZoneId] = useState(null);
+  const [selectedZoneId, setSelectedZoneId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('zone') || p.get('tile') || null;
+    }
+    return null;
+  });
   const [resetTrigger, setResetTrigger] = useState(0);
   const [visibleLayers, setVisibleLayers] = useState({
     flood: true,
@@ -55,7 +61,13 @@ export default function DashboardLayout({
     floodPredicted: true,
   });
   const [modelMode, setModelMode] = useState('fast');
-  const [selectedTileId, setSelectedTileId] = useState('ALL');
+  const [selectedTileId, setSelectedTileId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('tile') || 'ALL';
+    }
+    return 'ALL';
+  });
 
   // 2. Filter & Sort state
   const [filters, setFilters] = useState({ search: '', riskLevel: 'ALL' });
@@ -134,6 +146,14 @@ export default function DashboardLayout({
     );
   }, [data?.floodGroundTruth, data?.floodPredictedFast, data?.floodPredictedAccurate, availableTiles.length]);
 
+  const isFloodwatchMode = useMemo(() => {
+    return Boolean(
+      metadata.dataSource === 'mock-floodwatch' ||
+      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_DATA_SOURCE === 'mock-floodwatch') ||
+      (Array.isArray(allZones) && allZones.length > 0 && allZones.some((z) => typeof z.observed_flooded_count === 'number'))
+    );
+  }, [metadata.dataSource, allZones]);
+
   // Handlers
   const handleToggleLayer = useCallback((layerKey) => {
     setVisibleLayers((prev) => ({
@@ -197,59 +217,119 @@ export default function DashboardLayout({
           aria-label="Key Operational Metrics"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
         >
-          <StatCard
-            title="Flooded area"
-            value={stats.floodedAreaKm2}
-            unit="km²"
-            isDemo={stats.isDemo}
-            icon={Droplets}
-            variant="flood"
-            caption={
-              stats.isFiltered
-                ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
-                : stats.floodedAreaIsPartial
-                ? `Partial (${stats.floodedMissingCount} zone unassessed)`
-                : 'Derived from labelled flooded buildings/roads, not a measured water boundary'
-            }
-          />
-          <StatCard
-            title="High-priority zones"
-            value={stats.highPriorityCount}
-            isDemo={stats.isDemo}
-            icon={AlertOctagon}
-            variant="highRisk"
-            caption={
-              stats.isFiltered
-                ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
-                : 'Requiring immediate action'
-            }
-          />
-          <StatCard
-            title="Exposed buildings"
-            value={stats.exposedBuildingsCount}
-            isDemo={stats.isDemo}
-            icon={Home}
-            variant="warning"
-            caption={
-              stats.isFiltered
-                ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
-                : stats.exposedBuildingsIsPartial
-                ? 'Partial: one zone is a designated test case with the value withheld'
-                : 'Structures within flood zone'
-            }
-          />
-          <StatCard
-            title="Blocked roadways"
-            value={stats.blockedRoadsCount}
-            isDemo={stats.isDemo}
-            icon={Ban}
-            variant="highRisk"
-            caption="Roads labelled flooded in ground-truth data"
-          />
+          {isFloodwatchMode ? (
+            <>
+              <StatCard
+                title="Observed flooded buildings (labels)"
+                value={stats.observedBuildingsCount}
+                isDemo={false}
+                icon={Home}
+                variant="warning"
+                caption={
+                  stats.isFiltered
+                    ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} tiles`
+                    : 'Human SpaceNet 8 building labels'
+                }
+              />
+              <StatCard
+                title="Observed flooded roads (labels)"
+                value={stats.observedRoadsCount}
+                isDemo={false}
+                icon={Ban}
+                variant="highRisk"
+                caption={
+                  stats.isFiltered
+                    ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} tiles`
+                    : 'Human SpaceNet 8 road labels'
+                }
+              />
+              <StatCard
+                title="Model mask pixels (derived)"
+                value={
+                  modelMode === 'accurate'
+                    ? stats.modelMaskPixelsAccurate?.toLocaleString('en-US')
+                    : stats.modelMaskPixelsFast?.toLocaleString('en-US')
+                }
+                unit="px"
+                isDemo={false}
+                icon={Droplets}
+                variant="flood"
+                caption={
+                  modelMode === 'accurate'
+                    ? 'Accurate mode (SegFormer-B0 derived)'
+                    : 'Fast mode (SegFormer-B0 derived)'
+                }
+              />
+              <StatCard
+                title="Monitored tiles"
+                value={stats.activeZoneCount}
+                isDemo={false}
+                icon={MapPin}
+                variant="default"
+                caption={
+                  stats.isFiltered
+                    ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} tiles`
+                    : 'SpaceNet 8 Germany AOI'
+                }
+              />
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="Flooded area"
+                value={stats.floodedAreaKm2}
+                unit="km²"
+                isDemo={stats.isDemo}
+                icon={Droplets}
+                variant="flood"
+                caption={
+                  stats.isFiltered
+                    ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
+                    : stats.floodedAreaIsPartial
+                    ? `Partial (${stats.floodedMissingCount} zone unassessed)`
+                    : 'Derived from labelled flooded buildings/roads, not a measured water boundary'
+                }
+              />
+              <StatCard
+                title="High-priority zones"
+                value={stats.highPriorityCount}
+                isDemo={stats.isDemo}
+                icon={AlertOctagon}
+                variant="highRisk"
+                caption={
+                  stats.isFiltered
+                    ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
+                    : 'Requiring immediate action'
+                }
+              />
+              <StatCard
+                title="Exposed buildings"
+                value={stats.exposedBuildingsCount}
+                isDemo={stats.isDemo}
+                icon={Home}
+                variant="warning"
+                caption={
+                  stats.isFiltered
+                    ? `Filtered view: ${stats.activeZoneCount} of ${stats.totalZoneCount} zones`
+                    : stats.exposedBuildingsIsPartial
+                    ? 'Partial: one zone is a designated test case with the value withheld'
+                    : 'Structures within flood zone'
+                }
+              />
+              <StatCard
+                title="Blocked roadways"
+                value={stats.blockedRoadsCount}
+                isDemo={stats.isDemo}
+                icon={Ban}
+                variant="highRisk"
+                caption="Roads labelled flooded in ground-truth data"
+              />
+            </>
+          )}
         </section>
 
         {/* Demo Mode Risk Disclaimer (Requirement 4) */}
-        {metadata.dataMode === 'demo' && (
+        {metadata.dataMode === 'demo' && !isFloodwatchMode && (
           <div
             role="note"
             aria-label="Demo Risk Scores Notice"
@@ -324,7 +404,7 @@ export default function DashboardLayout({
                   zone={selectedZone}
                   timestamp={metadata.generatedAt}
                   onClearSelection={() => setSelectedZoneId(null)}
-                  isTestFixture={metadata.dataMode === 'demo'}
+                  isTestFixture={metadata.dataMode === 'demo' && !isFloodwatchMode}
                 />
 
                 {/* Aerial Reconnaissance Survey Needed List */}
@@ -373,23 +453,25 @@ export default function DashboardLayout({
 
               {/* Analytical Charts Container (Col span 6 on desktop) */}
               <section
-                aria-label="Impact Analytics and Risk Charts"
+                aria-label={isFloodwatchMode ? "Observed and Model Feature Analytics" : "Impact Analytics and Risk Charts"}
                 className="lg:col-span-6 bg-card border border-border rounded-card shadow-sm p-4 space-y-3"
               >
                 <div className="flex items-center justify-between pb-2 border-b border-border">
                   <div className="flex items-center space-x-2 text-text font-semibold text-sm">
                     <BarChart2 className="w-4 h-4 text-navy-700" aria-hidden="true" />
-                    <span>Impact Analytics</span>
+                    <span>{isFloodwatchMode ? "Feature Analytics" : "Impact Analytics"}</span>
                   </div>
                   <span className="text-caption text-text-muted">
-                    {filters.riskLevel !== 'ALL' || filters.search ? 'Filtered Scope' : 'Full Scope'}
+                    {isFloodwatchMode
+                      ? "Real counts from SpaceNet 8 labels & model masks"
+                      : (filters.riskLevel !== 'ALL' || filters.search ? 'Filtered Scope' : 'Full Scope')}
                   </span>
                 </div>
 
                 {/* Charts Grid: Risk Distribution & Top Impacted Zones (FR-30, FR-31, T4.9) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <RiskDistributionChart zones={filteredZones} />
-                  <ImpactChart zones={filteredZones} />
+                  <RiskDistributionChart zones={filteredZones} isFloodwatchMode={isFloodwatchMode} />
+                  <ImpactChart zones={filteredZones} isFloodwatchMode={isFloodwatchMode} />
                 </div>
               </section>
             </div>
@@ -521,7 +603,7 @@ export default function DashboardLayout({
                     zone={selectedZone}
                     timestamp={metadata.generatedAt}
                     onClearSelection={() => setSelectedZoneId(null)}
-                    isTestFixture={metadata.dataMode === 'demo'}
+                    isTestFixture={metadata.dataMode === 'demo' && !isFloodwatchMode}
                   />
                   <SurveyNeededList
                     zones={allZones}

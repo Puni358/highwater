@@ -6,6 +6,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MapContainer } from 'react-leaflet';
 import FloodMap from '../components/FloodMap.jsx';
 import MapControls from '../components/MapControls.jsx';
+import DashboardLayout from '../app/DashboardLayout.jsx';
 import FloodWatchObservedLayer from '../features/map/FloodWatchObservedLayer.jsx';
 import FloodWatchPredictedLayer from '../features/map/FloodWatchPredictedLayer.jsx';
 import {
@@ -415,6 +416,55 @@ describe('FloodWatch Layers & Unobstructed Map Integration (Step 6)', () => {
       const multiLines = adapted.features.filter((f) => f.geometry.type === 'MultiLineString');
       expect(multiPolygons.length).toBeGreaterThan(0);
       expect(multiLines.length).toBeGreaterThan(0);
+    });
+
+    it('relabels stat cards, zone details and charts in mock-floodwatch mode without risk or exposure implications', () => {
+      const mockZones = JSON.parse(fs.readFileSync(path.join(mockDir, 'zones.json'), 'utf-8'));
+      const mockGt = JSON.parse(fs.readFileSync(path.join(mockDir, 'flood_extent_groundtruth.geojson'), 'utf-8'));
+      const mockFast = JSON.parse(fs.readFileSync(path.join(mockDir, 'flood_extent_predicted_fast.geojson'), 'utf-8'));
+      const mockAcc = JSON.parse(fs.readFileSync(path.join(mockDir, 'flood_extent_predicted_accurate.geojson'), 'utf-8'));
+
+      const testData = {
+        metadata: {
+          dataSource: 'mock-floodwatch',
+          dataMode: 'demo',
+          studyArea: 'SpaceNet 8 Germany AOI (FloodWatch)',
+          generatedAt: '2026-10-15T06:00:13Z',
+        },
+        zones: mockZones.zones.map((z) => ({
+          ...z,
+          zoneId: z.zone_id,
+          riskLevel: z.risk_level,
+          riskScore: z.risk_score,
+          exposedBuildings: z.exposed_buildings,
+          observed_flooded_count: z.observed_flooded_count,
+          in_training_pool: z.in_training_pool,
+          hasGeometry: Boolean(z.geometry),
+        })),
+        floodGroundTruth: mockGt,
+        floodPredictedFast: mockFast,
+        floodPredictedAccurate: mockAcc,
+        blockedRoads: { type: 'FeatureCollection', features: [] },
+        facilities: { type: 'FeatureCollection', features: [] },
+        routes: [],
+      };
+
+      render(<DashboardLayout data={testData} />);
+
+      // Stat cards must have the exact requested labels
+      expect(screen.getByText('Observed flooded buildings (labels)')).toBeInTheDocument();
+      expect(screen.getByText('Observed flooded roads (labels)')).toBeInTheDocument();
+      expect(screen.getByText('Model mask pixels (derived)')).toBeInTheDocument();
+      expect(screen.getByText('Monitored tiles')).toBeInTheDocument();
+
+      // Must NOT display risk assessment titles
+      expect(screen.queryByText('High-priority zones')).not.toBeInTheDocument();
+      expect(screen.queryByText('Flooded area')).not.toBeInTheDocument();
+
+      // Charts must be relabeled to observed flooded features
+      expect(screen.getByText('Observed Flooded Features per Tile')).toBeInTheDocument();
+      expect(screen.getByText('Observed Flooded Buildings per Tile')).toBeInTheDocument();
+      expect(screen.queryByText('Risk Classification Distribution')).not.toBeInTheDocument();
     });
   });
 });

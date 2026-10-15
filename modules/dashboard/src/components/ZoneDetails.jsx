@@ -94,11 +94,42 @@ export default function ZoneDetails({
     (Array.isArray(zone.reasons) && zone.reasons.some((r) => r.toLowerCase().includes('designated test case')))
   );
 
+  const isFloodwatch = Boolean(
+    isTestFixture === false &&
+    zone.observed_flooded_count !== undefined &&
+    zone.observed_flooded_count !== null
+  ) || Boolean(
+    typeof zone.zoneId === 'string' && (zone.zoneId.startsWith('0_') || zone.zoneId.includes('_')) &&
+    typeof zone.observed_flooded_count === 'number'
+  );
+
   const scoreDisplay = zone.riskScore !== null ? `${zone.riskScore} / 100` : 'Not assessed';
   const floodAreaDisplay = zone.floodedAreaKm2 !== null ? `${zone.floodedAreaKm2} km²` : 'Not available';
   const floodPctDisplay = zone.floodedPercent !== null ? `${zone.floodedPercent}%` : 'Not available';
   const exposedBldgsDisplay = zone.exposedBuildings !== null ? zone.exposedBuildings : 'Not available';
   const updatedDisplay = timestamp || 'Not available';
+
+  // FloodWatch derived metrics
+  const observedBldgs = zone.exposedBuildings !== null && zone.exposedBuildings !== undefined ? zone.exposedBuildings : 0;
+  const observedRoads = (typeof zone.observed_flooded_count === 'number' && typeof zone.exposedBuildings === 'number')
+    ? Math.max(0, zone.observed_flooded_count - zone.exposedBuildings)
+    : 0;
+  const observedTotal = zone.observed_flooded_count !== null && zone.observed_flooded_count !== undefined
+    ? zone.observed_flooded_count
+    : (observedBldgs + observedRoads);
+
+  let modelMaskDisplay = 'None reported';
+  if (Array.isArray(zone.reasons)) {
+    const maskLine = zone.reasons.find((r) => r.includes('mask pixels'));
+    if (maskLine) {
+      const match = maskLine.match(/mask pixels:\s*(\d+)\s*\(fast\s*mode\),\s*(\d+)\s*\(accurate\s*mode\)/i);
+      if (match) {
+        modelMaskDisplay = `${Number(match[1]).toLocaleString('en-US')} (fast) • ${Number(match[2]).toLocaleString('en-US')} (acc)`;
+      } else {
+        modelMaskDisplay = maskLine.replace(/Model detected mask pixels:\s*/i, '');
+      }
+    }
+  }
 
   return (
     <div
@@ -110,12 +141,29 @@ export default function ZoneDetails({
       {/* Header: Zone Name, Risk Badge, and Clear Button */}
       <div className="flex items-start justify-between gap-2 pb-3 border-b border-border">
         <div className="space-y-1 min-w-0">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
             <h3 className="text-sm font-bold text-navy-900 truncate">
               {zone.name}
             </h3>
-            <RiskBadge level={zone.riskLevel} size="sm" />
-            {isPartial && (
+            {isFloodwatch ? (
+              <>
+                <span className="px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded bg-slate-100 text-slate-700 border border-slate-300">
+                  No Risk Scoring
+                </span>
+                {zone.in_training_pool !== null && zone.in_training_pool !== undefined && (
+                  <span className={`px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded ${
+                    zone.in_training_pool
+                      ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                      : 'bg-slate-50 text-slate-600 border border-slate-200'
+                  }`}>
+                    {zone.in_training_pool ? 'In training pool' : 'Not in training pool'}
+                  </span>
+                )}
+              </>
+            ) : (
+              <RiskBadge level={zone.riskLevel} size="sm" />
+            )}
+            {isPartial && !isFloodwatch && (
               <span
                 className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-300 rounded shrink-0"
                 title="Zone contains partial data"
@@ -123,7 +171,7 @@ export default function ZoneDetails({
                 Partial data
               </span>
             )}
-            {zone.needsSurvey === true && (
+            {zone.needsSurvey === true && !isFloodwatch && (
               <span
                 className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-purple-800 bg-purple-50 border border-purple-300 rounded shrink-0"
                 title="Ground reconnaissance survey needed"
@@ -165,46 +213,81 @@ export default function ZoneDetails({
       )}
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        {/* Risk Score */}
-        <div className="p-2.5 rounded bg-surface border border-border/50">
-          <span className="text-[11px] text-text-muted block">Priority Score</span>
-          <span className={`text-sm font-bold block mt-0.5 ${zone.riskScore === null ? 'text-text-muted font-normal' : 'text-navy-900'}`}>
-            {scoreDisplay}
-          </span>
-        </div>
+      {isFloodwatch ? (
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          {/* Observed Flooded Buildings */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Observed flooded buildings (labels)</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {observedBldgs}
+            </span>
+          </div>
 
-        {/* Accessibility Status */}
-        <div className="p-2.5 rounded bg-surface border border-border/50">
-          <span className="text-[11px] text-text-muted block">Accessibility</span>
-          <div className="flex items-center space-x-1.5 mt-0.5">
-            <AccessIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-            <span className="text-xs font-semibold text-text truncate">
-              {access.label}
+          {/* Observed Flooded Roads */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Observed flooded roads (labels)</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {observedRoads}
+            </span>
+          </div>
+
+          {/* Model Mask Pixels */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Model mask pixels (derived)</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {modelMaskDisplay}
+            </span>
+          </div>
+
+          {/* Total Flooded Features */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Observed flooded total (labels)</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {observedTotal} features
             </span>
           </div>
         </div>
-
-        {/* Flooded Area */}
-        <div className="p-2.5 rounded bg-surface border border-border/50">
-          <span className="text-[11px] text-text-muted block">Flooded Area</span>
-          <span className="text-sm font-bold text-navy-900 mt-0.5 block">
-            {floodAreaDisplay}
-          </span>
-          {zone.floodedPercent !== null && (
-            <span className="text-[10px] text-text-muted block">
-              Coverage: {floodPctDisplay}
+      ) : (
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          {/* Risk Score */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Priority Score</span>
+            <span className={`text-sm font-bold block mt-0.5 ${zone.riskScore === null ? 'text-text-muted font-normal' : 'text-navy-900'}`}>
+              {scoreDisplay}
             </span>
-          )}
-        </div>
+          </div>
 
-        {/* Exposed Buildings */}
-        <div className="p-2.5 rounded bg-surface border border-border/50">
-          <span className="text-[11px] text-text-muted block">Exposed Buildings</span>
-          <span className="text-sm font-bold text-navy-900 mt-0.5 block">
-            {exposedBldgsDisplay}
-          </span>
-        </div>
+          {/* Accessibility Status */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Accessibility</span>
+            <div className="flex items-center space-x-1.5 mt-0.5">
+              <AccessIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span className="text-xs font-semibold text-text truncate">
+                {access.label}
+              </span>
+            </div>
+          </div>
+
+          {/* Flooded Area */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Flooded Area</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {floodAreaDisplay}
+            </span>
+            {zone.floodedPercent !== null && (
+              <span className="text-[10px] text-text-muted block">
+                Coverage: {floodPctDisplay}
+              </span>
+            )}
+          </div>
+
+          {/* Exposed Buildings */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Exposed Buildings</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {exposedBldgsDisplay}
+            </span>
+          </div>
 
         {/* Provenance */}
         {zone.provenance !== null && zone.provenance !== undefined && (
@@ -255,11 +338,12 @@ export default function ZoneDetails({
           </div>
         )}
       </div>
+      )}
 
       {/* Operational Reasons (FR-21) */}
       <div className="pt-2 border-t border-border space-y-1.5">
         <span className="text-xs font-semibold text-text block">
-          Operational Assessment Reasons:
+          {isFloodwatch ? 'Observed Features & Model Findings:' : 'Operational Assessment Reasons:'}
         </span>
         {zone.reasons && zone.reasons.length > 0 ? (
           <ul className="space-y-1 text-xs text-text-muted pl-4 list-disc">

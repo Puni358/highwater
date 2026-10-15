@@ -171,6 +171,8 @@ export function adaptZones(rawZonesPayload) {
       rank_p90: z.rank_p90 !== undefined ? z.rank_p90 : null,
       needsSurvey: z.needs_survey === true,
       partialData,
+      observed_flooded_count: typeof z.observed_flooded_count === 'number' ? z.observed_flooded_count : null,
+      in_training_pool: z.in_training_pool !== undefined ? Boolean(z.in_training_pool) : null,
     };
   });
 

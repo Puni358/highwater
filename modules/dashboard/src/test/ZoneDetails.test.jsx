@@ -183,4 +183,41 @@ describe('ZoneDetails component (T4.5, FR-20, FR-21)', () => {
     fireEvent.click(clearBtn);
     expect(handleClear).toHaveBeenCalledTimes(1);
   });
+
+  it('renders FloodWatch tile in mock-floodwatch mode with real labels and zero risk implications', () => {
+    const floodwatchTile = {
+      zoneId: '0_41_58',
+      name: 'Tile 0_41_58',
+      riskLevel: 'UNKNOWN',
+      riskScore: null,
+      observed_flooded_count: 181,
+      exposedBuildings: 169,
+      in_training_pool: true,
+      reasons: [
+        '169 observed flooded buildings, 12 observed flooded roads (181 total)',
+        'Model detected mask pixels: 668123 (fast mode), 733609 (accurate mode)',
+        'In model training pool',
+      ],
+      hasGeometry: true,
+    };
+
+    render(<ZoneDetails zone={floodwatchTile} isTestFixture={false} />);
+
+    expect(screen.getByText('Tile 0_41_58')).toBeInTheDocument();
+    expect(screen.getByText('Observed flooded buildings (labels)')).toBeInTheDocument();
+    expect(screen.getByText('169')).toBeInTheDocument();
+    expect(screen.getByText('Observed flooded roads (labels)')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
+    expect(screen.getByText('Model mask pixels (derived)')).toBeInTheDocument();
+    expect(screen.getByText(/668,123 \(fast\) • 733,609 \(acc\)/i)).toBeInTheDocument();
+    expect(screen.getByText('Observed flooded total (labels)')).toBeInTheDocument();
+    expect(screen.getByText('181 features')).toBeInTheDocument();
+    expect(screen.getByText('In training pool')).toBeInTheDocument();
+    expect(screen.getByText('Observed Features & Model Findings:')).toBeInTheDocument();
+
+    // Confirm that no risk or exposure fields are displayed
+    expect(screen.queryByText('Priority Score')).not.toBeInTheDocument();
+    expect(screen.queryByText('Accessibility')).not.toBeInTheDocument();
+    expect(screen.queryByText('Flooded Area')).not.toBeInTheDocument();
+  });
 });

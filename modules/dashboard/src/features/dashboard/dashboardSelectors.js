@@ -89,11 +89,42 @@ export function selectSummaryStats(data, activeZones = null) {
     : null;
   const blockedRoadsCount = blockedRoadFeatures !== null ? blockedRoadFeatures.length : null;
 
+  // 5. FloodWatch metrics (pure real counts, no invented risk or exposure formulas)
+  const observedBuildingsCount = zones.reduce((acc, z) => {
+    return acc + (typeof z.exposedBuildings === 'number' ? z.exposedBuildings : 0);
+  }, 0);
+
+  const observedRoadsCount = zones.reduce((acc, z) => {
+    if (typeof z.observed_flooded_count === 'number' && typeof z.exposedBuildings === 'number') {
+      return acc + Math.max(0, z.observed_flooded_count - z.exposedBuildings);
+    }
+    return acc;
+  }, 0);
+
+  const activeTileIds = new Set(zones.map((z) => z.zoneId));
+  const calcMaskPixels = (fc) => {
+    if (!fc || !Array.isArray(fc.features)) return 0;
+    return fc.features.reduce((acc, f) => {
+      const tid = f.properties?.tile_id;
+      if (!tid || activeTileIds.has(tid)) {
+        return acc + (Number(f.properties?.mask_pixels) || 0);
+      }
+      return acc;
+    }, 0);
+  };
+
+  const modelMaskPixelsFast = calcMaskPixels(data?.floodPredictedFast);
+  const modelMaskPixelsAccurate = calcMaskPixels(data?.floodPredictedAccurate);
+
   return {
     floodedAreaKm2,
     highPriorityCount,
     exposedBuildingsCount,
     blockedRoadsCount,
+    observedBuildingsCount,
+    observedRoadsCount,
+    modelMaskPixelsFast,
+    modelMaskPixelsAccurate,
     isDemo,
     floodedAreaIsPartial,
     floodedMissingCount,
@@ -103,6 +134,30 @@ export function selectSummaryStats(data, activeZones = null) {
     totalZoneCount: totalZones,
     activeZoneCount,
   };
+}
+
+/**
+ * Derives observed flooded features per tile for Recharts BarChart in mock-floodwatch mode.
+ * Real counts only; no invented risk levels or scores.
+ * @param {Array<object>} zones
+ * @returns {Array<{ tileId: string, name: string, fullName: string, count: number, buildings: number, roads: number }>}
+ */
+export function selectObservedFloodedFeaturesChartData(zones) {
+  if (!Array.isArray(zones)) return [];
+
+  return zones.map((z) => {
+    const buildings = typeof z.exposedBuildings === 'number' ? z.exposedBuildings : 0;
+    const count = typeof z.observed_flooded_count === 'number' ? z.observed_flooded_count : buildings;
+    const roads = Math.max(0, count - buildings);
+    return {
+      tileId: z.zoneId,
+      name: z.zoneId.replace(/^0_/, ''),
+      fullName: z.name || `Tile ${z.zoneId}`,
+      count,
+      buildings,
+      roads,
+    };
+  });
 }
 
 /**
