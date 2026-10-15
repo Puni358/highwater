@@ -15,14 +15,22 @@ export default function Header({
   loading = false,
   lastRefreshedAt = null,
 }) {
+  const activeSource = dataSource || (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_DATA_SOURCE : null);
+
+  const isFloodWatch =
+    activeSource === 'mock-floodwatch' ||
+    (typeof source === 'string' && source.includes('FloodWatch')) ||
+    (typeof studyArea === 'string' && studyArea.includes('FloodWatch'));
+
   const isDernau =
+    !isFloodWatch &&
     dataMode === 'demo' &&
     !studyArea?.includes('Bengaluru') &&
-    (dataSource === 'mock-dernau' ||
+    (activeSource === 'mock-dernau' ||
       (typeof source === 'string' && source.includes('SpaceNet')) ||
       (typeof studyArea === 'string' && studyArea.includes('Dernau')));
 
-  const isDemo = dataMode === 'demo' && !isDernau;
+  const isDemo = dataMode === 'demo' && !isDernau && !isFloodWatch;
 
   const formatTimestamp = (ts) => {
     if (!ts) return 'Timestamp not available';
@@ -88,7 +96,16 @@ export default function Header({
 
       {/* Right: Mode Badge & Refresh Action */}
       <div className="flex items-center space-x-3">
-        {isDernau ? (
+        {isFloodWatch ? (
+          <div
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-demo-bg text-demo-text text-xs font-semibold tracking-wide border border-amber-300/60"
+            role="status"
+            aria-label="Historical labels and model output active"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-demo-text" aria-hidden="true" />
+            <span>Historical labels and model output (SpaceNet 8)</span>
+          </div>
+        ) : isDernau ? (
           <div
             className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-demo-bg text-demo-text text-xs font-semibold tracking-wide border border-amber-300/60"
             role="status"
