@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo, Suspense, lazy } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import {
@@ -21,11 +21,12 @@ import MapLegend from './MapLegend.jsx';
 import MapControls from './MapControls.jsx';
 import { AlertTriangle, RotateCcw, PanelRightClose, PanelRightOpen, Info, ExternalLink } from 'lucide-react';
 
+const LazyReliefView = lazy(() => import('./ReliefView.jsx'));
+
 /**
  * MapController
- * Inner hook manager for Leaflet map instance.
- * Handles resize invalidation, selection fly-to, dynamic data bounds fitting,
- * and reset-extent without resetting on layer toggle.
+ * Leaflet map controller managing resize invalidation, coordinate tracking, scale measurement,
+ * and view bounds.
  */
 export function MapController({
   selectedZoneId,
@@ -34,6 +35,8 @@ export function MapController({
   dataBounds = null,
   onMapReady = null,
   selectedTileBounds = null,
+  onCoordinatesChange = null,
+  onScaleChange = null,
 }) {
   const map = useMap();
   const prevSelectedIdRef = useRef(null);
@@ -46,7 +49,41 @@ export function MapController({
     }
   }, [map, onMapReady]);
 
-  // Resize observer to ensure map tiles & vector layers redraw on container size changes (FR-19)
+  // Coordinate tracking & real cartographic scale calculation
+  useEffect(() => {
+    const updateMetrics = () => {
+      if (onCoordinatesChange) {
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        const latStr = `${Math.abs(center.lat).toFixed(4)}° ${center.lat >= 0 ? 'N' : 'S'}`;
+        const lngStr = `${Math.abs(center.lng).toFixed(4)}° ${center.lng >= 0 ? 'E' : 'W'}`;
+        onCoordinatesChange({ lat: latStr, lng: lngStr, zoom });
+      }
+
+      if (onScaleChange) {
+        const p1 = map.containerPointToLatLng([20, 20]);
+        const p2 = map.containerPointToLatLng([120, 20]);
+        if (p1 && p2) {
+          const distMetres = map.distance(p1, p2);
+          const distStr = distMetres >= 1000
+            ? `${(distMetres / 1000).toFixed(1)} km`
+            : `${Math.round(distMetres)} m`;
+          onScaleChange(distStr);
+        }
+      }
+    };
+
+    updateMetrics();
+    map.on('move', updateMetrics);
+    map.on('zoom', updateMetrics);
+
+    return () => {
+      map.off('move', updateMetrics);
+      map.off('zoom', updateMetrics);
+    };
+  }, [map, onCoordinatesChange, onScaleChange]);
+
+  // Resize observer to ensure map tiles redraw on side panel toggle
   useEffect(() => {
     if (typeof ResizeObserver === 'undefined') return;
     const container = map.getContainer();
@@ -60,7 +97,7 @@ export function MapController({
     };
   }, [map]);
 
-  // Fit bounds from loaded data (Requirement 2)
+  // Fit bounds from loaded data
   useEffect(() => {
     if (dataBounds && !initialFitDoneRef.current) {
       initialFitDoneRef.current = true;
@@ -81,14 +118,14 @@ export function MapController({
     }
   }, [selectedTileBounds, map]);
 
-  // Reset extent handler returns to fitted bounds (FR-15, T3.6, Requirement 2)
+  // Reset extent handler returns to fitted bounds
   useEffect(() => {
     if (resetTrigger > 0) {
       map.flyToBounds(dataBounds || DEFAULT_AOI_BOUNDS, { duration: 1 });
     }
   }, [resetTrigger, dataBounds, map]);
 
-  // Pan / fly to selected zone if it has geometry (FR-17)
+  // Pan / fly to selected zone if it has geometry
   useEffect(() => {
     if (selectedZoneId && selectedZoneId !== prevSelectedIdRef.current) {
       prevSelectedIdRef.current = selectedZoneId;
@@ -109,7 +146,7 @@ export function MapController({
 
 /**
  * ResetExtentControl
- * Compact, unobtrusive button positioned in Leaflet top-left control stack.
+ * Compact button in Leaflet top-left control stack.
  */
 function ResetExtentControl({ onReset }) {
   return (
@@ -120,7 +157,7 @@ function ResetExtentControl({ onReset }) {
           onClick={onReset}
           title="Reset map extent"
           aria-label="Reset map extent"
-          className="flex items-center justify-center w-[30px] h-[30px] bg-white hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
+          className="flex items-center justify-center w-[30px] h-[30px] bg-paper hover:bg-hairline/40 text-ink transition-colors cursor-pointer"
         >
           <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
@@ -130,10 +167,13 @@ function ResetExtentControl({ onReset }) {
 }
 
 /**
- * FloodMap component (FR-10 to FR-19, T3.1)
- * High-performance Leaflet WebGIS surface with docked, collapsible side panel.
- * Map remains 100% unobstructed: only Zoom, Reset Extent, and Attribution sit on the map.
- * All controls, legends, notices, and provenance notes are docked in the side panel.
+ * FloodMap component (Cartographic Survey Plate)
+ * Features:
+ * - Unobstructed base map with neutral background fallback (.bg-slate-200)
+ * - 2D Survey Map / 3D Relief Projection toggle
+ * - Corner registration marks and real margin coordinates
+ * - Dynamic scale bar
+ * - Docked, collapsible side panel for controls, legend, and notices
  */
 export default function FloodMap({
   floodGeoJSON = null,
@@ -169,14 +209,18 @@ export default function FloodMap({
   onChangeModelMode,
   selectedTileId: selectedTileIdProp,
   onSelectTile,
-  children, // For custom/injected test layers
+  children,
 }) {
   const [internalReset, setInternalReset] = useState(0);
   const [layerErrors, setLayerErrors] = useState({});
   const [internalTilesOffline, setInternalTilesOffline] = useState(false);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [viewMode, setViewMode] = useState('2d'); // '2d' | '3d'
   const [internalModelMode, setInternalModelMode] = useState('fast');
   const [internalSelectedTileId, setInternalSelectedTileId] = useState('ALL');
+  const [coords, setCoords] = useState({ lat: '50.5342° N', lng: '7.0421° E', zoom: 14 });
+  const [scaleDistance, setScaleDistance] = useState('250 m');
+
   const tilesOfflineRef = useRef(false);
   const mapInstanceRef = useRef(null);
 
@@ -212,7 +256,6 @@ export default function FloodMap({
     setIsPanelCollapsed((prev) => !prev);
   }, []);
 
-  // Invalidate map size whenever panel expands/collapses or breakpoint changes
   useEffect(() => {
     if (mapInstanceRef.current) {
       mapInstanceRef.current.invalidateSize();
@@ -224,9 +267,8 @@ export default function FloodMap({
       window.dispatchEvent(new Event('resize'));
     }, 150);
     return () => clearTimeout(timer);
-  }, [isPanelCollapsed]);
+  }, [isPanelCollapsed, viewMode]);
 
-  // Extract all distinct tile IDs across FloodWatch sources
   const availableTiles = useMemo(() => {
     const tileSet = new Set();
     const addFromCollection = (fc) => {
@@ -267,11 +309,9 @@ export default function FloodMap({
     ]);
   }, [riskZones, floodGeoJSON, floodGroundTruth, floodPredictedFast, floodPredictedAccurate]);
 
-  // Compute bounding box for the selected tile
   const selectedTileBounds = useMemo(() => {
     if (!activeSelectedTileId || activeSelectedTileId === 'ALL') return null;
 
-    // Check riskZones first
     const matchingZone = riskZones.find((z) => z.zoneId === activeSelectedTileId);
     if (matchingZone && matchingZone.hasGeometry && matchingZone.geometry?.coordinates) {
       const ring = matchingZone.geometry.coordinates[0];
@@ -279,7 +319,6 @@ export default function FloodMap({
       return L.latLngBounds(latLngs);
     }
 
-    // Otherwise compute from features
     const allFeatures = [
       ...(floodGroundTruth?.features || []),
       ...(floodPredictedFast?.features || []),
@@ -337,7 +376,6 @@ export default function FloodMap({
 
   const activePredictedData = activeModelMode === 'accurate' ? floodPredictedAccurate : floodPredictedFast;
 
-  // STEP 4: Persistent training-pool honesty note condition
   const showTrainingPoolNotice = useMemo(() => {
     if (!visibleLayers.floodPredicted || !activePredictedData?.features) return false;
     return activePredictedData.features.some((f) => {
@@ -348,289 +386,384 @@ export default function FloodMap({
     });
   }, [visibleLayers.floodPredicted, activePredictedData, activeSelectedTileId]);
 
-  // STEP 5: Optional FloodWatch backend URL link
   const floodwatchUrl = typeof import.meta !== 'undefined' ? (import.meta.env?.VITE_FLOODWATCH_URL || '') : '';
 
   return (
-    <div className="flex flex-col lg:flex-row w-full h-full min-h-[440px] overflow-hidden font-sans bg-card relative">
-      {/* 1. Unobstructed Leaflet Map Viewport */}
-      <div className="relative flex-1 h-[420px] lg:h-full w-full min-w-0 overflow-hidden bg-slate-200">
-        <MapContainer
-          center={DEFAULT_MAP_CENTER}
-          zoom={DEFAULT_MAP_ZOOM}
-          className="w-full h-full z-0 bg-slate-200"
-          scrollWheelZoom={true}
-        >
-          <TileLayer
-            url={tileUrl}
-            attribution={tileAttribution}
-            eventHandlers={{
-              tileerror: handleTileError,
-            }}
-          />
+    <div className="relative w-full h-full flex flex-col font-sans bg-paper border border-control-border/60 rounded overflow-hidden select-none">
+      {/* 4 Corner Registration Marks */}
+      <span aria-hidden="true" className="absolute top-1 left-1.5 font-mono text-[11px] text-control-border select-none pointer-events-none z-20">+</span>
+      <span aria-hidden="true" className="absolute top-1 right-1.5 font-mono text-[11px] text-control-border select-none pointer-events-none z-20">+</span>
+      <span aria-hidden="true" className="absolute bottom-1 left-1.5 font-mono text-[11px] text-control-border select-none pointer-events-none z-20">+</span>
+      <span aria-hidden="true" className="absolute bottom-1 right-1.5 font-mono text-[11px] text-control-border select-none pointer-events-none z-20">+</span>
 
-          <MapController
-            selectedZoneId={selectedZoneId}
-            zones={riskZones}
-            resetTrigger={activeReset}
-            dataBounds={dataBounds}
-            onMapReady={handleMapReady}
-            selectedTileBounds={selectedTileBounds}
-          />
+      {/* Cartographic Plate Header: 2D / 3D Toggle & Margin Coordinates */}
+      <div className="px-4 py-2 border-b border-hairline bg-plate flex flex-wrap items-center justify-between gap-2 shrink-0 z-10">
+        <div className="flex items-center space-x-3">
+          <span className="font-serif font-bold text-xs uppercase tracking-wider text-ink">
+            Survey Plate Viewport
+          </span>
 
-          {/* Reset Extent Button Control directly on map (unobtrusive under zoom controls) */}
-          <ResetExtentControl onReset={handleResetExtent} />
-
-          {/* 1. Flood Extent Layer */}
-          {visibleLayers.flood && (
-            <LayerErrorBoundary
-              layerName="flood"
-              onError={(err) => handleLayerError('flood', err)}
+          <div className="inline-flex rounded border border-control-border overflow-hidden bg-paper" role="group" aria-label="Survey projection mode">
+            <button
+              type="button"
+              onClick={() => setViewMode('2d')}
+              aria-pressed={viewMode === '2d'}
+              className={`px-3 py-1 font-serif text-xs font-medium transition cursor-pointer ${
+                viewMode === '2d'
+                  ? 'bg-ink text-paper'
+                  : 'bg-paper text-ink hover:bg-hairline/40'
+              }`}
             >
-              <FloodLayer data={floodGeoJSON} />
-            </LayerErrorBoundary>
-          )}
-
-          {/* 2. Priority Risk Zones Layer */}
-          {visibleLayers.risk && (
-            <LayerErrorBoundary
-              layerName="risk"
-              onError={(err) => handleLayerError('risk', err)}
+              2D Survey Map
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('3d')}
+              aria-pressed={viewMode === '3d'}
+              className={`px-3 py-1 font-serif text-xs font-medium border-l border-control-border transition cursor-pointer ${
+                viewMode === '3d'
+                  ? 'bg-ink text-paper'
+                  : 'bg-paper text-ink hover:bg-hairline/40'
+              }`}
             >
-              <RiskLayer
-                zones={riskZones}
-                selectedZoneId={selectedZoneId}
-                onZoneSelect={onZoneSelect}
-              />
-            </LayerErrorBoundary>
-          )}
+              3D Relief Projection
+            </button>
+          </div>
+        </div>
 
-          {/* 3. Blocked Roadways Layer */}
-          {visibleLayers.roads && (
-            <LayerErrorBoundary
-              layerName="roads"
-              onError={(err) => handleLayerError('roads', err)}
-            >
-              <RoadLayer data={blockedRoads} />
-            </LayerErrorBoundary>
-          )}
-
-          {/* 4. Facilities Layer */}
-          {visibleLayers.facilities && (
-            <LayerErrorBoundary
-              layerName="facilities"
-              onError={(err) => handleLayerError('facilities', err)}
-            >
-              <FacilityLayer data={facilities} />
-            </LayerErrorBoundary>
-          )}
-
-          {/* 5. Routes Layer */}
-          {visibleLayers.routes && (
-            <LayerErrorBoundary
-              layerName="routes"
-              onError={(err) => handleLayerError('routes', err)}
-            >
-              <RouteLayer routes={routes} />
-            </LayerErrorBoundary>
-          )}
-
-          {/* 6. Exposed Buildings Layer */}
-          {visibleLayers.buildings && (
-            <LayerErrorBoundary
-              layerName="buildings"
-              onError={(err) => handleLayerError('buildings', err)}
-            >
-              <BuildingLayer data={buildingsExposed} />
-            </LayerErrorBoundary>
-          )}
-
-          {/* 7. FloodWatch Observed Ground Truth Layer (SpaceNet 8) */}
-          {visibleLayers.floodGroundTruth && (
-            <LayerErrorBoundary
-              layerName="floodGroundTruth"
-              onError={(err) => handleLayerError('floodGroundTruth', err)}
-            >
-              <FloodWatchObservedLayer
-                data={floodGroundTruth}
-                selectedTileId={activeSelectedTileId}
-              />
-            </LayerErrorBoundary>
-          )}
-
-          {/* 8. FloodWatch Model Output Layer (fast or accurate) */}
-          {visibleLayers.floodPredicted && (
-            <LayerErrorBoundary
-              layerName="floodPredicted"
-              onError={(err) => handleLayerError('floodPredicted', err)}
-            >
-              <FloodWatchPredictedLayer
-                data={activePredictedData}
-                selectedTileId={activeSelectedTileId}
-              />
-            </LayerErrorBoundary>
-          )}
-
-          {/* Custom/Injected Children Layers */}
-          {children}
-        </MapContainer>
+        {/* Dynamic Margin Coordinates from Active Map View */}
+        <div className="flex items-center space-x-3 font-mono text-[11px] text-ink-muted">
+          <span>LAT: <strong className="text-ink">{coords.lat}</strong></span>
+          <span>•</span>
+          <span>LNG: <strong className="text-ink">{coords.lng}</strong></span>
+          <span className="hidden sm:inline">•</span>
+          <span className="hidden sm:inline">ZOOM: <strong className="text-ink">{coords.zoom}</strong></span>
+        </div>
       </div>
 
-      {/* 2. Docked Side Panel (Beside map on desktop, below on mobile/tablet) */}
-      <aside
-        aria-label="Map Controls and Legend Side Panel"
-        className={`border-t lg:border-t-0 lg:border-l border-border bg-slate-50/90 flex flex-col transition-all duration-200 z-10 shrink-0 ${
-          isPanelCollapsed ? 'lg:w-12 w-full' : 'lg:w-80 w-full'
-        }`}
-      >
-        {/* Panel Collapsible Header */}
-        <div className="p-2 sm:p-2.5 border-b border-border bg-white flex items-center justify-between gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleTogglePanel}
-            aria-expanded={!isPanelCollapsed}
-            aria-controls="map-side-panel-content"
-            className="min-h-[44px] min-w-[44px] px-3 py-2 text-xs font-semibold text-slate-700 hover:text-navy-900 flex items-center justify-between rounded border border-border bg-white hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-flood transition cursor-pointer select-none"
-          >
-            <div className="flex items-center space-x-2">
-              {isPanelCollapsed ? (
-                <>
-                  <PanelRightOpen className="w-4 h-4 text-slate-600 shrink-0" aria-hidden="true" />
-                  <span className="lg:hidden font-medium">Expand Side Panel</span>
-                </>
-              ) : (
-                <>
-                  <PanelRightClose className="w-4 h-4 text-slate-600 shrink-0" aria-hidden="true" />
-                  <span className="font-medium">Collapse Side Panel</span>
-                </>
+      {/* Main View Area: Map Viewport + Docked Side Panel */}
+      <div className="flex-1 flex flex-col lg:flex-row w-full min-h-0 overflow-hidden relative">
+        {/* Unobstructed Viewport */}
+        <div className="relative flex-1 h-[420px] lg:h-full w-full min-w-0 overflow-hidden bg-slate-200">
+          {viewMode === '3d' ? (
+            <Suspense
+              fallback={
+                <div className="w-full h-full flex items-center justify-center bg-paper text-xs text-ink-muted font-serif">
+                  Initializing 3D cartographic relief projection...
+                </div>
+              }
+            >
+              <LazyReliefView
+                zones={riskZones}
+                selectedZoneId={selectedZoneId}
+                onSelectZone={onZoneSelect}
+                groundTruthData={floodGroundTruth}
+                modelMode={activeModelMode}
+              />
+            </Suspense>
+          ) : (
+            <MapContainer
+              center={DEFAULT_MAP_CENTER}
+              zoom={DEFAULT_MAP_ZOOM}
+              className="w-full h-full z-0 bg-slate-200"
+              scrollWheelZoom={true}
+            >
+              <TileLayer
+                url={tileUrl}
+                attribution={tileAttribution}
+                eventHandlers={{
+                  tileerror: handleTileError,
+                }}
+              />
+
+              <MapController
+                selectedZoneId={selectedZoneId}
+                zones={riskZones}
+                resetTrigger={activeReset}
+                dataBounds={dataBounds}
+                onMapReady={handleMapReady}
+                selectedTileBounds={selectedTileBounds}
+                onCoordinatesChange={setCoords}
+                onScaleChange={setScaleDistance}
+              />
+
+              <ResetExtentControl onReset={handleResetExtent} />
+
+              {/* Vector Layers */}
+              {visibleLayers.flood && (
+                <LayerErrorBoundary
+                  layerName="flood"
+                  onError={(err) => handleLayerError('flood', err)}
+                >
+                  <FloodLayer data={floodGeoJSON} />
+                </LayerErrorBoundary>
               )}
+
+              {visibleLayers.risk && (
+                <LayerErrorBoundary
+                  layerName="risk"
+                  onError={(err) => handleLayerError('risk', err)}
+                >
+                  <RiskLayer
+                    zones={riskZones}
+                    selectedZoneId={selectedZoneId}
+                    onZoneSelect={onZoneSelect}
+                  />
+                </LayerErrorBoundary>
+              )}
+
+              {visibleLayers.roads && (
+                <LayerErrorBoundary
+                  layerName="roads"
+                  onError={(err) => handleLayerError('roads', err)}
+                >
+                  <RoadLayer data={blockedRoads} />
+                </LayerErrorBoundary>
+              )}
+
+              {visibleLayers.facilities && (
+                <LayerErrorBoundary
+                  layerName="facilities"
+                  onError={(err) => handleLayerError('facilities', err)}
+                >
+                  <FacilityLayer data={facilities} />
+                </LayerErrorBoundary>
+              )}
+
+              {visibleLayers.routes && (
+                <LayerErrorBoundary
+                  layerName="routes"
+                  onError={(err) => handleLayerError('routes', err)}
+                >
+                  <RouteLayer routes={routes} />
+                </LayerErrorBoundary>
+              )}
+
+              {visibleLayers.buildings && (
+                <LayerErrorBoundary
+                  layerName="buildings"
+                  onError={(err) => handleLayerError('buildings', err)}
+                >
+                  <BuildingLayer data={buildingsExposed} />
+                </LayerErrorBoundary>
+              )}
+
+              {visibleLayers.floodGroundTruth && (
+                <LayerErrorBoundary
+                  layerName="floodGroundTruth"
+                  onError={(err) => handleLayerError('floodGroundTruth', err)}
+                >
+                  <FloodWatchObservedLayer
+                    data={floodGroundTruth}
+                    selectedTileId={activeSelectedTileId}
+                  />
+                </LayerErrorBoundary>
+              )}
+
+              {visibleLayers.floodPredicted && (
+                <LayerErrorBoundary
+                  layerName="floodPredicted"
+                  onError={(err) => handleLayerError('floodPredicted', err)}
+                >
+                  <FloodWatchPredictedLayer
+                    data={activePredictedData}
+                    selectedTileId={activeSelectedTileId}
+                  />
+                </LayerErrorBoundary>
+              )}
+
+              {children}
+            </MapContainer>
+          )}
+
+          {/* Dynamic Cartographic Scale Bar (Leaflet Overlay) */}
+          {viewMode === '2d' && (
+            <div className="absolute bottom-6 left-6 z-[400] pointer-events-none flex flex-col items-start font-mono text-[10px] text-ink bg-paper px-2 py-1 rounded border border-control-border shadow-xs">
+              <div className="flex items-center justify-between w-[100px] border-b-2 border-l-2 border-r-2 border-ink h-2 pb-0.5">
+                <span className="text-[9px]">0</span>
+                <span className="text-[9px]">{scaleDistance}</span>
+              </div>
+              <span className="text-[9px] mt-0.5 text-ink-muted">Cartographic scale</span>
             </div>
-            {!isPanelCollapsed && (
-              <span className="text-[11px] text-slate-500 font-normal hidden sm:inline ml-2">
-                Unobstruct Map
-              </span>
-            )}
-          </button>
-          {!isPanelCollapsed && (
-            <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider hidden sm:inline">
-              Layers & Legend
-            </span>
+          )}
+
+          {/* North Arrow Indicator (Plate Furniture) */}
+          {viewMode === '2d' && (
+            <div className="absolute top-4 right-4 z-[400] pointer-events-none flex flex-col items-center font-serif text-ink bg-paper px-2 py-1 rounded border border-control-border shadow-xs select-none">
+              <span className="text-xs font-bold leading-none">▲</span>
+              <span className="text-[10px] font-bold tracking-widest mt-0.5">N</span>
+            </div>
           )}
         </div>
 
-        {/* Panel Content (Visible when expanded) */}
-        {!isPanelCollapsed && (
-          <div
-            id="map-side-panel-content"
-            className="p-3 overflow-y-auto space-y-3 flex-1 text-xs max-h-[480px] lg:max-h-full"
-          >
-            {/* Offline Base Map Tiles Warning Notice */}
-            {isTilesOffline && (
-              <div
-                role="alert"
-                className="p-2.5 rounded bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start space-x-2 shadow-sm"
-              >
-                <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <span>
-                  Map tiles unavailable. Base map tiles unreachable; vector flood overlays continue to operate offline.
+        {/* Docked Side Panel (Beside map on desktop, below on mobile/tablet) */}
+        <aside
+          aria-label="Map Controls and Legend Side Panel"
+          className={`border-t lg:border-t-0 lg:border-l border-hairline bg-plate flex flex-col transition-all duration-200 z-10 shrink-0 ${
+            isPanelCollapsed ? 'lg:w-12 w-full' : 'lg:w-80 w-full'
+          }`}
+        >
+          {/* Panel Header */}
+          <div className="p-2 sm:p-2.5 border-b border-hairline bg-paper flex items-center justify-between gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleTogglePanel}
+              aria-expanded={!isPanelCollapsed}
+              aria-controls="map-side-panel-content"
+              className="min-h-[44px] min-w-[44px] px-3 py-2 text-xs font-semibold text-ink flex items-center justify-between rounded border border-control-border bg-paper hover:bg-hairline/40 transition cursor-pointer select-none"
+            >
+              <div className="flex items-center space-x-2">
+                {isPanelCollapsed ? (
+                  <>
+                    <PanelRightOpen className="w-4 h-4 text-ink-muted shrink-0" aria-hidden="true" />
+                    <span className="lg:hidden font-medium">Expand Side Panel</span>
+                  </>
+                ) : (
+                  <>
+                    <PanelRightClose className="w-4 h-4 text-ink-muted shrink-0" aria-hidden="true" />
+                    <span className="font-medium">Collapse Side Panel</span>
+                  </>
+                )}
+              </div>
+              {!isPanelCollapsed && (
+                <span className="text-[11px] text-ink-muted font-normal hidden sm:inline ml-2">
+                  Unobstruct Map
                 </span>
-              </div>
+              )}
+            </button>
+            {!isPanelCollapsed && (
+              <span className="text-[11px] font-serif font-bold text-ink uppercase tracking-wider hidden sm:inline">
+                Layers & Legend
+              </span>
             )}
+          </div>
 
-            {/* Offline Cached Data Notice */}
-            {isFromCache && (
-              <div
-                role="status"
-                className="p-2.5 rounded bg-sky-50 border border-sky-300 text-sky-900 text-xs flex items-start space-x-2 shadow-sm"
-              >
-                <Info className="w-4 h-4 text-sky-700 shrink-0 mt-0.5" />
-                <span>Offline cached snapshot loaded {cachedAt ? `from ${cachedAt}` : ''}.</span>
-              </div>
-            )}
+          {/* Panel Content */}
+          {!isPanelCollapsed && (
+            <div
+              id="map-side-panel-content"
+              className="p-3 overflow-y-auto space-y-3 flex-1 text-xs max-h-[480px] lg:max-h-full"
+            >
+              {/* Offline Base Map Tiles Warning */}
+              {isTilesOffline && (
+                <div
+                  role="alert"
+                  className="p-2.5 rounded bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start space-x-2 shadow-xs"
+                >
+                  <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <span>
+                    Map tiles unavailable. Base map tiles unreachable; vector flood overlays continue to operate offline.
+                  </span>
+                </div>
+              )}
 
-            {/* Malformed Geometry Warning Notice */}
-            {droppedCount > 0 && (
-              <div
-                role="status"
-                className="p-2 rounded bg-amber-50 border border-amber-300 text-amber-900 text-[11px] shadow-sm flex items-center space-x-1.5"
-              >
-                <span className="font-bold">Notice:</span>
-                <span>{droppedCount} malformed features skipped during geometry verification.</span>
-              </div>
-            )}
+              {/* Offline Cached Data Notice */}
+              {isFromCache && (
+                <div
+                  role="status"
+                  className="p-2.5 rounded bg-sky-50 border border-sky-300 text-sky-900 text-xs flex items-start space-x-2 shadow-xs"
+                >
+                  <Info className="w-4 h-4 text-sky-700 shrink-0 mt-0.5" />
+                  <span>Offline cached snapshot loaded {cachedAt ? `from ${cachedAt}` : ''}.</span>
+                </div>
+              )}
 
-            {/* Layer Error Notice */}
-            {Object.keys(combinedLayerErrors).length > 0 && (
-              <div
-                role="alert"
-                aria-label="Layer Error Notice"
-                className="p-2 rounded bg-red-50 border border-red-300 text-risk-high text-[11px] shadow-sm flex items-center space-x-1.5"
-              >
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                <span>
-                  Overlay error: {Object.entries(combinedLayerErrors).map(([k, msg]) => `${k} layer (${msg})`).join(', ')}. Base map and other layers operational.
-                </span>
-              </div>
-            )}
+              {/* Malformed Geometry Warning */}
+              {droppedCount > 0 && (
+                <div
+                  role="status"
+                  className="p-2 rounded bg-amber-50 border border-amber-300 text-amber-900 text-[11px] shadow-xs flex items-center space-x-1.5"
+                >
+                  <span className="font-bold">Notice:</span>
+                  <span>{droppedCount} malformed features skipped during geometry verification.</span>
+                </div>
+              )}
 
-            {/* Operational Calibration Note */}
-            {showTrainingPoolNotice && (
+              {/* Layer Error Notice */}
+              {Object.keys(combinedLayerErrors).length > 0 && (
+                <div
+                  role="alert"
+                  aria-label="Layer Error Notice"
+                  className="p-2 rounded bg-red-50 border border-red-300 text-risk-high text-[11px] shadow-xs flex items-center space-x-1.5"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    Overlay error: {Object.entries(combinedLayerErrors).map(([k, msg]) => `${k} layer (${msg})`).join(', ')}. Base map and other layers operational.
+                  </span>
+                </div>
+              )}
+
+              {/* Operational Calibration Note */}
+              {showTrainingPoolNotice && (
+                <div
+                  role="note"
+                  aria-label="Training Pool Notice"
+                  className="p-2.5 rounded bg-amber-50 border border-amber-300 text-amber-950 text-xs space-y-1 shadow-xs"
+                >
+                  <div className="flex items-center space-x-1.5 font-bold text-amber-900">
+                    <Info className="w-3.5 h-3.5 shrink-0 text-amber-700" />
+                    <span>Model segmentation calibrated against surveyed ground truth</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-900/90">
+                    Predicted-versus-observed agreement is <strong>not</strong> a held-out test result. The model training pool incorporates these flood zones. Tiles 0_15_63, 0_15_65, 0_15_68, and 0_20_66 are not in the training pool.
+                  </p>
+                </div>
+              )}
+
+              {/* 1. Map Layer Controls */}
+              <MapControls
+                visibleLayers={visibleLayers}
+                onToggleLayer={onToggleLayer}
+                onResetExtent={handleResetExtent}
+                modelMode={activeModelMode}
+                onChangeModelMode={handleChangeModelMode}
+                availableTiles={availableTiles}
+                selectedTileId={activeSelectedTileId}
+                onSelectTile={handleSelectTile}
+                hasFloodWatch={hasFloodWatch}
+              />
+
+              {/* 2. Map Legend */}
+              <MapLegend
+                visibleLayers={visibleLayers}
+                modelMode={activeModelMode}
+              />
+
+              {/* 3. Provenance Context Note */}
               <div
                 role="note"
-                aria-label="Training Pool Notice"
-                className="p-2 rounded bg-sky-50 border border-sky-200 text-sky-900 text-[11px] flex items-center space-x-1.5 shadow-xs"
+                aria-label="Provenance and Verification Note"
+                className="p-2.5 rounded border border-hairline bg-paper text-ink-muted text-[11px] space-y-1"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-600 shrink-0" />
-                <span>Model segmentation calibrated against surveyed ground truth.</span>
+                <div className="font-semibold text-ink flex items-center space-x-1">
+                  <Info className="w-3 h-3 text-ink-muted" />
+                  <span>Data Provenance & Verification</span>
+                </div>
+                <p>
+                  <strong>Observed:</strong> Human-verified SpaceNet 8 ground labels.
+                  <br />
+                  <strong>Derived:</strong> SegFormer-B0 neural segmentation inference.
+                  <br />
+                  <strong>Simulated:</strong> Priority risk scoring and scenario routing.
+                </p>
+                {floodwatchUrl && (
+                  <div className="pt-1 border-t border-hairline mt-1">
+                    <a
+                      href={floodwatchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center space-x-1 text-ink hover:underline font-medium"
+                    >
+                      <span>FloodWatch Service</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  </div>
+                )}
               </div>
-            )}
-
-            {/* Layer Controls Switch Panel */}
-            <MapControls
-              visibleLayers={visibleLayers}
-              onToggleLayer={onToggleLayer}
-              onResetExtent={handleResetExtent}
-              modelMode={activeModelMode}
-              onChangeModelMode={handleChangeModelMode}
-              availableTiles={availableTiles}
-              selectedTileId={activeSelectedTileId}
-              onSelectTile={handleSelectTile}
-              hasFloodWatch={hasFloodWatch}
-            />
-
-            {/* Dynamic Map Legend */}
-            <MapLegend
-              visibleLayers={visibleLayers}
-              modelMode={activeModelMode}
-            />
-
-            {/* STEP 5: Optional Link to FloodWatch Analysis */}
-            {floodwatchUrl && (
-              <div className="p-2.5 rounded bg-white border border-border text-[11px] shadow-sm space-y-1">
-                <div className="font-semibold text-text">FloodWatch Analysis</div>
-                <a
-                  href={floodwatchUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Open FloodWatch tile analysis (localhost:8000)"
-                  className="inline-flex items-center space-x-1.5 text-xs text-sky-700 hover:text-navy-900 font-medium underline underline-offset-2"
-                >
-                  <ExternalLink className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                  <span>Open FloodWatch tile analysis (localhost:8000)</span>
-                </a>
-              </div>
-            )}
-
-            {/* Provenance & Data Notes */}
-            <div className="p-2.5 rounded bg-white border border-border text-[11px] text-text-muted space-y-1 shadow-sm">
-              <div className="font-semibold text-text">Data Notes & Provenance</div>
-              <p>
-                Overlays indicate observed, derived, or simulated emergency response data. Zoom or click features on the map to inspect properties.
-              </p>
             </div>
-          </div>
-        )}
-      </aside>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }
