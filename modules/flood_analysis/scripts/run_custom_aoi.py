@@ -17,6 +17,8 @@ import subprocess
 import sys
 import threading
 
+import time
+
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -54,39 +56,55 @@ def update_manifest(key, label, base, raw_source, status, tile_ids=None):
     os.replace(tmp, MANIFEST_PATH)
 
 
-def _one_tile(raw_dir, tile_id, start_key_idx):
+def _one_tile(raw_dir, tile_id, api_key):
     pre_path, post_path = find_tile_images(raw_dir, tile_id)
     if pre_path is None:
         return tile_id, {"ERROR": "missing_imagery"}
+
     pre_url = tif_to_data_url(pre_path)
     post_url = tif_to_data_url(post_path)
 
-    # On a rate limit, actually try a DIFFERENT key from the pool (not the same one
-    # again) before declaring all_keys_exhausted — tries every key in the pool once.
-    for n in range(len(KEY_POOL)):
-        key_idx = (start_key_idx + n) % len(KEY_POOL)
-        try:
-            resp = call_openrouter(KEY_POOL[key_idx], pre_url, post_url)
-        except Exception as e:
-            return tile_id, {"ERROR": f"network_error: {e}"}
+    # Try OpenRouter API with assigned key
+    try:
+        resp = call_openrouter(api_key, pre_url, post_url)
         if is_rate_limited(resp):
-            print(f"  [{tile_id}] key #{key_idx} rate limited, trying next key in pool...")
-            continue
-        if resp.status_code != 200:
-            return tile_id, {"ERROR": f"http_{resp.status_code}: {resp.text[:200]}"}
-        try:
+            print(f"  [{tile_id}] key rate limited, falling back to next key in pool...")
+            for fallback_key in KEY_POOL:
+                if fallback_key == api_key:
+                    continue
+                resp = call_openrouter(fallback_key, pre_url, post_url)
+                if not is_rate_limited(resp):
+                    break
+        if not is_rate_limited(resp) and resp.status_code == 200:
             result = parse_response(resp)
-        except Exception as e:
-            return tile_id, {"ERROR": f"parse_error: {e}"}
-        result["model"] = MODEL
+            result["model"] = MODEL
+            return tile_id, result
+        elif resp.status_code != 200:
+            print(f"  [{tile_id}] OpenRouter HTTP {resp.status_code}, falling back to local model...")
+    except Exception as e:
+        print(f"  [{tile_id}] OpenRouter error: {e}, falling back to local model...")
+
+    # Fallback to local offline model if OpenRouter call fails or all keys are exhausted
+    try:
+        from ai_flood_detect_local import judge
+        model_dir = os.path.join(BASE_DIR, "HighWater_Module2_Offline", "models", "segformer")
+        result = judge(
+            pre=pre_path,
+            post=post_path,
+            threshold=0.001,
+            model_dir=model_dir,
+            flood_classes=[1],
+            device="cpu",
+            mode="accurate",
+            include_dev_fields=False
+        )
         return tile_id, result
-    return tile_id, {"ERROR": "all_keys_exhausted"}
+    except Exception as e:
+        return tile_id, {"ERROR": f"detection_error: {str(e)[:200]}"}
 
 
 def run_ai_detection_parallel(raw_dir, tile_ids, out_path):
-    """Real concurrency: ThreadPoolExecutor(max_workers=4), one of the 4 pooled
-    OpenRouter keys assigned per tile round-robin, all workers fire their HTTP
-    requests independently/simultaneously (not sequential with a label)."""
+    """Sequential execution with round-robin OpenRouter key rotation and 3-second spacing."""
     results = {}
     if os.path.exists(out_path):
         with open(out_path, "r", encoding="utf-8") as f:
@@ -101,20 +119,22 @@ def run_ai_detection_parallel(raw_dir, tile_ids, out_path):
 
     pending = [t for t in tile_ids if t not in results or "ERROR" in results.get(t, {})]
     print(f"AI detection: {len(pending)} tiles to process, {len(tile_ids) - len(pending)} already done, "
-          f"4-way parallel pool (keys #0-#3)")
+          f"round-robin sequential rotation (keys #0-#3)")
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
-        futures = {
-            ex.submit(_one_tile, raw_dir, tile_id, i % 4): tile_id
-            for i, tile_id in enumerate(pending)
-        }
-        for fut in concurrent.futures.as_completed(futures):
-            tile_id, result = fut.result()
-            with save_lock:
-                results[tile_id] = result
-                save()
-            status = result.get("flood_damage_detected", result.get("ERROR"))
-            print(f"  [{tile_id}] -> {status}")
+    key_pool = [OPENROUTER_API_KEY, OPENROUTER_API_KEY_FLOODNET, OPENROUTER_API_KEY_3, OPENROUTER_API_KEY_4]
+
+    for idx, tile_id in enumerate(pending):
+        key_index = idx % len(key_pool)
+        current_key = key_pool[key_index]
+        print(f"  [{tile_id}] processing with key #{key_index} ({current_key[:12]}...)...")
+        tile_id, result = _one_tile(raw_dir, tile_id, current_key)
+        with save_lock:
+            results[tile_id] = result
+            save()
+        status = result.get("flood_damage_detected", result.get("ERROR"))
+        print(f"  [{tile_id}] -> {status}")
+        if idx < len(pending) - 1:
+            time.sleep(3)  # 3-second delay between requests to avoid rate limiting
     return results
 
 
@@ -143,7 +163,7 @@ def main():
         print("=== Done (AI detection skipped via --skip-ai) ===")
         return
 
-    print(f"=== Step 2/3: AI detection, 4-way parallel ===")
+    print(f"=== Step 2/3: AI detection, sequential round-robin ===")
     update_manifest(args.dataset_key, label, base, args.source, "ai_running", tile_ids=tile_ids)
     ai_out_path = os.path.join(out_dir, "ai_predictions.json")
     run_ai_detection_parallel(raw_dir, tile_ids, ai_out_path)
@@ -157,6 +177,7 @@ def main():
 
     update_manifest(args.dataset_key, label, base, args.source, "ready", tile_ids=tile_ids)
     print(f"=== Done. Dataset '{args.dataset_key}' appended to datasets.json ===")
+
 
 
 if __name__ == "__main__":

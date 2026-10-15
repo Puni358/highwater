@@ -15,6 +15,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import run_custom_aoi
 from flood_analysis import cli as flood_cli
+from ai_flood_detect import find_tile_images
+from ai_flood_detect_local import judge
 
 app = FastAPI(title="HighWater Local API Server")
 
@@ -28,6 +30,13 @@ app.add_middleware(
 
 BASE_DIR = run_custom_aoi.BASE_DIR
 RAW_DIRS = run_custom_aoi.RAW_DIRS
+
+MODEL_DIR = os.getenv(
+    "FW_MODEL_DIR",
+    os.path.join(BASE_DIR, "HighWater_Module2_Offline", "models", "segformer")
+)
+DEFAULT_DEVICE = os.getenv("FW_DEVICE", "cpu")
+JUDGE_LOCK = threading.Lock()
 
 # In-memory job tracking: job_id -> dict
 jobs: dict[str, dict] = {}
@@ -69,6 +78,8 @@ def _run_pipeline(job_id: str, source: str, tile_ids: list[str], dataset_key: st
         job["tiles_done"] = 0
         run_custom_aoi.update_manifest(dataset_key, label, base, source, "ai_running", tile_ids=tile_ids)
         ai_out_path = os.path.join(out_dir, "ai_predictions.json")
+        import importlib
+        importlib.reload(run_custom_aoi)
         run_custom_aoi.run_ai_detection_parallel(raw_dir, tile_ids, ai_out_path)
 
         # Step 3: validation
@@ -91,6 +102,20 @@ def _run_pipeline(job_id: str, source: str, tile_ids: list[str], dataset_key: st
     except Exception as e:
         job["status"] = "error"
         job["error"] = str(e)
+
+
+class DetectTileRequest(BaseModel):
+    tile_id: str
+    source: str = "germany"
+    threshold: float = 0.001
+    mode: str = "accurate"
+
+
+class DetectTilesRequest(BaseModel):
+    tiles: list[str]
+    source: str = "germany"
+    threshold: float = 0.001
+    mode: str = "accurate"
 
 
 @app.get("/api/health")
@@ -163,6 +188,72 @@ def get_job_status(job_id: str):
         "dataset_key": job.get("dataset_key"),
         "label": job.get("label"),
     }
+
+
+@app.post("/api/detect-tile")
+def detect_tile(req: DetectTileRequest):
+    """Run offline SegFormer-B0 flood detection on a single tile."""
+    raw_dir = RAW_DIRS.get(req.source)
+    if not raw_dir or not os.path.exists(raw_dir):
+        raise HTTPException(status_code=400, detail=f"Invalid or missing raw source '{req.source}'")
+
+    pre_path, post_path = find_tile_images(raw_dir, req.tile_id)
+    if not pre_path or not post_path:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Imagery missing for tile '{req.tile_id}' in source '{req.source}'"
+        )
+
+    try:
+        with JUDGE_LOCK:
+            result = judge(
+                pre=pre_path,
+                post=post_path,
+                threshold=req.threshold,
+                model_dir=MODEL_DIR,
+                flood_classes=[1],
+                device=DEFAULT_DEVICE,
+                mode=req.mode,
+                include_dev_fields=False
+            )
+        return {
+            "tile_id": req.tile_id,
+            "source": req.source,
+            **result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)[:200]}")
+
+
+@app.post("/api/detect-tiles")
+def detect_tiles(req: DetectTilesRequest):
+    """Run offline SegFormer-B0 flood detection across multiple tiles."""
+    raw_dir = RAW_DIRS.get(req.source)
+    if not raw_dir or not os.path.exists(raw_dir):
+        raise HTTPException(status_code=400, detail=f"Invalid or missing raw source '{req.source}'")
+
+    results = {}
+    for tile_id in req.tiles:
+        pre_path, post_path = find_tile_images(raw_dir, tile_id)
+        if not pre_path or not post_path:
+            results[tile_id] = {"ERROR": "missing_imagery"}
+            continue
+        try:
+            with JUDGE_LOCK:
+                results[tile_id] = judge(
+                    pre=pre_path,
+                    post=post_path,
+                    threshold=req.threshold,
+                    model_dir=MODEL_DIR,
+                    flood_classes=[1],
+                    device=DEFAULT_DEVICE,
+                    mode=req.mode,
+                    include_dev_fields=False
+                )
+        except Exception as e:
+            results[tile_id] = {"ERROR": f"detection_error: {str(e)[:200]}"}
+
+    return {"source": req.source, "predictions": results}
 
 
 if __name__ == "__main__":

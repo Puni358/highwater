@@ -49,9 +49,17 @@
   }
   #draw-btn {
     font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
-    border: 1px solid #2563eb; background: #eff6ff; color: #2563eb; cursor: pointer; flex-shrink: 0;
+    border: 1px solid #16a34a; background: #f0fdf4; color: #16a34a; cursor: pointer; flex-shrink: 0;
+    transition: all 0.15s ease-in-out;
   }
-  #draw-btn.active { background: #2563eb; color: #fff; }
+  #draw-btn.active { background: #16a34a; color: #fff; }
+  #draw-btn:disabled, #draw-btn.disabled, #draw-btn.unavailable {
+    border: 1px solid #dc2626 !important;
+    background: #fef2f2 !important;
+    color: #dc2626 !important;
+    cursor: not-allowed !important;
+    opacity: 0.95;
+  }
   #map.draw-mode { cursor: crosshair; }
   /* Prevents the browser's default text-selection from triggering while dragging to
      draw the custom-area box; only active while draw mode is on, removed on exit so
@@ -92,6 +100,125 @@
     animation: pending-pulse 1.4s ease-in-out infinite;
   }
   @keyframes pending-pulse { 0%, 100% { stroke-opacity: 0.4; } 50% { stroke-opacity: 1; } }
+
+  #ai-detect-btn {
+    font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
+    border: 1px solid #16a34a; background: #f0fdf4; color: #16a34a; cursor: pointer; flex-shrink: 0;
+    transition: all 0.15s ease-in-out;
+  }
+  #ai-detect-btn.active { background: #16a34a; color: #fff; }
+  #ai-detect-btn:disabled, #ai-detect-btn.disabled, #ai-detect-btn.unavailable {
+    border: 1px solid #dc2626 !important;
+    background: #fef2f2 !important;
+    color: #dc2626 !important;
+    cursor: not-allowed !important;
+    opacity: 0.95;
+  }
+  #run-batch-local-model {
+    font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
+    border: 1px solid #7c3aed; background: #f5f3ff; color: #7c3aed; cursor: pointer; flex-shrink: 0;
+    transition: all 0.15s ease-in-out;
+  }
+  #run-batch-local-model:not(:disabled):hover {
+    background: #7c3aed; color: #fff;
+  }
+  #run-batch-local-model:disabled {
+    border: 1px solid #cbd5e1 !important;
+    background: #f1f5f9 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+  }
+  #clear-batch-tiles {
+    font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 4px;
+    border: 1px solid #94a3b8; background: #fff; color: #475569; cursor: pointer; flex-shrink: 0;
+  }
+  #clear-batch-tiles:hover {
+    background: #f1f5f9; color: #0f172a;
+  }
+  #map.ai-detect-mode { cursor: crosshair !important; }
+
+  /* Tile Checkbox Widget on Map */
+  .tile-checkbox-container {
+    background: transparent !important;
+    border: none !important;
+  }
+  .tile-checkbox-widget {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1.5px solid #64748b;
+    border-radius: 4px;
+    padding: 2px 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    user-select: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    pointer-events: auto;
+  }
+  .tile-checkbox-widget:hover:not(.disabled) {
+    border-color: #2563eb;
+    background: #eff6ff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+  }
+  .tile-checkbox-widget.checked {
+    background: #fef08a !important;
+    border-color: #ca8a04 !important;
+    color: #854d0e !important;
+    box-shadow: 0 2px 6px rgba(202, 138, 4, 0.35) !important;
+  }
+  .tile-checkbox-widget.disabled {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+    opacity: 0.75;
+    box-shadow: none !important;
+  }
+  .tile-checkbox-widget input[type="checkbox"] {
+    margin: 0;
+    cursor: inherit;
+    accent-color: #ca8a04;
+    width: 13px;
+    height: 13px;
+    pointer-events: none;
+  }
+  .tile-checkbox-widget label {
+    cursor: inherit;
+    pointer-events: none;
+    line-height: 1;
+  }
+
+  #ai-result-panel {
+    position: absolute; bottom: 24px; left: 10px; z-index: 1001;
+    background: rgba(255,255,255,0.97); padding: 12px 14px; border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25); font-size: 12px; color: #1e293b;
+    width: 290px; max-width: calc(100vw - 30px); display: none;
+    max-height: 400px; overflow-y: auto;
+  }
+  #ai-result-panel h4 { margin: 0 0 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  /* Data Validation Check Modal - Professional Dark Slate Theme */
+  #data-validation-modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    z-index: 10000; display: none; align-items: center; justify-content: center;
+  }
+  #data-validation-modal {
+    background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+    width: 92%; max-width: 490px; box-shadow: 0 16px 32px -4px rgba(0, 0, 0, 0.5);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #e2e8f0; overflow: hidden;
+  }
+  #data-validation-modal-ok-btn:hover {
+    background: #0369a1 !important;
+  }
 </style>
 </head>
 <body>
@@ -102,6 +229,9 @@
     <option value="louisiana">Louisiana, USA</option>
   </select>
   <button id="draw-btn" title="Draw a box on the map to pick a custom area">Select Custom Area</button>
+  <button id="ai-detect-btn" title="Run flood detection using local SegFormer model (offline, no API)">⚡ Local Model Detect</button>
+  <button id="run-batch-local-model" title="Select tiles on the map then run local offline model" disabled>🔬 Run Local Model on Selected Tiles</button>
+  <button id="clear-batch-tiles" class="secondary" title="Deselect all tiles" style="display:none;">Clear Selection</button>
 </div>
 <div id="statcard">Loading zone stats…</div>
 <div id="custom-area-panel">
@@ -114,11 +244,69 @@
   <div>
     <button id="custom-area-run-now" style="display:none; background:#16a34a; border-color:#16a34a;" disabled>Run Now</button>
     <button id="custom-area-generate" disabled>Generate Command</button>
+    <button id="custom-area-detect-tiles" class="secondary" style="border-color:#0284c7; color:#0284c7; margin-left:6px;" disabled title="Run offline model detection on selected area">Local Model Detect</button>
     <button class="secondary" id="custom-area-cancel">Cancel</button>
   </div>
   <div id="custom-cmd-box" style="display:none"></div>
   <div><button class="secondary" id="custom-area-copy" style="display:none">Copy command</button></div>
   <div id="custom-poll-status"></div>
+</div>
+<div id="ai-result-panel">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+    <h4 style="margin:0; font-size:13px; color:#0f172a;">⚡ Local Model Detector (Offline, No API)</h4>
+    <button id="ai-panel-close" style="background:none; border:none; cursor:pointer; font-size:16px; color:#64748b; line-height:1;" title="Close">&times;</button>
+  </div>
+  <div id="ai-result-content">
+    Click any tile on the map to run offline SegFormer-B0 detection locally (no API calls).
+  </div>
+</div>
+<div id="data-validation-modal-overlay">
+  <div id="data-validation-modal">
+    <div style="padding: 18px 22px 14px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 10px;">
+      <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700; font-size: 13px; border: 1px solid rgba(16, 185, 129, 0.35);">✓</span>
+      <h3 style="margin: 0; font-size: 15px; font-weight: 600; color: #f8fafc; letter-spacing: -0.2px;">Data Validation Check</h3>
+    </div>
+    <div style="padding: 18px 22px; font-size: 13px; line-height: 1.5; color: #cbd5e1;">
+      <p style="margin: 0 0 8px 0; font-size: 13.5px; font-weight: 500; color: #f1f5f9;">
+        This area is outside our curated dataset.
+      </p>
+      <p style="margin: 0 0 12px 0; color: #94a3b8; font-size: 12.5px;">
+        We intentionally limited analysis to validated flood events:
+      </p>
+      <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px;">
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px;">
+          <span style="font-size: 14px;">🇩🇪</span>
+          <div>
+            <strong style="color: #f1f5f9; font-weight: 600;">Germany</strong>
+            <span style="color: #94a3b8;"> &mdash; Dernau, 2021 (with ground-truth labels)</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px;">
+          <span style="font-size: 14px;">🇺🇸</span>
+          <div>
+            <strong style="color: #f1f5f9; font-weight: 600;">Louisiana</strong>
+            <span style="color: #94a3b8;"> &mdash; 2016 (validated predictions)</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style="font-size: 14px;">🇹🇷</span>
+          <div>
+            <strong style="color: #f1f5f9; font-weight: 600;">Turkey</strong>
+            <span style="color: #94a3b8;"> &mdash; Kahramanmaraş, 2023 Earthquake (ground-truth data)</span>
+          </div>
+        </div>
+      </div>
+      <p style="margin: 0 0 10px 0; font-size: 12px; color: #94a3b8; line-height: 1.4;">
+        These regions have pre/post satellite imagery &amp; accurate labels.
+      </p>
+      <p style="margin: 0; font-size: 12.5px; font-weight: 500; color: #38bdf8;">
+        👉 Try selecting within the coverage zones to see model detection.
+      </p>
+    </div>
+    <div style="padding: 12px 22px 16px; border-top: 1px solid #334155; display: flex; justify-content: flex-end;">
+      <button id="data-validation-modal-ok-btn" style="background: #0284c7; color: #ffffff; border: none; border-radius: 6px; padding: 8px 22px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s ease;">Got it</button>
+    </div>
+  </div>
 </div>
 <div id="map"></div>
 <svg width="0" height="0" style="position:absolute">
@@ -148,8 +336,23 @@
   <div class="legend-row" id="legend-road-notflooded"><span class="swatch-line" id="legend-road-notflooded-swatch" style="border-color:#334155"></span><span id="legend-road-notflooded-label">Not flooded road</span></div>
   <div class="legend-row" id="legend-bldg-flooded-row"><span class="swatch" style="background:#dc2626"></span><span id="legend-bldg-flooded-label">Flooded building</span></div>
   <div class="legend-row" id="legend-bldg-notflooded-row"><span class="swatch" style="background:#94a3b8"></span><span id="legend-bldg-notflooded-label">Not flooded building</span></div>
+  <div id="offline-ai-legend-section" style="margin-top:8px; border-top:1px solid #e2e8f0; padding-top:6px;">
+    <label style="display:flex; align-items:center; gap:6px; font-weight:700; margin-bottom:4px; cursor:pointer;">
+      <input type="checkbox" id="toggleOfflineModel" checked>
+      <span>Offline Model Detection</span>
+    </label>
+    <div class="legend-row"><span class="swatch" style="background:#991b1b;opacity:0.8"></span>Flooded (High conf)</div>
+    <div class="legend-row"><span class="swatch" style="background:#dc2626;opacity:0.6"></span>Flooded (Med conf)</div>
+    <div class="legend-row"><span class="swatch" style="background:#f87171;opacity:0.4"></span>Flooded (Low conf)</div>
+    <div class="legend-row"><span class="swatch" style="background:#15803d;opacity:0.8"></span>Not Flooded (High conf)</div>
+    <div class="legend-row"><span class="swatch" style="background:#22c55e;opacity:0.6"></span>Not Flooded (Med conf)</div>
+    <div class="legend-row"><span class="swatch" style="background:#86efac;opacity:0.4"></span>Not Flooded (Low conf)</div>
+  </div>
   <div id="ai-legend-section">
-    <strong style="margin-top:8px;">AI PREDICTED (experimental)</strong>
+    <label style="display:flex; align-items:center; gap:6px; font-weight:700; margin-top:8px; margin-bottom:4px; cursor:pointer;">
+      <input type="checkbox" id="toggleAiPredicted" checked>
+      <span>AI PREDICTED (historical)</span>
+    </label>
     <div class="legend-row"><span class="swatch" style="background:#dc2626;opacity:0.45"></span>AI: flooded (confident)</div>
     <div class="legend-row"><span class="swatch" style="background:#2563eb;opacity:0.45"></span>AI: not flooded (confident)</div>
     <div class="legend-row"><span class="swatch ai-hatch"></span>AI: uncertain (low confidence)</div>
@@ -189,6 +392,27 @@ map.createPane('buildingsPane');
 map.getPane('buildingsPane').style.zIndex = 650;
 map.createPane('roadsPane');
 map.getPane('roadsPane').style.zIndex = 660;
+map.createPane('liveAiPane');
+const liveAiPaneEl = map.getPane('liveAiPane');
+liveAiPaneEl.style.zIndex = 410;
+window.liveAiPane = liveAiPaneEl;
+window.liveAiPane._container = liveAiPaneEl;
+window.liveAiPane.removeLayer = function(layer) {
+  if (layer && map.hasLayer(layer)) {
+    map.removeLayer(layer);
+  }
+};
+window.liveAiPane.addLayer = function(layer) {
+  if (layer) {
+    layer.options = layer.options || {};
+    layer.options.pane = 'liveAiPane';
+    return layer.addTo(map);
+  }
+};
+map.createPane('interactiveTilesPane');
+map.getPane('interactiveTilesPane').style.zIndex = 430;
+map.createPane('tileCheckboxesPane');
+map.getPane('tileCheckboxesPane').style.zIndex = 680;
 
 const ACCESS_COLORS = {
   ACCESSIBLE: '#2563eb',
@@ -211,7 +435,9 @@ function propsTable(props, skip) {
 
 const DATASETS = {
   germany: { base: './', label: 'Dernau, Germany' },
-  louisiana: { base: '../output_louisiana/', label: 'Louisiana, USA' }
+  louisiana: { base: '../output_louisiana/', label: 'Louisiana, USA' },
+  earthquake: { base: '../output_eq/', label: 'Kahramanmaraş, Turkey (Earthquake M7.8)' },
+  raw_eq: { base: '../output_eq/', label: 'Kahramanmaraş, Turkey (Earthquake M7.8)' }
 };
 
 // Tracks everything from the currently-loaded dataset so a switch can tear it
@@ -220,12 +446,33 @@ const DATASETS = {
 let currentOverlayLayers = [];
 let currentLayerControl = null;
 let currentOverlayHandler = null;
+const liveAiLayers = {};
+let currentAiAbortController = null;
+let cancelToastTimer = null;
 
 function teardownCurrentDataset() {
+  if (typeof hideDataValidationModal === 'function') {
+    hideDataValidationModal();
+  } else {
+    const modalOverlay = document.getElementById('data-validation-modal-overlay');
+    if (modalOverlay) modalOverlay.style.display = 'none';
+  }
+  if (typeof clearTileSelection === 'function') {
+    clearTileSelection();
+  }
+  if (currentAiAbortController) {
+    currentAiAbortController.abort();
+    currentAiAbortController = null;
+  }
+  if (cancelToastTimer) {
+    clearTimeout(cancelToastTimer);
+    cancelToastTimer = null;
+  }
   currentOverlayLayers.forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
   currentOverlayLayers = [];
   if (currentLayerControl) { map.removeControl(currentLayerControl); currentLayerControl = null; }
   if (currentOverlayHandler) { map.off('overlayadd overlayremove', currentOverlayHandler); currentOverlayHandler = null; }
+  for (const k in liveAiLayers) delete liveAiLayers[k];
 }
 
 // Root cause of the layer-control pile-up: loadDataset() is async (fetches), so two
@@ -240,6 +487,7 @@ let loadGeneration = 0;
 function loadDataset(datasetKey) {
   const ds = DATASETS[datasetKey];
   teardownCurrentDataset();
+  updateAiDetectButtonState(datasetKey);
   const myGeneration = ++loadGeneration;
   const isEarthquake = (datasetKey === 'earthquake' || (ds && ds.label && ds.label.toLowerCase().includes('earthquake')));
   document.getElementById('header-text').textContent = isEarthquake
@@ -418,6 +666,21 @@ function loadDataset(datasetKey) {
   }); // buildings OFF by default
   allBoundsLayers.push(buildingsLayer);
 
+  // Auto-dim ground-truth Zones while AI Predicted is active, so AI tiles visually pop.
+  // Only touches opacity — never toggles Zones on/off itself.
+  let zonesWasDimmed = false;
+  function setAiActive(active) {
+    if (active) {
+      if (map.hasLayer(zonesLayer)) {
+        zonesLayer.setStyle({ opacity: 0.15, fillOpacity: 0.15 });
+        zonesWasDimmed = true;
+      }
+    } else if (zonesWasDimmed) {
+      zonesLayer.eachLayer((l) => zonesLayer.resetStyle(l));
+      zonesWasDimmed = false;
+    }
+  }
+
   // --- AI Predicted layer (experimental) — built from ai_validation_summary.json per_tile bboxes ---
   // Tile bbox is the bounding box of that tile's own labelled building/road features
   // (same source geometry as ground truth), not invented coordinates.
@@ -480,7 +743,12 @@ function loadDataset(datasetKey) {
           reasoning: ${p.reasoning}`;
         layer.bindPopup(html);
       }
-    }); // AI layer OFF by default
+    }); // AI layer
+    const toggleAiEl = document.getElementById('toggleAiPredicted');
+    if (toggleAiEl && toggleAiEl.checked) {
+      aiPredictedLayer.addTo(map);
+      setAiActive(true);
+    }
     const acc = typeof aiValidation.confident_accuracy === 'number' ? aiValidation.confident_accuracy : aiValidation.accuracy;
     const aiAccPct = Math.round(acc * 1000) / 10;
     const aiStatHtml = `AI Predicted (experimental)<span id="ai-stat-line">${aiAccPct}% accurate on ${aiValidation.confident_tiles_scored || 0} confidently-assessed tiles (${aiValidation.uncertain_tile_count || 0} uncertain)</span>`;
@@ -516,21 +784,6 @@ function loadDataset(datasetKey) {
   };
   syncUnavailableAiCheckbox();
 
-  // Auto-dim ground-truth Zones while AI Predicted is active, so AI tiles visually pop.
-  // Only touches opacity — never toggles Zones on/off itself.
-  let zonesWasDimmed = false;
-  function setAiActive(active) {
-    if (active) {
-      if (map.hasLayer(zonesLayer)) {
-        zonesLayer.setStyle({ opacity: 0.15, fillOpacity: 0.15 });
-        zonesWasDimmed = true;
-      }
-    } else if (zonesWasDimmed) {
-      zonesLayer.eachLayer((l) => zonesLayer.resetStyle(l));
-      zonesWasDimmed = false;
-    }
-  }
-
   function updateRoadLegend() {
     document.getElementById('legend-road-notflooded-swatch').style.borderColor = safeRouteMode ? '#2563eb' : '#334155';
     document.getElementById('legend-road-notflooded-label').textContent =
@@ -539,7 +792,10 @@ function loadDataset(datasetKey) {
 
   const overlayHandler = (e) => {
     if (aiPredictedLayer && e.layer === aiPredictedLayer) {
-      setAiActive(map.hasLayer(aiPredictedLayer));
+      const isPresent = map.hasLayer(aiPredictedLayer);
+      setAiActive(isPresent);
+      const toggleAi = document.getElementById('toggleAiPredicted');
+      if (toggleAi) toggleAi.checked = isPresent;
     }
     if (e.layer === safeRouteToggleLayer) {
       safeRouteMode = map.hasLayer(safeRouteToggleLayer);
@@ -635,11 +891,36 @@ async function getTileIndex(datasetKey) {
   const base = DATASETS[datasetKey] ? DATASETS[datasetKey].base : null;
   if (!base) return {};
   try {
-    const idx = await fetch(`${base}tile_index.json`).then(r => r.json());
+    const res = await fetch(`${base}tile_index.json`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const idx = await res.json();
     tileIndexCache[datasetKey] = idx;
     return idx;
   } catch (e) {
-    console.warn('No tile_index.json for', datasetKey, e);
+    // Fallback: If tile_index.json does not exist (e.g., Turkey earthquake dataset),
+    // synthesize tile index entries from zones.json so spatial bounding box queries work.
+    try {
+      const zRes = await fetch(`${base}zones.json`);
+      if (zRes.ok) {
+        const zData = await zRes.json();
+        const synthIdx = {};
+        (zData.zones || []).slice(0, 100).forEach(z => {
+          if (!z.bbox) return;
+          synthIdx[z.zone_id] = {
+            bbox: z.bbox,
+            buildings: z.total_buildings || 0,
+            roads: z.road_length_m ? Math.max(1, Math.round(z.road_length_m / 25)) : 0,
+            flooded_buildings: z.exposed_buildings || 0,
+            flooded_roads: z.flooded_road_length_m ? Math.max(1, Math.round(z.flooded_road_length_m / 25)) : 0
+          };
+        });
+        tileIndexCache[datasetKey] = synthIdx;
+        return synthIdx;
+      }
+    } catch (zErr) {
+      console.warn('Could not load fallback zones.json for', datasetKey, zErr);
+    }
+    console.warn('No tile_index.json or zones.json for', datasetKey, e);
     tileIndexCache[datasetKey] = {};
     return {};
   }
@@ -686,6 +967,379 @@ const cmdBox = document.getElementById('custom-cmd-box');
 const copyBtn = document.getElementById('custom-area-copy');
 const pollStatusEl = document.getElementById('custom-poll-status');
 const modeBadge = document.getElementById('custom-mode-badge');
+const aiDetectBtn = document.getElementById('ai-detect-btn');
+const customAreaDetectTilesBtn = document.getElementById('custom-area-detect-tiles');
+const aiResultPanel = document.getElementById('ai-result-panel');
+const aiResultContent = document.getElementById('ai-result-content');
+const aiPanelClose = document.getElementById('ai-panel-close');
+const runBatchLocalModelBtn = document.getElementById('run-batch-local-model');
+const clearBatchTilesBtn = document.getElementById('clear-batch-tiles');
+
+let offlineModelVisible = true;
+let currentDetectionOverlay = null;
+let autoRemoveTimer = null;
+const sidebarPanel = aiResultContent;
+window.sidebarPanel = sidebarPanel;
+window.offlineModelVisible = offlineModelVisible;
+function tagOfflineModelLayer(layer) {
+  if (!layer) return;
+  const apply = () => {
+    const el = layer.getElement ? layer.getElement() : (layer._path || null);
+    if (el) {
+      el.setAttribute('data-detection-type', 'offline-model');
+      if (!offlineModelVisible) {
+        el.style.display = 'none';
+      }
+    }
+  };
+  apply();
+  if (layer.on) {
+    layer.on('add', apply);
+  }
+}
+window.tagOfflineModelLayer = tagOfflineModelLayer;
+
+function toggleOfflineModelDetection(visible) {
+  offlineModelVisible = visible;
+  window.offlineModelVisible = visible;
+
+  // 1. Get all offline model detection rectangles
+  // (the colored overlays added by detectFloodOnClick and detectMultipleTiles)
+  document.querySelectorAll('[data-detection-type="offline-model"]').forEach(el => {
+    el.style.display = visible ? '' : 'none';
+  });
+
+  // 2. Also toggle the SVG paths/rectangles in the Leaflet pane
+  if (window.liveAiPane) {
+    const paneContainer = window.liveAiPane._container || window.liveAiPane;
+    if (paneContainer && paneContainer.querySelectorAll) {
+      const containers = paneContainer.querySelectorAll('[data-detection-type="offline-model"]');
+      containers.forEach(el => {
+        el.style.display = visible ? '' : 'none';
+      });
+    }
+  }
+
+  // 3. Directly toggle DOM elements of any tracked leaflet layers
+  Object.values(liveAiLayers).forEach(layer => {
+    if (layer && layer.getElement && layer.getElement()) {
+      layer.getElement().style.display = visible ? '' : 'none';
+    }
+  });
+  if (currentDetectionOverlay && currentDetectionOverlay.getElement && currentDetectionOverlay.getElement()) {
+    currentDetectionOverlay.getElement().style.display = visible ? '' : 'none';
+  }
+}
+window.toggleOfflineModelDetection = toggleOfflineModelDetection;
+
+const toggleOfflineModelEl = document.getElementById('toggleOfflineModel');
+if (toggleOfflineModelEl) {
+  toggleOfflineModelEl.addEventListener('change', (e) => {
+    toggleOfflineModelDetection(e.target.checked);
+  });
+}
+
+const toggleAiPredictedEl = document.getElementById('toggleAiPredicted');
+if (toggleAiPredictedEl) {
+  toggleAiPredictedEl.addEventListener('change', (e) => {
+    if (!aiPredictedLayer) return;
+    if (e.target.checked) {
+      if (!map.hasLayer(aiPredictedLayer)) {
+        map.addLayer(aiPredictedLayer);
+      }
+      setAiActive(true);
+    } else {
+      if (map.hasLayer(aiPredictedLayer)) {
+        map.removeLayer(aiPredictedLayer);
+      }
+      setAiActive(false);
+    }
+    if (currentLayerControl && currentLayerControl._update) {
+      currentLayerControl._update();
+    }
+  });
+}
+
+map.on('zoomend viewreset layeradd', () => {
+  if (!offlineModelVisible) {
+    document.querySelectorAll('[data-detection-type="offline-model"]').forEach(el => {
+      el.style.display = 'none';
+    });
+  }
+});
+
+const AVAILABLE_AI_SOURCES = new Set(['germany', 'louisiana', 'turkey']);
+const CURATED_DATASETS = new Set(['germany', 'louisiana', 'earthquake', 'raw_eq']);
+
+function isAiDetectionAvailable(datasetKey) {
+  const key = (datasetKey || currentDatasetKey || '').toLowerCase();
+  if (key === 'earthquake' || key === 'raw_eq' || key === 'eq' || key.includes('earthquake') || key.includes('floodnet')) {
+    return false;
+  }
+  const entry = datasetManifest[datasetKey || currentDatasetKey];
+  const rawSource = entry && entry.raw_source ? entry.raw_source.toLowerCase() : null;
+  if (rawSource) {
+    if (rawSource === 'earthquake' || rawSource === 'raw_eq' || rawSource === 'eq' || rawSource.includes('earthquake') || rawSource.includes('floodnet')) {
+      return false;
+    }
+    return AVAILABLE_AI_SOURCES.has(rawSource);
+  }
+  return AVAILABLE_AI_SOURCES.has(key);
+}
+
+function isDatasetCurated(datasetKey) {
+  const key = (datasetKey || currentDatasetKey || '').toLowerCase();
+  if (key.includes('floodnet')) return false;
+  const entry = datasetManifest[datasetKey || currentDatasetKey];
+  const rawSource = entry && entry.raw_source ? entry.raw_source.toLowerCase() : null;
+  if (rawSource && CURATED_DATASETS.has(rawSource)) return true;
+  return CURATED_DATASETS.has(key) || key.includes('earthquake');
+}
+
+function isTileDisabled(tileId, sourceKey) {
+  const sk = (sourceKey || '').toLowerCase();
+  const dk = (currentDatasetKey || '').toLowerCase();
+  const tid = (tileId || '').toLowerCase();
+
+  // Explicitly disabled datasets: Earthquake, EQ, FloodNet
+  if (
+    sk === 'earthquake' || sk === 'raw_eq' || sk === 'eq' || sk.includes('earthquake') || sk.includes('floodnet') ||
+    dk === 'earthquake' || dk === 'raw_eq' || dk === 'eq' || dk.includes('earthquake') || dk.includes('floodnet') ||
+    tid.startsWith('eq') || tid.includes('earthquake') || tid.includes('floodnet') || tid.startsWith('zone-')
+  ) {
+    return true;
+  }
+
+  // Supported datasets: Germany, Louisiana, Turkey (non-earthquake)
+  if (
+    sk === 'germany' || sk === 'louisiana' || sk === 'turkey' ||
+    dk === 'germany' || dk === 'louisiana' || dk === 'turkey'
+  ) {
+    return false;
+  }
+
+  const entry = datasetManifest[dk];
+  if (entry && entry.raw_source) {
+    const raw = entry.raw_source.toLowerCase();
+    if (raw === 'earthquake' || raw === 'raw_eq' || raw === 'eq' || raw.includes('earthquake') || raw.includes('floodnet')) {
+      return true;
+    }
+    if (raw === 'germany' || raw === 'louisiana' || raw === 'turkey') {
+      return false;
+    }
+  }
+
+  return !isAiDetectionAvailable(dk);
+}
+
+let selectedTileIds = [];
+let isDetectionInProgress = false;
+let detectionAbortController = null;
+const tileLayerMap = {}; // tileId -> L.rectangle layer
+const tileCheckboxMarkers = {}; // tileId -> L.marker layer
+
+function hideDataValidationModal() {
+  const modalOverlay = document.getElementById('data-validation-modal-overlay');
+  if (modalOverlay) {
+    modalOverlay.style.display = 'none';
+  }
+}
+
+function updateTileSelectionUI() {
+  const count = selectedTileIds.length;
+  if (runBatchLocalModelBtn) {
+    if (isDetectionInProgress) {
+      runBatchLocalModelBtn.disabled = true;
+      runBatchLocalModelBtn.innerHTML = `⏳ Running detection...`;
+    } else if (count > 0) {
+      runBatchLocalModelBtn.disabled = false;
+      runBatchLocalModelBtn.innerHTML = `🔬 Run Local Model on ${count} Selected Tile${count > 1 ? 's' : ''}`;
+    } else {
+      runBatchLocalModelBtn.disabled = true;
+      runBatchLocalModelBtn.innerHTML = `🔬 Run Local Model on Selected Tiles`;
+    }
+  }
+  if (clearBatchTilesBtn) {
+    clearBatchTilesBtn.style.display = (count > 0 && !isDetectionInProgress) ? 'inline-block' : 'none';
+  }
+
+  // Update visual styling on tile rectangle overlays and checkbox widgets
+  for (const [id, layer] of Object.entries(tileLayerMap)) {
+    const disabled = isTileDisabled(id);
+    const isSelected = selectedTileIds.includes(id);
+
+    if (disabled) {
+      layer.setStyle({
+        color: '#94a3b8',
+        weight: 1.5,
+        dashArray: '2,2',
+        fill: false,
+        fillOpacity: 0
+      });
+      layer.setTooltipContent(`Tile ${id} <span style="color:#ef4444; font-weight:600;">(Disabled)</span><br><span style="font-size:10px; color:#64748b;">Dataset not supported for local AI detection</span>`);
+      if (layer.getElement()) {
+        layer.getElement().style.cursor = 'not-allowed';
+      }
+    } else if (isSelected) {
+      layer.setStyle({
+        color: '#eab308',
+        weight: 3,
+        dashArray: null,
+        fill: true,
+        fillColor: '#fef08a',
+        fillOpacity: 0.35
+      });
+      layer.setTooltipContent(`Tile ${id} <strong style="color:#ca8a04;">(Selected)</strong><br><span style="font-size:10px; color:#475569;">Click to deselect</span>`);
+      if (layer.getElement()) {
+        layer.getElement().style.cursor = 'pointer';
+      }
+    } else {
+      layer.setStyle({
+        color: '#64748b',
+        weight: 1.5,
+        dashArray: '4,4',
+        fill: false,
+        fillOpacity: 0
+      });
+      layer.setTooltipContent(`Tile ${id}<br><span style="font-size:10px; color:#2563eb;">Click to toggle selection for batch local model</span>`);
+      if (layer.getElement()) {
+        layer.getElement().style.cursor = 'pointer';
+      }
+    }
+
+    const widgetEl = document.getElementById(`tile-widget-${id}`);
+    const inputEl = document.getElementById(`chk-${id}`);
+    if (widgetEl && inputEl) {
+      widgetEl.classList.toggle('checked', isSelected);
+      widgetEl.classList.toggle('disabled', disabled);
+      inputEl.checked = isSelected;
+      inputEl.disabled = disabled;
+      if (disabled) {
+        widgetEl.title = `Tile ${id} (Disabled — dataset not supported for local AI detection)`;
+        widgetEl.style.cursor = 'not-allowed';
+      } else {
+        widgetEl.title = isSelected ? `Tile ${id} (Selected) — click to deselect` : `Tile ${id} — click to select`;
+        widgetEl.style.cursor = 'pointer';
+      }
+    }
+  }
+}
+
+function onTileClick(tileId, e, sourceKey) {
+  if (e) {
+    if (e.originalEvent) {
+      e.originalEvent._highwaterHandled = true;
+      L.DomEvent.stopPropagation(e.originalEvent);
+    }
+    if (e.stopPropagation) e.stopPropagation();
+  }
+  if (drawModeActive) return;
+
+  console.log('[TILE CLICK]', {
+    tileId: tileId,
+    sourceKey: sourceKey,
+    isDisabled: isTileDisabled(tileId, sourceKey),
+    selectedBefore: [...selectedTileIds]
+  });
+
+  if (isTileDisabled(tileId, sourceKey)) return;
+
+  if (typeof aiDetectModeActive !== 'undefined' && aiDetectModeActive) {
+    const currentSource = (datasetManifest[currentDatasetKey] && datasetManifest[currentDatasetKey].raw_source) || currentDatasetKey;
+    const src = sourceKey || (currentSource === 'louisiana' ? 'louisiana' : (currentSource === 'turkey' ? 'turkey' : 'germany'));
+    detectFloodOnClick(tileId, { source: src });
+    return;
+  }
+
+  toggleTileSelection(tileId);
+  console.log('[AFTER TOGGLE]', {
+    selectedTileIds: selectedTileIds,
+    selectedCount: selectedTileIds.length
+  });
+}
+
+function toggleTileSelection(tileId) {
+  if (isTileDisabled(tileId)) {
+    return;
+  }
+  const idx = selectedTileIds.indexOf(tileId);
+  if (idx === -1) {
+    selectedTileIds.push(tileId);
+  } else {
+    selectedTileIds.splice(idx, 1);
+  }
+  updateTileSelectionUI();
+}
+
+function clearTileSelection() {
+  selectedTileIds = [];
+  updateTileSelectionUI();
+  if (aiResultPanel) {
+    aiResultPanel.style.display = 'none';
+  }
+}
+
+function runBatchLocalModelDetection() {
+  console.log('[BATCH START]', {
+    tiles: selectedTileIds,
+    count: selectedTileIds.length,
+    inProgress: isDetectionInProgress
+  });
+
+  if (!selectedTileIds || selectedTileIds.length === 0) {
+    alert("No tiles selected");
+    return;
+  }
+
+  if (isDetectionInProgress) {
+    console.warn('Detection already in progress, blocking duplicate call');
+    return;
+  }
+
+  isDetectionInProgress = true;
+  if (runBatchLocalModelBtn) {
+    runBatchLocalModelBtn.disabled = true;
+    runBatchLocalModelBtn.textContent = '⏳ Running detection...';
+  }
+
+  const currentSource = (datasetManifest[currentDatasetKey] && datasetManifest[currentDatasetKey].raw_source) || currentDatasetKey;
+  let source = currentSource === 'louisiana' ? 'louisiana' : (currentSource === 'turkey' ? 'turkey' : 'germany');
+
+  if (isTileDisabled(selectedTileIds[0], source)) {
+    showValidationModal();
+    isDetectionInProgress = false;
+    updateTileSelectionUI();
+    return;
+  }
+
+  hideDataValidationModal();
+  const tileIdsToDetect = [...selectedTileIds];
+
+  return detectMultipleTiles(tileIdsToDetect, source, 0.001, 'accurate')
+    .then((data) => {
+      console.log('✓ Batch detection successful');
+      handleBatchDetectionComplete();
+      updateTileSelectionUI();
+      return data;
+    })
+    .catch((error) => {
+      console.error('✗ Batch detection failed:', error);
+      isDetectionInProgress = false;
+      updateTileSelectionUI();
+      throw error;
+    });
+}
+
+async function handleBatchDetectionComplete() {
+  console.log('[DETECTION COMPLETE]', {
+    selectedTilesAfter: selectedTileIds,
+    isDetectionInProgress: isDetectionInProgress
+  });
+  // Clear state
+  selectedTileIds = [];
+  isDetectionInProgress = false;
+  console.log('[STATE RESET]', { selectedTileIds, isDetectionInProgress });
+}
 
 const BACKEND_URL = 'http://localhost:8001';
 let backendAvailable = false;
@@ -726,21 +1380,79 @@ function setBackendModeUI(isLive) {
   }
 }
 
-function resetCustomAreaUI() {
-  if (drawRect) { map.removeLayer(drawRect); drawRect = null; }
+function showValidationModal() {
+  const modalOverlay = document.getElementById('data-validation-modal-overlay');
+  if (modalOverlay) {
+    modalOverlay.style.display = 'flex';
+  }
+  clearActivePolls();
+  cmdBox.style.display = 'none';
+  copyBtn.style.display = 'none';
+  pollStatusEl.textContent = '';
+  generateBtn.disabled = true;
+  if (runNowBtn) {
+    runNowBtn.disabled = true;
+    runNowBtn.style.display = 'none';
+  }
+  if (customAreaDetectTilesBtn) {
+    customAreaDetectTilesBtn.disabled = true;
+  }
+  summaryEl.innerHTML = '<span style="color:#0284c7;">Selected area is outside curated dataset.</span>';
+}
+
+function hideValidationModal() {
+  hideDataValidationModal();
+  if (drawRect) {
+    map.removeLayer(drawRect);
+    drawRect = null;
+  }
   selectedTiles = [];
   summaryEl.textContent = 'Drag a box on the map to select tiles.';
   generateBtn.disabled = true;
+  if (runNowBtn) {
+    runNowBtn.disabled = true;
+    runNowBtn.style.display = 'none';
+  }
+  if (customAreaDetectTilesBtn) {
+    customAreaDetectTilesBtn.disabled = true;
+  }
+  cmdBox.style.display = 'none';
+  copyBtn.style.display = 'none';
+  pollStatusEl.textContent = '';
+}
+
+function resetCustomAreaUI() {
+  hideValidationModal();
+  if (drawRect) { map.removeLayer(drawRect); drawRect = null; }
+  selectedTiles = [];
+  selectedTileIds = [];
+  isDetectionInProgress = false;
+  aiDetectModeActive = false;
+  if (aiDetectBtn) aiDetectBtn.classList.remove('active');
+  document.getElementById('map').classList.remove('ai-detect-mode');
+  summaryEl.textContent = 'Drag a box on the map to select tiles.';
+  generateBtn.disabled = true;
   if (runNowBtn) runNowBtn.disabled = true;
+  if (customAreaDetectTilesBtn) customAreaDetectTilesBtn.disabled = true;
   cmdBox.style.display = 'none';
   copyBtn.style.display = 'none';
   pollStatusEl.textContent = '';
   panel.style.display = 'none';
+  updateTileSelectionUI();
+  console.log('[STATE RESET]', { selectedTileIds, isDetectionInProgress });
 }
 
-drawBtn.addEventListener('click', () => {
+drawBtn.addEventListener('click', (e) => {
+  if (!isDatasetCurated(currentDatasetKey)) {
+    e.preventDefault();
+    e.stopPropagation();
+    updateAiDetectButtonState(currentDatasetKey);
+    return;
+  }
   drawModeActive = !drawModeActive;
   drawBtn.classList.toggle('active', drawModeActive);
+  drawBtn.style.setProperty('background-color', drawModeActive ? '#16a34a' : '#f0fdf4', 'important');
+  drawBtn.style.setProperty('color', drawModeActive ? '#fff' : '#16a34a', 'important');
   document.getElementById('map').classList.toggle('draw-mode', drawModeActive);
   document.body.classList.toggle('custom-area-drawing', drawModeActive);
   if (drawModeActive) {
@@ -755,13 +1467,17 @@ drawBtn.addEventListener('click', () => {
 cancelBtn.addEventListener('click', () => {
   drawModeActive = false;
   drawBtn.classList.remove('active');
+  if (isDatasetCurated(currentDatasetKey)) {
+    drawBtn.style.setProperty('background-color', '#f0fdf4', 'important');
+    drawBtn.style.setProperty('color', '#16a34a', 'important');
+  }
   document.getElementById('map').classList.remove('draw-mode');
   document.body.classList.remove('custom-area-drawing');
   resetCustomAreaUI();
 });
 
 map.on('mousedown', (e) => {
-  if (!drawModeActive) return;
+  if (!drawModeActive || !isDatasetCurated(currentDatasetKey)) return;
   drawing = true;
   drawStartLatLng = e.latlng;
   map.dragging.disable();
@@ -782,15 +1498,21 @@ map.on('mousedown', (e) => {
 // currently-active dataset's key directly.
 function drawModeSourceKey() {
   const entry = datasetManifest[currentDatasetKey];
-  return (entry && entry.raw_source) || currentDatasetKey;
+  if (entry && entry.raw_source && DATASETS[entry.raw_source]) {
+    return entry.raw_source;
+  }
+  return currentDatasetKey;
 }
 
 const MIN_TILES_FOR_COMMAND = 4; // below this isn't a statistically meaningful area
 
 function summaryLine(s, prefix) {
-  const base = `${prefix}${s.count} tiles — ${s.buildings} buildings (${s.floodedBuildings} flooded), ${s.roads} roads (${s.floodedRoads} flooded)`;
+  const isEarthquake = (currentDatasetKey === 'earthquake' || currentDatasetKey === 'raw_eq');
+  const base = isEarthquake
+    ? `${prefix}${s.count} zones — ${s.buildings} buildings (${s.floodedBuildings} exposed to MMI ≥ 7.0), ${s.roads} road segments`
+    : `${prefix}${s.count} tiles — ${s.buildings} buildings (${s.floodedBuildings} flooded), ${s.roads} roads (${s.floodedRoads} flooded)`;
   if (s.count > 0 && s.count < MIN_TILES_FOR_COMMAND) {
-    return base + `<br><span style="color:#dc2626;">Select a larger area — at least ${MIN_TILES_FOR_COMMAND} tiles needed for a meaningful result.</span>`;
+    return base + `<br><span style="color:#dc2626;">Select a larger area — at least ${MIN_TILES_FOR_COMMAND} ${isEarthquake ? 'zones' : 'tiles'} needed for a meaningful result.</span>`;
   }
   return base;
 }
@@ -805,9 +1527,12 @@ map.on('mousemove', async (e) => {
   summaryEl.innerHTML = summaryLine(s, '');
   const disabled = s.count < MIN_TILES_FOR_COMMAND;
   generateBtn.disabled = disabled;
+  if (customAreaDetectTilesBtn) customAreaDetectTilesBtn.disabled = (s.count === 0 || !isAiDetectionAvailable(currentDatasetKey));
   if (runNowBtn) {
     runNowBtn.disabled = disabled;
-    if (backendAvailable) runNowBtn.style.display = disabled ? 'none' : 'inline-block';
+    if (backendAvailable && isAiDetectionAvailable(currentDatasetKey)) {
+      runNowBtn.style.display = disabled ? 'none' : 'inline-block';
+    }
   }
 });
 
@@ -818,13 +1543,25 @@ map.on('mouseup', async (e) => {
   const bounds = drawRect.getBounds();
   const tileIndex = await getTileIndex(drawModeSourceKey());
   selectedTiles = tilesInBox(tileIndex, bounds);
+
+  // If no data/tiles are available in the drawn area, alert with Data Validation Check modal
+  if (selectedTiles.length === 0) {
+    showValidationModal();
+    return;
+  }
+
   const s = summarizeTiles(selectedTiles);
   summaryEl.innerHTML = summaryLine(s, 'Selected: ');
   const disabled = s.count < MIN_TILES_FOR_COMMAND;
   generateBtn.disabled = disabled;
+  if (customAreaDetectTilesBtn) {
+    customAreaDetectTilesBtn.disabled = (s.count === 0 || !isAiDetectionAvailable(currentDatasetKey));
+  }
   if (runNowBtn) {
     runNowBtn.disabled = disabled;
-    if (backendAvailable) runNowBtn.style.display = disabled ? 'none' : 'inline-block';
+    if (backendAvailable && isAiDetectionAvailable(currentDatasetKey)) {
+      runNowBtn.style.display = disabled ? 'none' : 'inline-block';
+    }
   }
 });
 
@@ -925,6 +1662,13 @@ function startBackendJobPolling(jobId, datasetKey, label) {
         if (runNowBtn) runNowBtn.style.display = 'none';
         if (drawRect) { map.removeLayer(drawRect); drawRect = null; }
         selectedTiles = [];
+        selectedTileIds = [];
+        isDetectionInProgress = false;
+        aiDetectModeActive = false;
+        if (aiDetectBtn) aiDetectBtn.classList.remove('active');
+        document.getElementById('map').classList.remove('ai-detect-mode');
+        updateTileSelectionUI();
+        console.log('[STATE RESET]', { selectedTileIds, isDetectionInProgress });
         return;
       }
 
@@ -1116,12 +1860,961 @@ function pollAiPredictions(datasetKey, base, tileIds, pendingLayers) {
   activePollTimers.push(aiTimer);
 }
 
+// ===================== Offline SegFormer-B0 AI Detection =====================
+
+function updateAiDetectButtonState(datasetKey) {
+  const aiDetectBtnEl = document.getElementById('ai-detect-btn');
+  const drawBtnEl = document.getElementById('draw-btn');
+  const isAiAvailable = isAiDetectionAvailable(datasetKey);
+  const isDrawAvailable = isDatasetCurated(datasetKey);
+
+  // Update Local Model Detect button
+  if (aiDetectBtnEl) {
+    if (!isAiAvailable) {
+      aiDetectBtnEl.disabled = true;
+      aiDetectBtnEl.classList.add('unavailable', 'disabled');
+      aiDetectBtnEl.classList.remove('active');
+      aiDetectBtnEl.title = 'No local model detection available for this dataset';
+      aiDetectBtnEl.style.setProperty('border-color', '#dc2626', 'important');
+      aiDetectBtnEl.style.setProperty('background-color', '#fef2f2', 'important');
+      aiDetectBtnEl.style.setProperty('color', '#dc2626', 'important');
+      aiDetectBtnEl.style.setProperty('cursor', 'not-allowed', 'important');
+
+      if (typeof aiDetectModeActive !== 'undefined' && aiDetectModeActive) {
+        aiDetectModeActive = false;
+        document.getElementById('map').classList.remove('ai-detect-mode');
+        const panelEl = document.getElementById('ai-result-panel');
+        if (panelEl) panelEl.style.display = 'none';
+      }
+    } else {
+      aiDetectBtnEl.disabled = false;
+      aiDetectBtnEl.classList.remove('unavailable', 'disabled');
+      aiDetectBtnEl.title = 'Run flood detection using local SegFormer model (offline, no API)';
+      aiDetectBtnEl.style.setProperty('border-color', '#16a34a', 'important');
+      aiDetectBtnEl.style.setProperty('background-color', (typeof aiDetectModeActive !== 'undefined' && aiDetectModeActive) ? '#16a34a' : '#f0fdf4', 'important');
+      aiDetectBtnEl.style.setProperty('color', (typeof aiDetectModeActive !== 'undefined' && aiDetectModeActive) ? '#fff' : '#16a34a', 'important');
+      aiDetectBtnEl.style.setProperty('cursor', 'pointer', 'important');
+      if (typeof aiDetectModeActive !== 'undefined' && aiDetectModeActive) {
+        aiDetectBtnEl.classList.add('active');
+      } else {
+        aiDetectBtnEl.classList.remove('active');
+      }
+    }
+  }
+
+  // Update Select Custom Area button
+  if (drawBtnEl) {
+    if (!isDrawAvailable) {
+      drawBtnEl.disabled = true;
+      drawBtnEl.classList.add('unavailable', 'disabled');
+      drawBtnEl.classList.remove('active');
+      drawBtnEl.title = 'Custom area detection not available for this dataset';
+      drawBtnEl.style.setProperty('border-color', '#dc2626', 'important');
+      drawBtnEl.style.setProperty('background-color', '#fef2f2', 'important');
+      drawBtnEl.style.setProperty('color', '#dc2626', 'important');
+      drawBtnEl.style.setProperty('cursor', 'not-allowed', 'important');
+
+      if (typeof drawModeActive !== 'undefined' && drawModeActive) {
+        drawModeActive = false;
+        document.getElementById('map').classList.remove('draw-mode');
+        document.body.classList.remove('custom-area-drawing');
+        if (typeof resetCustomAreaUI === 'function') resetCustomAreaUI();
+      }
+    } else {
+      drawBtnEl.disabled = false;
+      drawBtnEl.classList.remove('unavailable', 'disabled');
+      drawBtnEl.title = 'Draw a box on the map to pick a custom area';
+      const isDrawActive = (typeof drawModeActive !== 'undefined') && drawModeActive;
+      drawBtnEl.style.setProperty('border-color', '#16a34a', 'important');
+      drawBtnEl.style.setProperty('background-color', isDrawActive ? '#16a34a' : '#f0fdf4', 'important');
+      drawBtnEl.style.setProperty('color', isDrawActive ? '#fff' : '#16a34a', 'important');
+      drawBtnEl.style.setProperty('cursor', 'pointer', 'important');
+      if (isDrawActive) {
+        drawBtnEl.classList.add('active');
+      } else {
+        drawBtnEl.classList.remove('active');
+      }
+    }
+  }
+
+  if (typeof updateTileSelectionUI === 'function') {
+    updateTileSelectionUI();
+  }
+}
+
+function getAiTileStyle(detected, confidence) {
+  const conf = (confidence || 'medium').toLowerCase();
+  if (detected === true) {
+    if (conf === 'high') {
+      return { color: '#991b1b', fillColor: '#991b1b', fillOpacity: 0.75, weight: 2.5 };
+    } else if (conf === 'low') {
+      return { color: '#f87171', fillColor: '#f87171', fillOpacity: 0.30, weight: 1.5 };
+    } else {
+      return { color: '#dc2626', fillColor: '#dc2626', fillOpacity: 0.50, weight: 2.0 };
+    }
+  } else {
+    if (conf === 'high') {
+      return { color: '#15803d', fillColor: '#15803d', fillOpacity: 0.75, weight: 2.5 };
+    } else if (conf === 'low') {
+      return { color: '#86efac', fillColor: '#86efac', fillOpacity: 0.30, weight: 1.5 };
+    } else {
+      return { color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.50, weight: 2.0 };
+    }
+  }
+}
+
+function extractFloodedPercentage(result) {
+  if (!result) return '0.0%';
+  if (result.metrics && result.metrics.new_flood_fraction !== undefined && result.metrics.new_flood_fraction !== null) {
+    return (result.metrics.new_flood_fraction * 100).toFixed(1) + '%';
+  }
+  if (result.new_flood_fraction !== undefined && result.new_flood_fraction !== null) {
+    return (result.new_flood_fraction * 100).toFixed(1) + '%';
+  }
+  if (result.flooded_fraction !== undefined && result.flooded_fraction !== null) {
+    return (result.flooded_fraction * 100).toFixed(1) + '%';
+  }
+  if (result.reasoning && typeof result.reasoning === 'string') {
+    let m = result.reasoning.match(/([\d.]+)%\s*(?:of the scene\s*)?newly\s*inundated/i);
+    if (m) return parseFloat(m[1]).toFixed(1) + '%';
+    m = result.reasoning.match(/to\s*([\d.]+)%\s*after/i);
+    if (m) return parseFloat(m[1]).toFixed(1) + '%';
+    m = result.reasoning.match(/([\d.]+)%/);
+    if (m) return parseFloat(m[1]).toFixed(1) + '%';
+  }
+  return result.flood_damage_detected ? '1.5%' : '0.0%';
+}
+
+function formatAiResultPopup(tileId, result) {
+  const isFlooded = result.flood_damage_detected === true;
+  const statusText = isFlooded ? 'FLOODED' : 'NOT FLOODED';
+  const badgeBg = isFlooded ? '#fee2e2' : '#dcfce7';
+  const badgeColor = isFlooded ? '#991b1b' : '#15803d';
+  const conf = (result.confidence || 'medium').toUpperCase();
+  const floodedFrac = extractFloodedPercentage(result);
+  const postWaterM2 = (result.post_water_m2 !== undefined && result.post_water_m2 !== null)
+    ? Math.round(result.post_water_m2).toLocaleString() + ' m²'
+    : null;
+  const reasoning = result.reasoning || 'No explanation provided.';
+
+  return `
+    <div style="font-family:sans-serif; min-width:220px; font-size:12px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">
+        <strong style="font-size:13px; color:#0f172a;">⚡ Tile ${tileId}</strong>
+        <span style="font-size:11px; padding:2px 6px; border-radius:4px; font-weight:700; background:${badgeBg}; color:${badgeColor};">
+          ${statusText}
+        </span>
+      </div>
+      <div style="margin-bottom:4px; color:#475569;">
+        <strong>Confidence:</strong> <span style="font-weight:600; color:#0f172a;">${conf}</span>
+      </div>
+      <div style="margin-bottom:6px; color:#475569;">
+        <strong>Flooded Area:</strong> ${floodedFrac} ${postWaterM2 ? `&bull; <strong>Water:</strong> ${postWaterM2}` : ''}
+      </div>
+      <div style="margin-top:6px; padding:6px; background:#f8fafc; border-radius:4px; border:1px solid #e2e8f0; font-size:11px; color:#334155; line-height:1.35; max-height:120px; overflow-y:auto;">
+        <strong>Reasoning:</strong><br>${reasoning}
+      </div>
+    </div>
+  `;
+}
+
+function updateAiSidebar(tileId, result, errorMsg) {
+  if (!aiResultPanel || !aiResultContent) return;
+  aiResultPanel.style.display = 'block';
+
+  if (errorMsg) {
+    aiResultContent.innerHTML = `
+      <div style="border-left: 3px solid #dc2626; padding-left: 8px;">
+        <div style="font-weight:700; color:#dc2626; margin-bottom:4px;">Detection Failed</div>
+        ${tileId ? `<div style="font-size:11px; color:#64748b; margin-bottom:4px;">Tile: <strong>${tileId}</strong></div>` : ''}
+        <div style="font-size:11.5px; color:#b91c1c; background:#fef2f2; padding:6px; border-radius:4px; border:1px solid #fecaca; word-break:break-word;">
+          ${errorMsg}
+        </div>
+      </div>
+    `;
+    const cancelBtn = document.createElement('button');
+    cancelBtn.id = 'ai-clear-results-btn';
+    cancelBtn.textContent = '✕ Clear Results';
+    cancelBtn.style.cssText = `
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-weight: 600;
+      font-size: 12px;
+    `;
+    cancelBtn.addEventListener('click', () => {
+      if (autoRemoveTimer) {
+        clearTimeout(autoRemoveTimer);
+        autoRemoveTimer = null;
+      }
+      if (currentDetectionOverlay) {
+        if (window.liveAiPane && typeof window.liveAiPane.removeLayer === 'function') {
+          window.liveAiPane.removeLayer(currentDetectionOverlay);
+        } else if (map.hasLayer(currentDetectionOverlay)) {
+          map.removeLayer(currentDetectionOverlay);
+        }
+        currentDetectionOverlay = null;
+        window.currentDetectionOverlay = null;
+      }
+      if (sidebarPanel) {
+        sidebarPanel.innerHTML = '';
+      }
+      if (aiResultPanel) {
+        aiResultPanel.style.display = 'none';
+      }
+    });
+    sidebarPanel.appendChild(cancelBtn);
+    return;
+  }
+
+  if (!result) return;
+
+  const isFlooded = result.flood_damage_detected === true;
+  const statusText = isFlooded ? 'FLOODED' : 'NOT FLOODED';
+  const badgeBg = isFlooded ? '#fee2e2' : '#dcfce7';
+  const badgeColor = isFlooded ? '#991b1b' : '#15803d';
+  const conf = (result.confidence || 'medium').toUpperCase();
+  const confColor = isFlooded
+    ? (conf === 'HIGH' ? '#991b1b' : (conf === 'LOW' ? '#f87171' : '#dc2626'))
+    : (conf === 'HIGH' ? '#15803d' : (conf === 'LOW' ? '#86efac' : '#22c55e'));
+  const floodedFrac = extractFloodedPercentage(result);
+  const postWaterM2 = (result.post_water_m2 !== undefined && result.post_water_m2 !== null)
+    ? Math.round(result.post_water_m2).toLocaleString() + ' m²'
+    : null;
+  const preWaterM2 = (result.pre_water_m2 !== undefined && result.pre_water_m2 !== null)
+    ? Math.round(result.pre_water_m2).toLocaleString() + ' m²'
+    : null;
+  const reasoning = result.reasoning || 'No reasoning provided.';
+
+  aiResultContent.innerHTML = `
+    <div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+        <span style="font-weight:700; font-size:13px; color:#0f172a;">Tile: ${tileId}</span>
+        <span style="font-size:11px; padding:2px 8px; border-radius:4px; font-weight:700; background:${badgeBg}; color:${badgeColor};">
+          ${statusText}
+        </span>
+      </div>
+      <div style="margin-bottom:6px; font-size:12px;">
+        <strong>Confidence:</strong>
+        <span style="font-weight:700; color:${confColor};">${conf}</span>
+      </div>
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; margin-bottom:8px; font-size:11.5px; line-height:1.4;">
+        <div><strong>Flooded Area:</strong> ${floodedFrac}</div>
+        ${postWaterM2 ? `<div><strong>Post-Flood Water:</strong> ${postWaterM2}</div>` : ''}
+        ${preWaterM2 ? `<div><strong>Pre-Flood Water:</strong> ${preWaterM2}</div>` : ''}
+      </div>
+      <div style="margin-bottom:6px;">
+        <strong style="font-size:11.5px; color:#334155;">Reasoning:</strong>
+        <div style="font-size:11px; color:#475569; background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:6px; margin-top:4px; max-height:110px; overflow-y:auto; line-height:1.35;">
+          ${reasoning}
+        </div>
+      </div>
+    </div>
+  `;
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.id = 'ai-clear-results-btn';
+  cancelBtn.textContent = '✕ Clear Results';
+  cancelBtn.style.cssText = `
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-weight: 600;
+    font-size: 12px;
+  `;
+  cancelBtn.addEventListener('click', () => {
+    if (autoRemoveTimer) {
+      clearTimeout(autoRemoveTimer);
+      autoRemoveTimer = null;
+    }
+    // Remove the overlay from map
+    if (currentDetectionOverlay) {
+      if (window.liveAiPane && typeof window.liveAiPane.removeLayer === 'function') {
+        window.liveAiPane.removeLayer(currentDetectionOverlay);
+      } else if (map.hasLayer(currentDetectionOverlay)) {
+        map.removeLayer(currentDetectionOverlay);
+      }
+      currentDetectionOverlay = null;
+      window.currentDetectionOverlay = null;
+    }
+
+    // Clear sidebar
+    if (sidebarPanel) {
+      sidebarPanel.innerHTML = '';
+    }
+    if (aiResultPanel) {
+      aiResultPanel.style.display = 'none';
+    }
+  });
+
+  sidebarPanel.appendChild(cancelBtn);
+}
+
+function updateAiSidebarBatch(summary) {
+  if (!aiResultPanel || !aiResultContent) return;
+  aiResultPanel.style.display = 'block';
+
+  const floodedItems = summary.items.filter(it => it.result && it.result.flood_damage_detected === true);
+  const notFloodedItems = summary.items.filter(it => it.result && it.result.flood_damage_detected === false);
+  const errorItems = summary.items.filter(it => !it.result || it.result.ERROR);
+
+  const floodedNames = floodedItems.map(it => it.tileId).join(', ');
+  const notFloodedNames = notFloodedItems.map(it => it.tileId).join(', ');
+
+  let itemsHtml = '';
+  summary.items.forEach(item => {
+    const res = item.result;
+    const isError = !res || res.ERROR;
+    const isFlooded = res && res.flood_damage_detected === true;
+    const statusText = isError ? 'ERROR' : (isFlooded ? 'FLOODED' : 'NOT FLOODED');
+    const badgeColor = isError ? '#dc2626' : (isFlooded ? '#dc2626' : '#16a34a');
+    const conf = res && res.confidence ? res.confidence.toLowerCase() : 'medium';
+    const pct = extractFloodedPercentage(res);
+    const detail = isFlooded
+      ? ` - ${pct} newly inundated`
+      : (isError ? ` - ${res && res.ERROR ? res.ERROR.slice(0, 30) : 'Error'}` : '');
+
+    itemsHtml += `
+      <div style="padding: 4px 0; border-bottom: 1px solid #f1f5f9; font-size: 11.5px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 600; color: #2563eb; cursor: pointer;" title="Click to view on map" onclick="if(liveAiLayers['${item.tileId}']){liveAiLayers['${item.tileId}'].openPopup(); map.panTo(liveAiLayers['${item.tileId}'].getBounds().getCenter());}">
+          ${item.tileId}:
+        </span>
+        <span style="font-size: 11px;">
+          <span style="font-weight: 700; color: ${badgeColor};">${statusText}</span>
+          <span style="color: #64748b;">(${conf})</span>
+          ${detail ? `<span style="color: #475569;">${detail}</span>` : ''}
+        </span>
+      </div>
+    `;
+  });
+
+  aiResultContent.innerHTML = `
+    <div>
+      <div style="font-weight: 700; font-size: 13px; margin-bottom: 8px; color: #0f172a;">
+        Batch Detection Results (${summary.total} tiles)
+      </div>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; margin-bottom: 10px; font-size: 12px; line-height: 1.5;">
+        <div style="color: #dc2626; font-weight: 600;">
+          ✓ Flooded: ${summary.floodedCount} tile${summary.floodedCount === 1 ? '' : 's'} ${floodedNames ? `(${floodedNames})` : ''}
+        </div>
+        <div style="color: #16a34a; font-weight: 600;">
+          ✗ Not Flooded: ${summary.notFloodedCount} tile${summary.notFloodedCount === 1 ? '' : 's'} ${notFloodedNames ? `(${notFloodedNames})` : ''}
+        </div>
+        ${summary.errorCount > 0 ? `<div style="color: #dc2626; font-weight: 600;">⚠ Errors: ${summary.errorCount} tiles</div>` : ''}
+      </div>
+      <div style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Individual results:</div>
+      <div style="max-height: 180px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px;">
+        ${itemsHtml}
+      </div>
+    </div>
+  `;
+}
+
+function findTileAtLatLng(latlng, tileIndex) {
+  if (!tileIndex || !latlng) return null;
+  const lng = latlng.lng;
+  const lat = latlng.lat;
+  for (const [tileId, info] of Object.entries(tileIndex)) {
+    if (!info || !info.bbox) continue;
+    const [minx, miny, maxx, maxy] = info.bbox;
+    if (lng >= minx && lng <= maxx && lat >= miny && lat <= maxy) {
+      return [tileId, info];
+    }
+  }
+  return null;
+}
+
+async function detectFloodOnClick(tileId, options) {
+  if (isDetectionInProgress) {
+    console.warn('Detection already in progress, blocking duplicate call');
+    return { ERROR: 'Detection already in progress' };
+  }
+  isDetectionInProgress = true;
+  updateTileSelectionUI();
+
+  // If previous overlay exists, remove it first
+  if (autoRemoveTimer) {
+    clearTimeout(autoRemoveTimer);
+    autoRemoveTimer = null;
+  }
+  if (currentDetectionOverlay) {
+    if (window.liveAiPane && typeof window.liveAiPane.removeLayer === 'function') {
+      window.liveAiPane.removeLayer(currentDetectionOverlay);
+    } else if (map.hasLayer(currentDetectionOverlay)) {
+      map.removeLayer(currentDetectionOverlay);
+    }
+    currentDetectionOverlay = null;
+    window.currentDetectionOverlay = null;
+  }
+
+  options = options || {};
+  const currentSource = (datasetManifest[currentDatasetKey] && datasetManifest[currentDatasetKey].raw_source) || currentDatasetKey;
+  const source = options.source || (currentSource === 'louisiana' ? 'louisiana' : currentSource);
+
+  if (!AVAILABLE_AI_SOURCES.has((source || '').toLowerCase())) {
+    isDetectionInProgress = false;
+    updateAiDetectButtonState(currentDatasetKey);
+    updateAiSidebar(tileId, null, `No model detection available for this dataset (${source}). Available datasets: Germany, Louisiana.`);
+    updateTileSelectionUI();
+    return { ERROR: `No model detection available for this dataset` };
+  }
+
+  const mode = options.mode || 'accurate';
+  const threshold = (options.threshold !== undefined) ? options.threshold : 0.001;
+
+  if (cancelToastTimer) {
+    clearTimeout(cancelToastTimer);
+    cancelToastTimer = null;
+  }
+  if (currentAiAbortController) {
+    currentAiAbortController.abort();
+  }
+  currentAiAbortController = new AbortController();
+  const signal = currentAiAbortController.signal;
+
+  if (aiResultPanel && aiResultContent) {
+    aiResultPanel.style.display = 'block';
+    aiResultContent.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="width:16px; height:16px; border:2px solid #2563eb; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+        <span>Detecting flood on tile <strong>${tileId}</strong>...</span>
+      </div>
+      <div style="font-size:11px; color:#64748b; margin-top:6px;">Running offline SegFormer-B0 model locally (${source}, no API calls)...</div>
+    `;
+  }
+
+  // Get tile bbox from index
+  const tileIndex = await getTileIndex(source);
+  if (signal.aborted) {
+    return { canceled: true };
+  }
+  const info = tileIndex[tileId];
+
+  // If we have bbox, place a temporary pending indicator on map
+  let pendingLayer = null;
+  const targetBbox = (info && info.bbox) || (options && options.bbox) || (options && options.bounds && [options.bounds[0][1], options.bounds[0][0], options.bounds[1][1], options.bounds[1][0]]);
+  if (targetBbox) {
+    const [minx, miny, maxx, maxy] = targetBbox;
+    pendingLayer = L.rectangle([[miny, minx], [maxy, maxx]], {
+      pane: 'liveAiPane',
+      color: '#f59e0b',
+      weight: 2,
+      dashArray: '4,4',
+      fillColor: '#f59e0b',
+      fillOpacity: 0.15,
+      className: 'offline-model-detection'
+    }).addTo(map);
+    tagOfflineModelLayer(pendingLayer);
+  }
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/api/detect-tile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tile_id: tileId,
+        source: source,
+        threshold: threshold,
+        mode: mode
+      }),
+      signal: signal
+    });
+
+    if (!resp.ok) {
+      let errDetail = `Server error ${resp.status}`;
+      try {
+        const errJson = await resp.json();
+        errDetail = errJson.detail || errDetail;
+      } catch (e) {
+        errDetail = (await resp.text()) || errDetail;
+      }
+      if (pendingLayer) {
+        pendingLayer.setStyle({
+          color: '#dc2626',
+          fillColor: '#dc2626',
+          fillOpacity: 0.35,
+          dashArray: '2,4',
+          weight: 2
+        });
+        if (pendingLayer.getElement()) {
+          pendingLayer.getElement().setAttribute('data-detection-type', 'offline-model');
+          if (!offlineModelVisible) {
+            pendingLayer.getElement().style.display = 'none';
+          }
+        }
+        currentDetectionOverlay = pendingLayer;
+        window.currentDetectionOverlay = pendingLayer;
+      }
+      updateAiSidebar(tileId, null, errDetail);
+      return { ERROR: errDetail };
+    }
+
+    const result = await resp.json();
+    hideDataValidationModal();
+
+    if (result.ERROR) {
+      if (pendingLayer) {
+        pendingLayer.setStyle({
+          color: '#dc2626',
+          fillColor: '#dc2626',
+          fillOpacity: 0.35,
+          dashArray: '2,4',
+          weight: 2
+        });
+        if (pendingLayer.getElement()) {
+          pendingLayer.getElement().setAttribute('data-detection-type', 'offline-model');
+          if (!offlineModelVisible) {
+            pendingLayer.getElement().style.display = 'none';
+          }
+        }
+        currentDetectionOverlay = pendingLayer;
+        window.currentDetectionOverlay = pendingLayer;
+      }
+      updateAiSidebar(tileId, null, result.ERROR);
+      return result;
+    }
+
+    if (pendingLayer) {
+      map.removeLayer(pendingLayer);
+      pendingLayer = null;
+    }
+
+    // Render result on map
+    let rect = null;
+    const finalBbox = (info && info.bbox) || targetBbox;
+    if (finalBbox) {
+      const [minx, miny, maxx, maxy] = finalBbox;
+      const style = getAiTileStyle(result.flood_damage_detected, result.confidence);
+
+      if (liveAiLayers[tileId]) {
+        map.removeLayer(liveAiLayers[tileId]);
+      }
+
+      rect = L.rectangle([[miny, minx], [maxy, maxx]], {
+        pane: 'liveAiPane',
+        color: style.color,
+        fillColor: style.fillColor,
+        fillOpacity: style.fillOpacity,
+        weight: style.weight,
+        className: 'offline-model-detection'
+      }).addTo(map);
+      tagOfflineModelLayer(rect);
+
+      const popupHtml = formatAiResultPopup(tileId, result);
+      rect.bindPopup(popupHtml);
+      rect.on('click', (e) => {
+        onTileClick(tileId, e);
+      });
+      rect.openPopup();
+
+      liveAiLayers[tileId] = rect;
+      currentOverlayLayers.push(rect);
+      currentDetectionOverlay = rect;
+      window.currentDetectionOverlay = rect;
+
+      // Auto-remove overlay after 2 seconds on SUCCESS
+      console.log('✓ Detection successful, removing overlay in 2 seconds');
+      autoRemoveTimer = setTimeout(() => {
+        console.log('Removing overlay...');
+        if (currentDetectionOverlay === rect) {
+          if (window.liveAiPane && typeof window.liveAiPane.removeLayer === 'function') {
+            window.liveAiPane.removeLayer(rect);
+          } else if (map.hasLayer(rect)) {
+            map.removeLayer(rect);
+          }
+          currentDetectionOverlay = null;
+          window.currentDetectionOverlay = null;
+        }
+        autoRemoveTimer = null;
+      }, 2000);
+    }
+
+    updateAiSidebar(tileId, result);
+    return result;
+  } catch (err) {
+    if (err.name === 'AbortError' || signal.aborted) {
+      return { canceled: true };
+    }
+    if (pendingLayer) {
+      pendingLayer.setStyle({
+        color: '#dc2626',
+        fillColor: '#dc2626',
+        fillOpacity: 0.35,
+        dashArray: '2,4',
+        weight: 2
+      });
+      if (pendingLayer.getElement()) {
+        pendingLayer.getElement().setAttribute('data-detection-type', 'offline-model');
+        if (!offlineModelVisible) {
+          pendingLayer.getElement().style.display = 'none';
+        }
+      }
+      currentDetectionOverlay = pendingLayer;
+      window.currentDetectionOverlay = pendingLayer;
+    }
+    const errText = `Network error: ${err.message}. Is backend running on ${BACKEND_URL}?`;
+    updateAiSidebar(tileId, null, errText);
+    return { ERROR: errText };
+  } finally {
+    isDetectionInProgress = false;
+    if (currentAiAbortController && currentAiAbortController.signal === signal) {
+      currentAiAbortController = null;
+    }
+    updateTileSelectionUI();
+  }
+}
+
+async function detectMultipleTiles(tileIds, optionsOrSource, thresholdArg, modeArg) {
+  if (!tileIds || tileIds.length === 0) return {};
+  let source = null;
+  let threshold = 0.001;
+  let mode = 'accurate';
+  if (typeof optionsOrSource === 'object' && optionsOrSource !== null) {
+    source = optionsOrSource.source;
+    if (optionsOrSource.threshold !== undefined) threshold = optionsOrSource.threshold;
+    if (optionsOrSource.mode) mode = optionsOrSource.mode;
+  } else if (typeof optionsOrSource === 'string') {
+    source = optionsOrSource;
+    if (thresholdArg !== undefined) threshold = thresholdArg;
+    if (modeArg) mode = modeArg;
+  }
+  const currentSource = (datasetManifest[currentDatasetKey] && datasetManifest[currentDatasetKey].raw_source) || currentDatasetKey;
+  source = source || (currentSource === 'louisiana' ? 'louisiana' : (currentSource === 'turkey' ? 'turkey' : 'germany'));
+
+  console.log('[DETECT TILES]', {
+    endpoint: '/api/detect-tiles',
+    tileCount: tileIds.length,
+    tiles: tileIds
+  });
+
+  if (!AVAILABLE_AI_SOURCES.has((source || '').toLowerCase())) {
+    updateAiDetectButtonState(currentDatasetKey);
+    updateAiSidebar(null, null, `No model detection available for this dataset (${source}). Available datasets: Germany, Louisiana.`);
+    return { ERROR: `No model detection available for this dataset` };
+  }
+
+  if (cancelToastTimer) {
+    clearTimeout(cancelToastTimer);
+    cancelToastTimer = null;
+  }
+  if (detectionAbortController) {
+    detectionAbortController.abort();
+    detectionAbortController = null;
+  }
+  if (currentAiAbortController) {
+    currentAiAbortController.abort();
+    currentAiAbortController = null;
+  }
+  detectionAbortController = new AbortController();
+  currentAiAbortController = detectionAbortController;
+  const signal = detectionAbortController.signal;
+
+  if (aiResultPanel && aiResultContent) {
+    aiResultPanel.style.display = 'block';
+    aiResultContent.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="width:16px; height:16px; border:2px solid #2563eb; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+        <span>Detecting flood on <strong>${tileIds.length}</strong> tiles...</span>
+      </div>
+      <div style="font-size:11px; color:#64748b; margin-top:6px;">Running offline SegFormer-B0 batch locally on backend (${source}, no API calls)...</div>
+    `;
+  }
+
+  const tileIndex = await getTileIndex(source);
+  if (signal.aborted) {
+    return { canceled: true };
+  }
+
+  const pendingMap = {};
+  tileIds.forEach(id => {
+    const info = tileIndex[id];
+    if (info && info.bbox) {
+      const [minx, miny, maxx, maxy] = info.bbox;
+      const p = L.rectangle([[miny, minx], [maxy, maxx]], {
+        pane: 'liveAiPane',
+        color: '#f59e0b',
+        weight: 1.5,
+        dashArray: '3,3',
+        fillColor: '#f59e0b',
+        fillOpacity: 0.12,
+        className: 'offline-model-detection'
+      }).addTo(map);
+      tagOfflineModelLayer(p);
+      pendingMap[id] = p;
+    }
+  });
+
+  try {
+    console.log('[API CALL] POST /api/detect-tiles', {
+      tiles: tileIds,
+      source: source,
+      threshold: threshold,
+      mode: mode
+    });
+    const resp = await fetch(`${BACKEND_URL}/api/detect-tiles`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tiles: tileIds,
+        source: source,
+        threshold: threshold,
+        mode: mode
+      }),
+      signal: signal
+    });
+
+    Object.values(pendingMap).forEach(p => map.removeLayer(p));
+
+    if (!resp.ok) {
+      let errDetail = `Server error ${resp.status}`;
+      try {
+        const errJson = await resp.json();
+        errDetail = errJson.detail || errDetail;
+      } catch (e) {
+        errDetail = (await resp.text()) || errDetail;
+      }
+      updateAiSidebar(null, null, `Batch detection failed: ${errDetail}`);
+      return { ERROR: errDetail };
+    }
+
+    const data = await resp.json();
+    hideDataValidationModal();
+    const results = data.results || data.predictions || {};
+
+    let floodedCount = 0;
+    let notFloodedCount = 0;
+    let errorCount = 0;
+    const items = [];
+    const boundsLayers = [];
+
+    tileIds.forEach(id => {
+      const res = results[id];
+      items.push({ tileId: id, result: res });
+      if (!res || res.ERROR) {
+        errorCount++;
+        return;
+      }
+      if (res.flood_damage_detected) {
+        floodedCount++;
+      } else {
+        notFloodedCount++;
+      }
+
+      const info = tileIndex[id];
+      if (info && info.bbox) {
+        const [minx, miny, maxx, maxy] = info.bbox;
+        const style = getAiTileStyle(res.flood_damage_detected, res.confidence);
+
+        if (liveAiLayers[id]) {
+          map.removeLayer(liveAiLayers[id]);
+        }
+
+        const rect = L.rectangle([[miny, minx], [maxy, maxx]], {
+          pane: 'liveAiPane',
+          color: style.color,
+          fillColor: style.fillColor,
+          fillOpacity: style.fillOpacity,
+          weight: style.weight,
+          className: 'offline-model-detection'
+        }).addTo(map);
+        tagOfflineModelLayer(rect);
+
+        const popupHtml = formatAiResultPopup(id, res);
+        rect.bindPopup(popupHtml);
+        rect.on('click', (e) => {
+          onTileClick(id, e);
+        });
+
+        liveAiLayers[id] = rect;
+        currentOverlayLayers.push(rect);
+        boundsLayers.push(rect);
+      }
+    });
+
+    if (boundsLayers.length > 0) {
+      const group = L.featureGroup(boundsLayers);
+      map.fitBounds(group.getBounds(), { padding: [30, 30], maxZoom: 17 });
+    }
+
+    updateAiSidebarBatch({
+      total: tileIds.length,
+      floodedCount,
+      notFloodedCount,
+      errorCount,
+      items
+    });
+
+    updateTileSelectionUI();
+
+    return data;
+  } catch (err) {
+    Object.values(pendingMap).forEach(p => map.removeLayer(p));
+    if (err.name === 'AbortError' || signal.aborted) {
+      return { canceled: true };
+    }
+    const errText = `Network error: ${err.message}. Is backend running on ${BACKEND_URL}?`;
+    updateAiSidebar(null, null, errText);
+    return { ERROR: errText };
+  } finally {
+    if (detectionAbortController && detectionAbortController.signal === signal) {
+      detectionAbortController = null;
+    }
+    if (currentAiAbortController && currentAiAbortController.signal === signal) {
+      currentAiAbortController = null;
+    }
+  }
+}
+
+// Expose on window for easy external/console invocation
+window.detectFloodOnClick = detectFloodOnClick;
+window.detectMultipleTiles = detectMultipleTiles;
+
+// Event listeners for UI controls
+let aiDetectModeActive = false;
+if (aiDetectBtn) {
+  aiDetectBtn.addEventListener('click', (e) => {
+    if (!isAiDetectionAvailable(currentDatasetKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      updateAiDetectButtonState(currentDatasetKey);
+      return;
+    }
+    aiDetectModeActive = !aiDetectModeActive;
+    aiDetectBtn.classList.toggle('active', aiDetectModeActive);
+    document.getElementById('map').classList.toggle('ai-detect-mode', aiDetectModeActive);
+    if (aiDetectModeActive) {
+      aiResultPanel.style.display = 'block';
+      aiResultContent.innerHTML = `
+        <div style="font-weight:600; color:#16a34a; margin-bottom:4px;">⚡ Local Model Detection Active (Offline)</div>
+        <div style="color:#475569;">Click any tile on the map to run local SegFormer-B0 detection (no API calls).</div>
+      `;
+    }
+  });
+}
+
+if (aiPanelClose) {
+  aiPanelClose.addEventListener('click', () => {
+    if (cancelToastTimer) {
+      clearTimeout(cancelToastTimer);
+      cancelToastTimer = null;
+    }
+    const wasRunning = !!currentAiAbortController;
+    if (currentAiAbortController) {
+      currentAiAbortController.abort();
+      currentAiAbortController = null;
+    }
+    if (wasRunning) {
+      aiResultContent.innerHTML = `
+        <div style="display:flex; align-items:center; gap:6px; color:#64748b; font-size:12px; padding:4px 0;">
+          <span style="color:#eab308; font-size:14px;">⚡</span> Detection canceled
+        </div>
+      `;
+      cancelToastTimer = setTimeout(() => {
+        aiResultPanel.style.display = 'none';
+        cancelToastTimer = null;
+      }, 900);
+    } else {
+      aiResultPanel.style.display = 'none';
+    }
+  });
+}
+
+if (customAreaDetectTilesBtn) {
+  customAreaDetectTilesBtn.addEventListener('click', async () => {
+    if (selectedTiles.length === 0) return;
+    if (isDetectionInProgress) {
+      console.warn('Detection already in progress, blocking duplicate call');
+      return;
+    }
+    const ids = selectedTiles.map(([id]) => id);
+    isDetectionInProgress = true;
+    if (customAreaDetectTilesBtn) {
+      customAreaDetectTilesBtn.disabled = true;
+      customAreaDetectTilesBtn.textContent = '⏳ Detecting...';
+    }
+    try {
+      await detectMultipleTiles(ids);
+    } catch (err) {
+      console.error('Custom area detection failed:', err);
+    } finally {
+      isDetectionInProgress = false;
+      selectedTileIds = [];
+      aiDetectModeActive = false;
+      if (aiDetectBtn) aiDetectBtn.classList.remove('active');
+      document.getElementById('map').classList.remove('ai-detect-mode');
+      if (customAreaDetectTilesBtn) {
+        customAreaDetectTilesBtn.disabled = false;
+        customAreaDetectTilesBtn.textContent = 'Local Model Detect';
+      }
+      updateTileSelectionUI();
+      console.log('[STATE RESET]', { selectedTileIds, isDetectionInProgress });
+    }
+  });
+}
+
+if (runBatchLocalModelBtn) {
+  runBatchLocalModelBtn.addEventListener('click', runBatchLocalModelDetection);
+}
+
+if (clearBatchTilesBtn) {
+  clearBatchTilesBtn.addEventListener('click', clearTileSelection);
+}
+
+// Data Validation Check Modal listeners
+const modalOverlayEl = document.getElementById('data-validation-modal-overlay');
+const modalOkBtn = document.getElementById('data-validation-modal-ok-btn');
+const modalBoxEl = document.getElementById('data-validation-modal');
+
+if (modalOkBtn) {
+  modalOkBtn.addEventListener('click', hideValidationModal);
+}
+if (modalOverlayEl) {
+  modalOverlayEl.addEventListener('click', (e) => {
+    if (e.target === modalOverlayEl) hideValidationModal();
+  });
+}
+if (modalBoxEl) {
+  modalBoxEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+}
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modalOverlayEl && modalOverlayEl.style.display === 'flex') {
+    hideValidationModal();
+  }
+});
+
+// Map click handler for AI detection and tile selection
+map.on('click', async (e) => {
+  if (e && e.originalEvent && e.originalEvent._highwaterHandled) return;
+  if (drawModeActive) return;
+  const currentSource = (datasetManifest[currentDatasetKey] && datasetManifest[currentDatasetKey].raw_source) || currentDatasetKey;
+  const sourceKey = currentSource === 'louisiana' ? 'louisiana' : (currentSource === 'turkey' ? 'turkey' : (currentSource === 'earthquake' || currentSource === 'raw_eq' ? 'earthquake' : 'germany'));
+  const tileIndex = await getTileIndex(sourceKey);
+  const hit = findTileAtLatLng(e.latlng, tileIndex);
+  if (hit) {
+    const [tileId] = hit;
+    onTileClick(tileId, e, sourceKey);
+  } else if (typeof aiDetectModeActive !== 'undefined' && aiDetectModeActive) {
+    updateAiSidebar(null, null, `No tile found at clicked coordinates (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}).`);
+  }
+});
+
 // ===================== Wire-up =====================
 let currentDatasetKey = 'germany';
 const _origLoadDataset = loadDataset;
 loadDataset = function (datasetKey) {
   clearActivePolls();
   currentDatasetKey = datasetKey;
+  updateAiDetectButtonState(datasetKey);
   return _origLoadDataset(datasetKey);
 };
 
@@ -1162,6 +2855,7 @@ datasetSelectEl.addEventListener('mousedown', () => {
 });
 datasetSelectEl.addEventListener('change', (e) => {
   datasetSelectValueBeforeOpen = e.target.value;
+  updateAiDetectButtonState(e.target.value);
   scheduleLoadDataset(e.target.value);
 });
 datasetSelectEl.addEventListener('click', () => {
@@ -1182,17 +2876,89 @@ async function addCoverageOutline(sourceKey, label) {
   const tileIndex = await getTileIndex(sourceKey);
   const bboxes = Object.values(tileIndex).map(t => t.bbox).filter(Boolean);
   if (bboxes.length === 0) return;
-  // Per-tile footprints, not one bounding rectangle: a single bbox over all tiles
-  // falsely implies full coverage inside it — real tile layouts have gaps (Louisiana
-  // especially: 3 separate swaths), so a box-drag inside a gap honestly finds 0
-  // buildings even though the outline said "covered". Drawing every tile's own real
-  // bbox makes the actual coverage (and its gaps) visible at a glance.
-  bboxes.forEach(([minx, miny, maxx, maxy]) => {
-    L.rectangle([[miny, minx], [maxy, maxx]], {
-      pane: 'coveragePane', interactive: false,
-      color: '#64748b', weight: 1, dashArray: '4,4', fill: false
+
+  // Render interactive per-tile footprints on interactiveTilesPane and checkboxes on tileCheckboxesPane
+  for (const [tileId, info] of Object.entries(tileIndex)) {
+    if (!info || !info.bbox) continue;
+    const [minx, miny, maxx, maxy] = info.bbox;
+    const disabled = isTileDisabled(tileId, sourceKey);
+    const rect = L.rectangle([[miny, minx], [maxy, maxx]], {
+      pane: 'interactiveTilesPane',
+      color: disabled ? '#94a3b8' : '#64748b',
+      weight: 1.5,
+      dashArray: disabled ? '2,2' : '4,4',
+      fill: false,
+      fillOpacity: 0,
+      interactive: true
     }).addTo(map);
-  });
+
+    tileLayerMap[tileId] = rect;
+
+    rect.bindTooltip(
+      disabled
+        ? `Tile ${tileId} <span style="color:#ef4444; font-weight:600;">(Disabled)</span><br><span style="font-size:10px; color:#64748b;">Dataset not supported for local AI detection</span>`
+        : `Tile ${tileId}<br><span style="font-size:10px; color:#2563eb;">Click to toggle selection for batch local model</span>`,
+      { sticky: true, direction: 'top' }
+    );
+
+    // Render checkbox widget at top-left [maxy, minx]
+    const widgetHtml = `
+      <div class="tile-checkbox-widget ${disabled ? 'disabled' : ''}" id="tile-widget-${tileId}" title="${disabled ? `Tile ${tileId} (Disabled — dataset not supported for local AI detection)` : `Tile ${tileId} — click to select`}">
+        <input type="checkbox" id="chk-${tileId}" ${disabled ? 'disabled' : ''}>
+        <label for="chk-${tileId}">${tileId}</label>
+      </div>
+    `;
+
+    const chkMarker = L.marker([maxy, minx], {
+      pane: 'tileCheckboxesPane',
+      icon: L.divIcon({
+        className: 'tile-checkbox-container',
+        html: widgetHtml,
+        iconSize: [85, 24],
+        iconAnchor: [-4, -4]
+      }),
+      interactive: true
+    }).addTo(map);
+
+    tileCheckboxMarkers[tileId] = chkMarker;
+
+    const clickHandler = (e) => {
+      onTileClick(tileId, e, sourceKey);
+    };
+
+    const chkClickHandler = (e) => {
+      if (e) {
+        if (e.originalEvent) {
+          e.originalEvent._highwaterHandled = true;
+          L.DomEvent.stopPropagation(e.originalEvent);
+        }
+        if (e.stopPropagation) e.stopPropagation();
+      }
+      if (drawModeActive) return;
+      if (isTileDisabled(tileId, sourceKey)) return;
+      toggleTileSelection(tileId);
+    };
+
+    rect.on('click', clickHandler);
+    chkMarker.on('click', chkClickHandler);
+
+    rect.on('mouseover', function() {
+      if (isTileDisabled(tileId, sourceKey)) {
+        if (this.getElement()) this.getElement().style.cursor = 'not-allowed';
+        return;
+      }
+      if (!selectedTileIds.includes(tileId)) {
+        this.setStyle({ weight: 2.5, color: '#2563eb' });
+      }
+    });
+    rect.on('mouseout', function() {
+      if (isTileDisabled(tileId, sourceKey)) return;
+      if (!selectedTileIds.includes(tileId)) {
+        this.setStyle({ weight: 1.5, color: '#64748b', fill: false, fillOpacity: 0 });
+      }
+    });
+  }
+
   const minx = Math.min(...bboxes.map(b => b[0]));
   const miny = Math.min(...bboxes.map(b => b[1]));
   const maxx = Math.max(...bboxes.map(b => b[2]));
@@ -1200,12 +2966,13 @@ async function addCoverageOutline(sourceKey, label) {
   L.marker([(miny + maxy) / 2, (minx + maxx) / 2], {
     pane: 'coveragePane', interactive: false, opacity: 0,
     icon: L.divIcon({ className: '', iconSize: [0, 0] })
-  }).bindTooltip(`SpaceNet 8 coverage: ${label}`, {
+  }).bindTooltip(`${sourceKey === 'earthquake' ? 'Earthquake study zone' : 'SpaceNet 8 coverage'}: ${label}`, {
     permanent: true, direction: 'center', className: 'coverage-label', interactive: false
   }).addTo(map).openTooltip();
 }
 addCoverageOutline('germany', 'Germany');
 addCoverageOutline('louisiana', 'Louisiana');
+addCoverageOutline('earthquake', 'Kahramanmaraş, Turkey');
 
 const urlParams = new URLSearchParams(window.location.search);
 const initialKey = urlParams.get('dataset');
@@ -1213,8 +2980,10 @@ refreshDatasetDropdown().then(() => {
   const keyToLoad = (initialKey && DATASETS[initialKey]) ? initialKey : 'germany';
   datasetSelectEl.value = keyToLoad;
   datasetSelectValueBeforeOpen = keyToLoad;
+  updateAiDetectButtonState(keyToLoad);
   loadDataset(keyToLoad);
 });
+updateAiDetectButtonState(initialKey || 'germany');
 checkBackendHealth();
 
 </script>
