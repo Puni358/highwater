@@ -98,7 +98,7 @@ export default function Header({
         )}
 
         <div className="flex items-center space-x-1.5">
-          <span className="font-medium text-ink">Data generated:</span>
+          <span className="font-medium text-ink">Data package generated:</span>
           <span className="font-mono">{formatTimestamp(timestamp)}</span>
         </div>
 

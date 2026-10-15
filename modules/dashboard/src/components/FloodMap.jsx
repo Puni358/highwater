@@ -605,37 +605,26 @@ export default function FloodMap({
         >
           {/* Panel Header */}
           <div className="p-2 sm:p-2.5 border-b border-hairline bg-paper flex items-center justify-between gap-2 shrink-0">
+            {!isPanelCollapsed && (
+              <span className="text-[11px] font-serif font-bold text-ink uppercase tracking-wider">
+                Layers & Legend
+              </span>
+            )}
             <button
               type="button"
               onClick={handleTogglePanel}
               aria-expanded={!isPanelCollapsed}
               aria-controls="map-side-panel-content"
-              className="min-h-[44px] min-w-[44px] px-3 py-2 text-xs font-semibold text-ink flex items-center justify-between rounded border border-control-border bg-paper hover:bg-hairline/40 transition cursor-pointer select-none"
+              aria-label={isPanelCollapsed ? "Expand side panel" : "Collapse side panel"}
+              title={isPanelCollapsed ? "Expand side panel" : "Collapse side panel"}
+              className="ml-auto min-h-[44px] min-w-[44px] p-2 text-xs font-semibold text-ink flex items-center justify-center rounded border border-control-border bg-paper hover:bg-hairline/40 transition cursor-pointer select-none"
             >
-              <div className="flex items-center space-x-2">
-                {isPanelCollapsed ? (
-                  <>
-                    <PanelRightOpen className="w-4 h-4 text-ink-muted shrink-0" aria-hidden="true" />
-                    <span className="lg:hidden font-medium">Expand Side Panel</span>
-                  </>
-                ) : (
-                  <>
-                    <PanelRightClose className="w-4 h-4 text-ink-muted shrink-0" aria-hidden="true" />
-                    <span className="font-medium">Collapse Side Panel</span>
-                  </>
-                )}
-              </div>
-              {!isPanelCollapsed && (
-                <span className="text-[11px] text-ink-muted font-normal hidden sm:inline ml-2">
-                  Unobstruct Map
-                </span>
+              {isPanelCollapsed ? (
+                <PanelRightOpen className="w-4 h-4 text-ink-muted" aria-hidden="true" />
+              ) : (
+                <PanelRightClose className="w-4 h-4 text-ink-muted" aria-hidden="true" />
               )}
             </button>
-            {!isPanelCollapsed && (
-              <span className="text-[11px] font-serif font-bold text-ink uppercase tracking-wider hidden sm:inline">
-                Layers & Legend
-              </span>
-            )}
           </div>
 
           {/* Panel Content */}
