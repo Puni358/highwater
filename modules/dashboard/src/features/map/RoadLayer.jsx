@@ -46,7 +46,6 @@ export default function RoadLayer({ data }) {
             <Popup>
               <div className="text-xs font-sans p-1 min-w-[170px]">
                 <div className="flex items-center space-x-1.5 font-bold text-risk-high border-b pb-1 mb-1">
-                  <span>⛔</span>
                   <span>{props.name || id}</span>
                 </div>
                 <div className="space-y-0.5 text-text-muted">

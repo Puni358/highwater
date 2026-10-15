@@ -5,7 +5,7 @@
  * FILTER POLICY (T4.8):
  * Summary statistics cards and analytical charts compute over the currently filtered subset
  * of zones. When an operational filter (e.g. search keyword or risk level) is active,
- * stats and charts update in real-time to reflect that filtered scope, and the UI
+ * stats and charts dynamically update to reflect that filtered scope, and the UI
  * displays "Showing N of M zones". If filters are cleared, metrics represent the full dataset.
  * 
  * FILTER POLICY SPECIFICATION TABLE:

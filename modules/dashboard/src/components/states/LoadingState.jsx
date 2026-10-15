@@ -10,7 +10,7 @@ export default function LoadingState({ message = 'Loading flood response data…
     <div
       role="status"
       aria-live="polite"
-      aria-label="Loading flood dashboard"
+      aria-label="Loading flood assessment data"
       className="min-h-screen bg-surface flex flex-col font-sans"
     >
       {/* Header Skeleton */}
