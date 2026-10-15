@@ -356,6 +356,80 @@ describe('dataAdapter', () => {
       expect(dropped).toHaveLength(3);
     });
 
+    it('adapts valid MultiPolygon and MultiLineString geometries without dropping', () => {
+      const dropped = [];
+      const onDrop = (reason) => dropped.push(reason);
+
+      const multiPolygon = {
+        type: 'Feature',
+        id: 'mp1',
+        properties: { tile_id: '0_41_58', feature_type: 'building' },
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [[[7.0, 50.5], [7.1, 50.5], [7.1, 50.6], [7.0, 50.6], [7.0, 50.5]]],
+            [[[7.2, 50.5], [7.3, 50.5], [7.3, 50.6], [7.2, 50.6], [7.2, 50.5]]],
+          ],
+        },
+      };
+
+      const multiLineString = {
+        type: 'Feature',
+        id: 'mls1',
+        properties: { tile_id: '0_41_58', feature_type: 'road' },
+        geometry: {
+          type: 'MultiLineString',
+          coordinates: [
+            [[7.0, 50.5], [7.1, 50.5]],
+            [[7.2, 50.6], [7.3, 50.6], [7.4, 50.7]],
+          ],
+        },
+      };
+
+      const adaptedMP = adaptFloodWatchFeature(multiPolygon, onDrop, 'observed');
+      expect(adaptedMP).not.toBeNull();
+      expect(adaptedMP.geometry.type).toBe('MultiPolygon');
+      expect(adaptedMP.properties.feature_type).toBe('building');
+
+      const adaptedMLS = adaptFloodWatchFeature(multiLineString, onDrop, 'observed');
+      expect(adaptedMLS).not.toBeNull();
+      expect(adaptedMLS.geometry.type).toBe('MultiLineString');
+      expect(adaptedMLS.properties.feature_type).toBe('road');
+
+      expect(dropped).toHaveLength(0);
+    });
+
+    it('drops invalid MultiPolygon and MultiLineString geometries', () => {
+      const dropped = [];
+      const onDrop = (reason) => dropped.push(reason);
+
+      const badMPUnclosed = {
+        type: 'Feature',
+        id: 'bad-mp',
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [[[7.0, 50.5], [7.1, 50.5], [7.1, 50.6]]],
+          ],
+        },
+      };
+      expect(adaptFloodWatchFeature(badMPUnclosed, onDrop)).toBeNull();
+
+      const badMLSShort = {
+        type: 'Feature',
+        id: 'bad-mls',
+        geometry: {
+          type: 'MultiLineString',
+          coordinates: [
+            [[7.0, 50.5]], // only 1 point
+          ],
+        },
+      };
+      expect(adaptFloodWatchFeature(badMLSShort, onDrop)).toBeNull();
+
+      expect(dropped).toHaveLength(2);
+    });
+
     it('uses defaultProvenance fallback only when provenance is undefined', () => {
       const featureWithoutProvenance = {
         type: 'Feature',

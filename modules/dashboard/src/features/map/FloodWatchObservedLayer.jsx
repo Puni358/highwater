@@ -88,14 +88,18 @@ export default function FloodWatchObservedLayer({ data, selectedTileId = null })
           );
         }
 
-        if (geom.type === 'LineString') {
+        if (geom.type === 'LineString' || geom.type === 'MultiLineString') {
           let latLngs;
           try {
-            latLngs = geom.coordinates.map(toLatLng);
+            if (geom.type === 'LineString') {
+              latLngs = geom.coordinates.map(toLatLng);
+            } else if (geom.type === 'MultiLineString') {
+              latLngs = geom.coordinates.map((line) => line.map(toLatLng));
+            }
           } catch {
             return null;
           }
-          if (!latLngs || latLngs.length < 2) return null;
+          if (!latLngs || latLngs.length === 0) return null;
 
           return (
             <Polyline key={id} positions={latLngs} pathOptions={roadStyle}>

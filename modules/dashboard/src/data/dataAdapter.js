@@ -379,6 +379,22 @@ export function adaptFloodWatchFeature(f, onDropped = () => {}, defaultProvenanc
       onDropped(`Invalid polygon coordinates on ${f.properties?.feature_id || 'feature'}`);
       return null;
     }
+  } else if (type === 'MultiPolygon') {
+    if (!Array.isArray(coordinates) || coordinates.length === 0) {
+      onDropped(`Invalid MultiPolygon coordinates on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+    for (const poly of coordinates) {
+      const ring = poly?.[0];
+      if (!ring || !isClosedRing(ring)) {
+        onDropped(`Unclosed polygon ring on ${f.properties?.feature_id || 'feature'}`);
+        return null;
+      }
+      if (!ring.every(isValidLngLat)) {
+        onDropped(`Invalid polygon coordinates on ${f.properties?.feature_id || 'feature'}`);
+        return null;
+      }
+    }
   } else if (type === 'LineString') {
     if (!Array.isArray(coordinates) || coordinates.length < 2) {
       onDropped(`Invalid LineString coordinate array on ${f.properties?.feature_id || 'feature'}`);
@@ -387,6 +403,21 @@ export function adaptFloodWatchFeature(f, onDropped = () => {}, defaultProvenanc
     if (!coordinates.every(isValidLngLat)) {
       onDropped(`Invalid LineString coordinates on ${f.properties?.feature_id || 'feature'}`);
       return null;
+    }
+  } else if (type === 'MultiLineString') {
+    if (!Array.isArray(coordinates) || coordinates.length === 0) {
+      onDropped(`Invalid MultiLineString coordinates on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+    for (const line of coordinates) {
+      if (!Array.isArray(line) || line.length < 2) {
+        onDropped(`Invalid MultiLineString line segment on ${f.properties?.feature_id || 'feature'}`);
+        return null;
+      }
+      if (!line.every(isValidLngLat)) {
+        onDropped(`Invalid MultiLineString coordinates on ${f.properties?.feature_id || 'feature'}`);
+        return null;
+      }
     }
   } else {
     onDropped(`Unsupported geometry type ${type} on ${f.properties?.feature_id || 'feature'}`);
