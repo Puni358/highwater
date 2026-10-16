@@ -9,6 +9,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        paper: THEME.colors.paper,
+        plate: THEME.colors.plate,
+        ink: THEME.colors.ink,
+        'ink-muted': THEME.colors.inkMuted,
+        hairline: THEME.colors.hairline,
+        'control-border': THEME.colors.controlBorder,
+        observed: THEME.colors.observed,
+        derived: THEME.colors.derived,
+        notice: THEME.colors.notice,
         'navy-900': THEME.colors['navy-900'],
         'navy-700': THEME.colors['navy-700'],
         surface: THEME.colors.surface,
@@ -27,7 +36,9 @@ export default {
         'demo-bg': THEME.colors.demo.bg,
       },
       fontFamily: {
+        serif: THEME.typography.fontFamily.serif,
         sans: THEME.typography.fontFamily.sans,
+        mono: THEME.typography.fontFamily.mono,
       },
       fontSize: {
         title: THEME.typography.fontSize.title,

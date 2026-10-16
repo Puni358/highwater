@@ -76,4 +76,32 @@ describe('dashboardSelectors', () => {
     expect(emptyStats.floodedAreaKm2).toBeNull();
     expect(emptyStats.highPriorityCount).toBeNull();
   });
+
+  it('correctly calculates FloodWatch observed and derived counts and chart data', () => {
+    const floodwatchData = {
+      metadata: { dataSource: 'mock-floodwatch', dataMode: 'demo' },
+      zones: [
+        { zoneId: '0_41_58', name: 'Tile 0_41_58', riskLevel: 'UNKNOWN', exposedBuildings: 169, observed_flooded_count: 181 },
+        { zoneId: '0_23_62', name: 'Tile 0_23_62', riskLevel: 'UNKNOWN', exposedBuildings: 94, observed_flooded_count: 101 },
+      ],
+      floodPredictedFast: {
+        features: [
+          { properties: { tile_id: '0_41_58', mask_pixels: 5000 } },
+          { properties: { tile_id: '0_23_62', mask_pixels: 1200 } },
+        ],
+      },
+      floodPredictedAccurate: {
+        features: [
+          { properties: { tile_id: '0_41_58', mask_pixels: 6000 } },
+          { properties: { tile_id: '0_23_62', mask_pixels: 1500 } },
+        ],
+      },
+    };
+
+    const stats = selectSummaryStats(floodwatchData);
+    expect(stats.observedBuildingsCount).toBe(263); // 169 + 94
+    expect(stats.observedRoadsCount).toBe(19); // (181 - 169) + (101 - 94) = 12 + 7
+    expect(stats.modelMaskPixelsFast).toBe(6200); // 5000 + 1200
+    expect(stats.modelMaskPixelsAccurate).toBe(7500); // 6000 + 1500
+  });
 });

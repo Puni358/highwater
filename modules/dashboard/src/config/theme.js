@@ -6,33 +6,66 @@
 
 export const THEME = {
   colors: {
-    'navy-900': '#0B1F33',
-    'navy-700': '#16344F',
-    surface: '#F4F6F8',
-    card: '#FFFFFF',
-    border: '#D5DBE1',
-    text: '#1B2733',
-    'text-muted': '#5B6B7B',
-    flood: '#2B8CC4',
-    floodBorder: '#1A6896',
-    shelter: '#0284C7',
+    // Survey plate paper and ink foundations
+    paper: '#F6F3ED',
+    plate: '#FCFAF6',
+    surface: '#F6F3ED',
+    card: '#FCFAF6',
+    ink: '#1C1917',
+    text: '#1C1917',
+    inkMuted: '#57534E',
+    'text-muted': '#57534E',
+    hairline: '#DCD6CA',
+    border: '#DCD6CA',
+    controlBorder: '#78716C', // 3.3:1 contrast against paper for interactive boundaries
+
+    // Cartographic Title Block Ink
+    'navy-900': '#1C1917',
+    'navy-700': '#292524',
+
+    // Core Survey Roles
+    observed: '#9A3412', // Burnt sienna (6.2:1 contrast against paper)
+    observedBorder: '#7C2D12',
+    derived: '#1E3A8A', // Deep cartographic indigo (9.5:1 contrast against paper)
+    derivedBorder: '#172554',
+
+    // Layer styles
+    flood: '#1E3A8A',
+    floodBorder: '#172554',
+    shelter: '#1E3A8A',
+    route: '#581C87',
+    selected: '#1C1917',
+    buildingFlooded: '#9A3412',
+    buildingFloodedBorder: '#7C2D12',
+    floodwatchObservedBuilding: '#9A3412',
+    floodwatchObservedBuildingBorder: '#7C2D12',
+    floodwatchObservedRoad: '#C2410C',
+    floodwatchObservedRoadBorder: '#9A3412',
+    floodwatchPredicted: '#1E3A8A',
+    floodwatchPredictedBorder: '#172554',
+
+    // Operational notices (Muted ochre: 5.8:1 contrast against paper)
+    notice: '#854D0E',
+    noticeBg: '#FEF3C7',
+    noticeBorder: '#D97706',
+    demo: {
+      text: '#854D0E',
+      specText: '#854D0E',
+      bg: '#FEF3C7',
+    },
+
+    // Risk levels in cartographic inks (all WCAG AA)
+    'risk-critical': '#7F1D1D',
     'risk-high': '#C62828',
     'risk-medium': '#E69F00',
     'risk-low': '#2E7D32',
     'risk-unknown': '#6B7280',
-    route: '#6A1B9A',
-    selected: '#0B1F33',
-    buildingFlooded: '#B45309', // WCAG AA compliant (5.02:1 with white text)
-    buildingFloodedBorder: '#92400E',
-    demo: {
-      text: '#965300', // WCAG AA compliant (5.39:1 on #FFF3D6)
-      specText: '#B26A00', // Base design token from design.md
-      bg: '#FFF3D6',
-    },
   },
   typography: {
     fontFamily: {
-      sans: ['ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'sans-serif'],
+      serif: ['"Source Serif 4"', 'Georgia', 'serif'],
+      sans: ['"Public Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      mono: ['"Public Sans"', 'monospace'],
     },
     fontSize: {
       title: '18px',
@@ -51,10 +84,11 @@ export const THEME = {
     8: '32px',
   },
   borderRadius: {
-    card: '8px',
-    badge: '999px',
+    card: '2px', // Cartographic sharp plates
+    badge: '2px',
   },
   riskColors: {
+    CRITICAL: '#7F1D1D',
     HIGH: '#C62828',
     MEDIUM: '#E69F00',
     LOW: '#2E7D32',

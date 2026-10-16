@@ -1,12 +1,13 @@
 import React from 'react';
-import { Waves, RefreshCw, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Printer, RefreshCw } from 'lucide-react';
 
 /**
- * Header component (compact, ~56px)
- * Displays brand, study area, timestamp, DEMO MODE badge, and refresh trigger.
+ * Cartographic Title Block (Survey Plate Header)
+ * Strictly derives area of interest, timestamps, and data basis from metadata.
+ * Free of invented dates, fictitious locations, and promotional copy.
  */
 export default function Header({
-  studyArea = 'Dernau (Ahr valley), Germany',
+  studyArea = null,
   timestamp = null,
   dataMode = 'demo',
   dataSource = null,
@@ -14,21 +15,38 @@ export default function Header({
   onRefresh,
   loading = false,
   lastRefreshedAt = null,
+  meshStatus = 'offline',
+  meshPeerCount = 0,
 }) {
-  const isDernau =
-    !studyArea?.includes('Bengaluru') &&
-    (dataSource === 'mock-dernau' ||
-      (typeof source === 'string' && (source.includes('SpaceNet') || source.includes('Dernau'))) ||
-      (typeof studyArea === 'string' && (studyArea.includes('Dernau') || studyArea.includes('Germany'))));
+  const activeSource = dataSource || (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_DATA_SOURCE : null);
 
-  const isDemo = dataMode === 'demo' && !isDernau;
-  const isUnverified = typeof studyArea === 'string' && (studyArea.includes('Unverified') || studyArea.includes('Unknown'));
+  const isUnverified =
+    typeof studyArea === 'string' &&
+    (studyArea.toLowerCase().includes('unverified') || studyArea.toLowerCase().includes('unknown'));
+
+  const isFloodWatch =
+    activeSource === 'mock-floodwatch' ||
+    (typeof source === 'string' && source.includes('FloodWatch')) ||
+    (typeof studyArea === 'string' && studyArea.includes('FloodWatch'));
+
+  const isDernau =
+    !isUnverified &&
+    !isFloodWatch &&
+    dataMode === 'demo' &&
+    studyArea &&
+    !studyArea.includes('Bengaluru') &&
+    (activeSource === 'mock-dernau' ||
+      (typeof source === 'string' && source.includes('SpaceNet')) ||
+      (typeof studyArea === 'string' && studyArea.includes('Dernau')));
+
+  const isDemo = dataMode === 'demo' && !isDernau && !isFloodWatch && !isUnverified;
 
   const formatTimestamp = (ts) => {
-    if (!ts) return 'Timestamp not available';
+    if (!ts) return 'Not available';
     try {
       const date = new Date(ts);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' Local';
+      if (isNaN(date.getTime())) return ts;
+      return date.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
     } catch {
       return ts;
     }
@@ -49,89 +67,122 @@ export default function Header({
 
   const lastRefreshedTime = formatHHMM(lastRefreshedAt);
 
+  const handlePrint = () => {
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
+
   return (
-    <header className="h-14 bg-navy-900 text-white px-4 md:px-6 flex items-center justify-between border-b border-navy-700 shadow-sm shrink-0">
-      {/* Left: Logo & Brand */}
-      <div className="flex items-center space-x-3">
-        <div className="p-1.5 bg-flood/20 rounded-md text-flood flex items-center justify-center">
-          <Waves className="w-5 h-5 text-flood" aria-hidden="true" />
+    <header className="bg-plate border-b border-hairline px-4 py-3 sm:px-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3 font-sans text-ink shrink-0">
+      {/* Title & Archival Registry */}
+      <div className="flex items-start sm:items-center space-x-3">
+        <div className="border border-control-border px-2 py-1 rounded bg-paper text-ink font-serif font-bold text-xs tracking-wider shrink-0 uppercase">
+          Survey Plate
         </div>
-        <div className="flex items-baseline space-x-2">
-          <span className="text-title font-bold tracking-wider text-white">HIGHWATER</span>
-          <span className="hidden sm:inline-block text-xs text-text-muted px-1.5 py-0.5 rounded bg-navy-700/60">
-            Flood Ops
-          </span>
+        <div>
+          <div className="flex items-baseline space-x-2">
+            <h1 className="text-lg sm:text-xl font-serif font-bold text-ink tracking-tight">
+              HIGHWATER
+            </h1>
+            <span className="text-xs text-ink-muted font-serif italic">
+              Geospatial Flood Assessment
+            </span>
+          </div>
+          <p className="text-[11px] text-ink-muted">
+            Data basis: {source || (isFloodWatch ? 'SpaceNet 8 / FloodWatch SegFormer-B0' : 'Hydrological Survey Network')}
+          </p>
         </div>
       </div>
 
-      {/* Center: Context & Study Area */}
-      <div className="flex items-center space-x-2 sm:space-x-4 text-xs">
-        <div className="hidden md:flex items-center space-x-1.5 text-slate-300">
-          <span className="font-semibold text-white">Area:</span>
-          <span>{studyArea}</span>
+      {/* Metadata Indicators: Area of Interest & Timestamps */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted">
+        {studyArea && (
+          <div className="flex items-center space-x-1.5">
+            <span className="font-medium text-ink">Area:</span>
+            <span className="font-serif">{studyArea}</span>
+          </div>
+        )}
+
+        <div className="flex items-center space-x-1.5">
+          <span className="font-medium text-ink">Data package generated:</span>
+          <span className="font-mono">{formatTimestamp(timestamp)}</span>
         </div>
-        <span className="hidden md:inline text-slate-600">•</span>
-        <div className="flex items-center space-x-1.5 text-slate-300">
-          <span className="font-semibold text-white">Data generated:</span>
-          <span>{formatTimestamp(timestamp)}</span>
-        </div>
+
         {lastRefreshedTime && (
-          <>
-            <span className="hidden lg:inline text-slate-600">•</span>
-            <div className="flex items-center space-x-1.5 text-slate-300">
-              <span className="font-semibold text-white">Last refreshed:</span>
-              <span>{lastRefreshedTime}</span>
-            </div>
-          </>
+          <div className="flex items-center space-x-1.5">
+            <span className="font-medium text-ink">Last refreshed:</span>
+            <span className="font-mono">{lastRefreshedTime}</span>
+          </div>
         )}
       </div>
 
-      {/* Right: Mode Badge & Refresh Action */}
-      <div className="flex items-center space-x-3">
-        {isDernau ? (
+      {/* Operational Stamps & Actions */}
+      <div className="flex items-center space-x-2.5 shrink-0">
+        {/* Archival Status Stamp */}
+        {isUnverified ? (
           <div
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-demo-bg text-demo-text text-xs font-semibold tracking-wide border border-amber-300/60"
-            role="status"
-            aria-label="Historical ground truth data active"
-          >
-            <AlertTriangle className="w-3.5 h-3.5 text-demo-text" aria-hidden="true" />
-            <span>Historical ground truth (SpaceNet 8)</span>
-          </div>
-        ) : isDemo ? (
-          <div
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-demo-bg text-demo-text text-xs font-semibold tracking-wide border border-amber-300/60"
-            role="status"
-            aria-label="Demonstration mode active"
-          >
-            <AlertTriangle className="w-3.5 h-3.5 text-demo-text" aria-hidden="true" />
-            <span>DEMO MODE</span>
-          </div>
-        ) : isUnverified ? (
-          <div
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-amber-500/20 text-amber-300 text-xs font-medium border border-amber-500/40"
+            className="px-2.5 py-1 rounded border border-control-border bg-paper text-ink font-mono text-[11px] font-semibold tracking-wider uppercase"
             role="status"
             aria-label="Unverified location active"
           >
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
-            <span>Unverified location</span>
+            Unverified location
+          </div>
+        ) : isFloodWatch || isDernau ? (
+          <div
+            className="px-2.5 py-1 rounded border border-control-border bg-paper text-ink font-mono text-[11px] font-semibold tracking-wider uppercase"
+            role="status"
+            aria-label="Simulated operations environment active"
+          >
+            Simulated Ops
+          </div>
+        ) : isDemo ? (
+          <div
+            className="px-2.5 py-1 rounded border border-notice bg-paper text-notice font-mono text-[11px] font-semibold tracking-wider uppercase"
+            role="status"
+            aria-label="Demonstration mode active"
+          >
+            DEMO MODE
           </div>
         ) : (
           <div
-            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-badge bg-risk-low/20 text-emerald-300 text-xs font-medium border border-risk-low/40"
+            className="px-2.5 py-1 rounded border border-control-border bg-paper text-ink font-mono text-[11px] font-semibold tracking-wider uppercase"
             role="status"
             aria-label="Connected data active"
           >
-            <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>Connected data</span>
+            Connected data
           </div>
         )}
 
+        {/* Mesh Network Status Badge */}
+        <div
+          className="px-2.5 py-1 rounded border border-control-border bg-paper text-ink font-mono text-[11px] font-semibold tracking-wider"
+          role="status"
+          aria-live="polite"
+        >
+          {meshStatus === 'active'
+            ? `Mesh active - ${meshPeerCount} peers connected`
+            : 'Mesh offline'}
+        </div>
+
+        {/* Print Situation Report Button */}
+        <button
+          type="button"
+          onClick={handlePrint}
+          aria-label="Print situation report"
+          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded border border-control-border bg-paper hover:bg-hairline/40 text-ink text-xs font-medium transition cursor-pointer select-none"
+        >
+          <Printer className="w-3.5 h-3.5 text-ink-muted" aria-hidden="true" />
+          <span className="hidden sm:inline">Print Report</span>
+        </button>
+
+        {/* Refresh Action Button */}
         <button
           type="button"
           onClick={onRefresh}
           disabled={loading}
-          aria-label="Refresh dashboard data"
-          className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md bg-navy-700 hover:bg-navy-700/80 active:scale-95 text-white text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-flood"
+          aria-label="Refresh survey data"
+          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded border border-control-border bg-paper hover:bg-hairline/40 text-ink text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer select-none"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
           <span className="hidden sm:inline">Refresh</span>

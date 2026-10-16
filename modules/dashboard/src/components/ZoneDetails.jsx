@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import RiskBadge from './RiskBadge.jsx';
 import ProvenanceBadge from './ProvenanceBadge.jsx';
 import { AlertCircle, CheckCircle, Ban, HelpCircle, X, ShieldAlert, MapPinOff } from 'lucide-react';
@@ -42,6 +42,44 @@ function getAccessibilityDisplay(accessibility) {
 }
 
 /**
+ * Maps field survey status enum to human-friendly badge styles and icons
+ */
+function getSurveyStatusConfig(surveyStatus) {
+  switch (surveyStatus) {
+    case 'flooded':
+      return {
+        label: 'Flooded',
+        icon: AlertCircle,
+        style: 'text-risk-high bg-red-50 border-red-200',
+      };
+    case 'clear':
+      return {
+        label: 'Clear',
+        icon: CheckCircle,
+        style: 'text-risk-low bg-emerald-50 border-emerald-200',
+      };
+    case 'unsure':
+    default:
+      return {
+        label: 'Unsure',
+        icon: HelpCircle,
+        style: 'text-text-muted bg-surface border-border',
+      };
+  }
+}
+
+function formatSurveyTime(isoString) {
+  if (!isoString) return '';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    return d.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+  } catch {
+    return isoString;
+  }
+}
+
+/**
  * ZoneDetails component (FR-20, FR-21, T4.5)
  * Displays in-depth assessment data for the selected zone.
  * Strictly adheres to rules.md:
@@ -51,12 +89,18 @@ function getAccessibilityDisplay(accessibility) {
  */
 export default function ZoneDetails({
   zone = null,
-  routes = [],
+  route = null,
   timestamp = null,
   onClearSelection,
   isTestFixture = false,
+  meshUpdates = [],
+  onSendSurveyUpdate = null,
 }) {
-  const [selectedVehicle, setSelectedVehicle] = React.useState('AMBULANCE');
+  const [surveyStatus, setSurveyStatus] = useState('flooded');
+  const [surveyNote, setSurveyNote] = useState('');
+  const [surveyAuthor, setSurveyAuthor] = useState('');
+  const [formError, setFormError] = useState(null);
+
   if (!zone) {
     return (
       <div
@@ -78,6 +122,10 @@ export default function ZoneDetails({
     );
   }
 
+  const zoneUpdates = Array.isArray(meshUpdates)
+    ? meshUpdates.filter((u) => u && String(u.zoneId) === String(zone.zoneId))
+    : [];
+
   const access = getAccessibilityDisplay(zone.accessibility);
   const AccessIcon = access.icon;
 
@@ -96,11 +144,42 @@ export default function ZoneDetails({
     (Array.isArray(zone.reasons) && zone.reasons.some((r) => r.toLowerCase().includes('designated test case')))
   );
 
+  const isFloodwatch = Boolean(
+    isTestFixture === false &&
+    zone.observed_flooded_count !== undefined &&
+    zone.observed_flooded_count !== null
+  ) || Boolean(
+    typeof zone.zoneId === 'string' && (zone.zoneId.startsWith('0_') || zone.zoneId.includes('_')) &&
+    typeof zone.observed_flooded_count === 'number'
+  );
+
   const scoreDisplay = zone.riskScore !== null ? `${zone.riskScore} / 100` : 'Not assessed';
   const floodAreaDisplay = zone.floodedAreaKm2 !== null ? `${zone.floodedAreaKm2} km²` : 'Not available';
   const floodPctDisplay = zone.floodedPercent !== null ? `${zone.floodedPercent}%` : 'Not available';
   const exposedBldgsDisplay = zone.exposedBuildings !== null ? zone.exposedBuildings : 'Not available';
   const updatedDisplay = timestamp || 'Not available';
+
+  // FloodWatch derived metrics
+  const observedBldgs = zone.exposedBuildings !== null && zone.exposedBuildings !== undefined ? zone.exposedBuildings : 0;
+  const observedRoads = (typeof zone.observed_flooded_count === 'number' && typeof zone.exposedBuildings === 'number')
+    ? Math.max(0, zone.observed_flooded_count - zone.exposedBuildings)
+    : 0;
+  const observedTotal = zone.observed_flooded_count !== null && zone.observed_flooded_count !== undefined
+    ? zone.observed_flooded_count
+    : (observedBldgs + observedRoads);
+
+  let modelMaskDisplay = 'None reported';
+  if (Array.isArray(zone.reasons)) {
+    const maskLine = zone.reasons.find((r) => r.includes('mask pixels'));
+    if (maskLine) {
+      const match = maskLine.match(/mask pixels:\s*(\d+)\s*\(fast\s*mode\),\s*(\d+)\s*\(accurate\s*mode\)/i);
+      if (match) {
+        modelMaskDisplay = `${Number(match[1]).toLocaleString('en-US')} (fast) • ${Number(match[2]).toLocaleString('en-US')} (acc)`;
+      } else {
+        modelMaskDisplay = maskLine.replace(/Model detected mask pixels:\s*/i, '');
+      }
+    }
+  }
 
   return (
     <div
@@ -112,12 +191,29 @@ export default function ZoneDetails({
       {/* Header: Zone Name, Risk Badge, and Clear Button */}
       <div className="flex items-start justify-between gap-2 pb-3 border-b border-border">
         <div className="space-y-1 min-w-0">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
             <h3 className="text-sm font-bold text-navy-900 truncate">
               {zone.name}
             </h3>
-            <RiskBadge level={zone.riskLevel} size="sm" />
-            {isPartial && (
+            {isFloodwatch ? (
+              <>
+                <span className="px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded bg-slate-100 text-slate-700 border border-slate-300">
+                  No Risk Scoring
+                </span>
+                {zone.in_training_pool !== null && zone.in_training_pool !== undefined && (
+                  <span className={`px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded ${
+                    zone.in_training_pool
+                      ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                      : 'bg-slate-50 text-slate-600 border border-slate-200'
+                  }`}>
+                    {zone.in_training_pool ? 'In training pool' : 'Not in training pool'}
+                  </span>
+                )}
+              </>
+            ) : (
+              <RiskBadge level={zone.riskLevel} size="sm" />
+            )}
+            {isPartial && !isFloodwatch && (
               <span
                 className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-300 rounded shrink-0"
                 title="Zone contains partial data"
@@ -125,7 +221,7 @@ export default function ZoneDetails({
                 Partial data
               </span>
             )}
-            {zone.needsSurvey === true && (
+            {zone.needsSurvey === true && !isFloodwatch && (
               <span
                 className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-purple-800 bg-purple-50 border border-purple-300 rounded shrink-0"
                 title="Ground reconnaissance survey needed"
@@ -161,79 +257,87 @@ export default function ZoneDetails({
           <MapPinOff className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" aria-hidden="true" />
           <div>
             <span className="font-bold block">Non-spatial staging area</span>
-            <span>This zone does not have map boundary data and is not plotted on the map.</span>
+            <span>No geospatial boundary coordinates available; sector not plotted on the map.</span>
           </div>
         </div>
       )}
 
-      {/* Cut-off area notice (PART A.3) */}
-      {(() => {
-        const zoneRoutes = (routes || []).filter(
-          (r) => r.zoneId === zone.zoneId || (r.routeId && zone.zoneId && r.routeId.includes(zone.zoneId))
-        );
-        const roadRoutes = zoneRoutes.filter(
-          (r) => r.geometryQuality !== 'AIR_LINE' && r.geometryQuality !== 'WATER_LINE' && r.vehicleType !== 'HELICOPTER' && r.vehicleType !== 'RESCUE_BOAT'
-        );
-        const hasNoRoadRoute = zone.accessibility === 'CUT_OFF' ||
-          roadRoutes.some((r) => r.status === 'NO_ROAD_ROUTE' || r.status === 'UNREACHABLE') ||
-          (roadRoutes.length > 0 && roadRoutes.every((r) => r.status !== 'OK'));
+      {/* Key Metrics Grid */}
+      {isFloodwatch ? (
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          {/* Observed Flooded Buildings */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Observed flooded buildings (labels)</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {observedBldgs}
+            </span>
+          </div>
 
-        if (!hasNoRoadRoute) return null;
-        return (
-          <div
-            className="p-2.5 bg-red-50 border border-red-300 rounded text-red-900 text-xs flex items-start space-x-2"
-            role="alert"
-          >
-            <ShieldAlert className="w-4 h-4 shrink-0 text-red-700 mt-0.5" aria-hidden="true" />
-            <div>
-              <span className="font-bold block">No road route: area cut off</span>
-              <span>All surface road access corridors to this sector are severed or impassable.</span>
+          {/* Observed Flooded Roads */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Observed flooded roads (labels)</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {observedRoads}
+            </span>
+          </div>
+
+          {/* Model Mask Pixels */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Model mask pixels (derived)</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {modelMaskDisplay}
+            </span>
+          </div>
+
+          {/* Total Flooded Features */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Observed flooded total (labels)</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {observedTotal} features
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          {/* Risk Score */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Priority Score</span>
+            <span className={`text-sm font-bold block mt-0.5 ${zone.riskScore === null ? 'text-text-muted font-normal' : 'text-navy-900'}`}>
+              {scoreDisplay}
+            </span>
+          </div>
+
+          {/* Accessibility Status */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Accessibility</span>
+            <div className="flex items-center space-x-1.5 mt-0.5">
+              <AccessIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span className="text-xs font-semibold text-text truncate">
+                {access.label}
+              </span>
             </div>
           </div>
-        );
-      })()}
 
-      {/* Key Metrics Grid */}
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        {/* Risk Score */}
-        <div className="p-2.5 rounded bg-surface border border-border/50">
-          <span className="text-[11px] text-text-muted block">Priority Score</span>
-          <span className={`text-sm font-bold block mt-0.5 ${zone.riskScore === null ? 'text-text-muted font-normal' : 'text-navy-900'}`}>
-            {scoreDisplay}
-          </span>
-        </div>
+          {/* Flooded Area */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Flooded Area</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {floodAreaDisplay}
+            </span>
+            {zone.floodedPercent !== null && (
+              <span className="text-[10px] text-text-muted block">
+                Coverage: {floodPctDisplay}
+              </span>
+            )}
+          </div>
 
-        {/* Accessibility Status */}
-        <div className="p-2.5 rounded bg-surface border border-border/50">
-          <span className="text-[11px] text-text-muted block">Accessibility</span>
-          <div className="flex items-center space-x-1.5 mt-0.5">
-            <AccessIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-            <span className="text-xs font-semibold text-text truncate">
-              {access.label}
+          {/* Exposed Buildings */}
+          <div className="p-2.5 rounded bg-surface border border-border/50">
+            <span className="text-[11px] text-text-muted block">Exposed Buildings</span>
+            <span className="text-sm font-bold text-navy-900 mt-0.5 block">
+              {exposedBldgsDisplay}
             </span>
           </div>
-        </div>
-
-        {/* Flooded Area */}
-        <div className="p-2.5 rounded bg-surface border border-border/50">
-          <span className="text-[11px] text-text-muted block">Flooded Area</span>
-          <span className="text-sm font-bold text-navy-900 mt-0.5 block">
-            {floodAreaDisplay}
-          </span>
-          {zone.floodedPercent !== null && (
-            <span className="text-[10px] text-text-muted block">
-              Coverage: {floodPctDisplay}
-            </span>
-          )}
-        </div>
-
-        {/* Exposed Buildings */}
-        <div className="p-2.5 rounded bg-surface border border-border/50">
-          <span className="text-[11px] text-text-muted block">Exposed Buildings</span>
-          <span className="text-sm font-bold text-navy-900 mt-0.5 block">
-            {exposedBldgsDisplay}
-          </span>
-        </div>
 
         {/* Provenance */}
         {zone.provenance !== null && zone.provenance !== undefined && (
@@ -284,104 +388,39 @@ export default function ZoneDetails({
           </div>
         )}
       </div>
+      )}
 
-      {/* Vehicle Deployment & Fallback Selector (PART B.7) */}
-      <div className="pt-2 border-t border-border space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-text">Vehicle Deployment & Fallback:</span>
-          {selectedVehicle === 'HELICOPTER' && (
-            <span className="text-[10px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">
-              Aerial Deployment
+      {/* Evacuation Route Assessment */}
+      {route && (
+        <div className="pt-2 border-t border-border space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-text">
+              {route.status === 'OK' ? 'Evacuation Route Clear' : 'No Safe Route (Cut Off)'}
             </span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+              route.status === 'OK' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+            }`}>
+              {route.status}
+            </span>
+          </div>
+          {route.status === 'OK' && (route.destinationName || route.destination) && (
+            <p className="text-xs text-navy-900 font-medium">
+              <span>Destination: </span>
+              <span>{route.destinationName || route.destination}</span>
+            </p>
+          )}
+          {route.reason && (
+            <p className="text-xs text-text-muted leading-snug">
+              {route.reason}
+            </p>
           )}
         </div>
-
-        <div className="grid grid-cols-4 gap-1 p-1 bg-surface rounded border border-border text-[11px]">
-          {['AMBULANCE', 'TRUCK_4X4', 'RESCUE_BOAT', 'HELICOPTER'].map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setSelectedVehicle(v)}
-              className={`py-1 px-1 rounded font-medium text-center transition ${
-                selectedVehicle === v
-                  ? 'bg-navy-900 text-white shadow-xs'
-                  : 'text-text-muted hover:text-text hover:bg-card'
-              }`}
-            >
-              {v === 'TRUCK_4X4' ? '4x4 TRUCK' : v === 'RESCUE_BOAT' ? 'BOAT' : v === 'HELICOPTER' ? 'HELI' : 'AMB'}
-            </button>
-          ))}
-        </div>
-
-        {/* Selected Vehicle Status Box */}
-        {(() => {
-          const zoneRoutes = (routes || []).filter(
-            (r) => r.zoneId === zone.zoneId || (r.routeId && zone.zoneId && r.routeId.includes(zone.zoneId))
-          );
-          const roadRoutes = zoneRoutes.filter(
-            (r) => r.geometryQuality !== 'AIR_LINE' && r.geometryQuality !== 'WATER_LINE' && r.vehicleType !== 'HELICOPTER' && r.vehicleType !== 'RESCUE_BOAT'
-          );
-          const hasCutOff = zone.accessibility === 'CUT_OFF' ||
-            roadRoutes.some((r) => r.status === 'NO_ROAD_ROUTE' || r.status === 'UNREACHABLE') ||
-            (roadRoutes.length > 0 && roadRoutes.every((r) => r.status !== 'OK'));
-
-          const matchedRoute = zoneRoutes.find((r) => r.vehicleType === selectedVehicle);
-          let vStatus = matchedRoute?.status;
-          let vEta = matchedRoute?.etaMinutes;
-          let vLimit = 'Depth clearance: 0.30m';
-          let vReason = matchedRoute?.reason || matchedRoute?.fallbackReason;
-
-          if (selectedVehicle === 'AMBULANCE') {
-            vLimit = 'Clearance: 0.30m (roads only)';
-            if (!vStatus) vStatus = hasCutOff ? 'NO_ROAD_ROUTE' : 'OK';
-            if (hasCutOff && !vReason) vReason = 'Road corridors severed by floodwater';
-          } else if (selectedVehicle === 'TRUCK_4X4') {
-            vLimit = 'Wading clearance: 0.60m';
-            if (!vStatus) vStatus = hasCutOff ? 'NO_ROAD_ROUTE' : 'OK';
-            if (hasCutOff && !vReason) vReason = 'Depth exceeds 0.60m limit or corridor severed';
-          } else if (selectedVehicle === 'RESCUE_BOAT') {
-            vLimit = 'Min draft: 0.50m (navigable water)';
-            if (!vStatus) vStatus = 'UNREACHABLE';
-            if (!vReason) vReason = 'No accessible boat ramp or inland navigable channel';
-          } else if (selectedVehicle === 'HELICOPTER') {
-            vLimit = 'Max rain 60 mm/h, wind 75 km/h';
-            if (!vStatus) vStatus = 'OK';
-            if (!vEta) vEta = 11.2;
-          }
-
-          return (
-            <div className="p-2.5 rounded bg-surface border border-border/60 text-xs space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-text">{selectedVehicle.replace('_', ' ')}:</span>
-                <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${
-                  vStatus === 'OK' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {vStatus || 'UNKNOWN'}
-                </span>
-              </div>
-              <div className="text-text-muted text-[11px] flex justify-between">
-                <span>ETA: <strong className="text-text">{vEta ? `${vEta} mins` : 'Not available'}</strong></span>
-                <span>Limit: <strong className="text-text">{vLimit}</strong></span>
-              </div>
-              {vReason && (
-                <div className="text-[11px] text-amber-800 font-medium pt-1 border-t border-border/40">
-                  {vStatus === 'OK' ? `Note: ${vReason}` : `Fallback Reason: ${vReason}`}
-                </div>
-              )}
-              {hasCutOff && selectedVehicle === 'HELICOPTER' && (
-                <div className="p-2 mt-1 bg-purple-50 border border-purple-200 rounded text-purple-900 text-[11px]">
-                  ⚠️ Surface corridors severed. Fallback chain escalated to aerial insertion (HELICOPTER).
-                </div>
-              )}
-            </div>
-          );
-        })()}
-      </div>
+      )}
 
       {/* Operational Reasons (FR-21) */}
       <div className="pt-2 border-t border-border space-y-1.5">
         <span className="text-xs font-semibold text-text block">
-          Operational Assessment Reasons:
+          {isFloodwatch ? 'Observed Features & Model Findings:' : 'Operational Assessment Reasons:'}
         </span>
         {zone.reasons && zone.reasons.length > 0 ? (
           <ul className="space-y-1 text-xs text-text-muted pl-4 list-disc">
@@ -398,16 +437,164 @@ export default function ZoneDetails({
         )}
       </div>
 
-      {/* Footer metadata (PART A.7) */}
-      <div className="pt-2 border-t border-border space-y-1 text-[11px] text-text-muted">
+      {/* Field Survey Section (Mesh Sync) */}
+      <div className="pt-3 border-t border-border space-y-2.5">
         <div className="flex items-center justify-between">
-          <span>Assessment run time:</span>
-          <span className="font-mono">{zone.runTime || timestamp || '2026-10-13T10:00:00Z'}</span>
+          <h4 className="text-xs font-semibold text-text">Field survey</h4>
+          <span className="text-[10px] text-text-muted font-mono">
+            {zoneUpdates.length} {zoneUpdates.length === 1 ? 'record' : 'records'}
+          </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span>Flood observation time:</span>
-          <span className="font-mono">{zone.observationTime || zone.acquired || '2026-10-13T07:30:00Z'}</span>
-        </div>
+
+        {/* Existing updates for selected zone */}
+        {zoneUpdates.length > 0 ? (
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {zoneUpdates.map((u) => {
+              const statusCfg = getSurveyStatusConfig(u.surveyStatus);
+              const StatusIcon = statusCfg.icon;
+              return (
+                <div
+                  key={u.id}
+                  className="p-2 rounded bg-surface border border-border text-xs space-y-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span
+                      className={`inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${statusCfg.style}`}
+                    >
+                      <StatusIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
+                      <span>{statusCfg.label}</span>
+                    </span>
+                    <ProvenanceBadge value="observed" />
+                  </div>
+                  <p className="text-xs text-ink break-words">{u.note}</p>
+                  <div className="flex items-center justify-between text-[10px] text-text-muted">
+                    <span className="font-medium">{u.author || 'Field user'}</span>
+                    <span className="font-mono">{formatSurveyTime(u.createdAt)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-xs text-text-muted italic">
+            No field surveys recorded for this zone yet.
+          </p>
+        )}
+
+        {/* Keyboard-accessible Field Survey Form */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const trimmed = surveyNote.trim();
+            if (!trimmed) {
+              setFormError('Note cannot be empty');
+              return;
+            }
+            if (surveyNote.length > 280) {
+              setFormError('Note exceeds 280 characters');
+              return;
+            }
+
+            if (onSendSurveyUpdate) {
+              onSendSurveyUpdate({
+                zoneId: zone.zoneId,
+                surveyStatus,
+                note: trimmed,
+                author: surveyAuthor.trim() || 'Field user',
+              });
+            }
+
+            setSurveyNote('');
+            setFormError(null);
+          }}
+          className="space-y-2 pt-2 border-t border-hairline"
+        >
+          <div>
+            <label
+              htmlFor={`survey-status-${zone.zoneId}`}
+              className="block text-[11px] font-medium text-text mb-0.5"
+            >
+              Survey status
+            </label>
+            <select
+              id={`survey-status-${zone.zoneId}`}
+              name="surveyStatus"
+              value={surveyStatus}
+              onChange={(e) => setSurveyStatus(e.target.value)}
+              className="w-full text-xs bg-paper text-ink border border-control-border rounded px-2 py-1.5 focus:ring-2 focus:ring-ink focus:outline-none"
+            >
+              <option value="flooded">Flooded</option>
+              <option value="clear">Clear</option>
+              <option value="unsure">Unsure</option>
+            </select>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-0.5">
+              <label
+                htmlFor={`survey-note-${zone.zoneId}`}
+                className="block text-[11px] font-medium text-text"
+              >
+                Observation note
+              </label>
+              <span
+                className={`text-[10px] font-mono ${
+                  surveyNote.length > 280 ? 'text-risk-high font-bold' : 'text-text-muted'
+                }`}
+              >
+                {surveyNote.length}/280
+              </span>
+            </div>
+            <textarea
+              id={`survey-note-${zone.zoneId}`}
+              name="note"
+              rows={2}
+              value={surveyNote}
+              onChange={(e) => {
+                setSurveyNote(e.target.value);
+                if (formError) setFormError(null);
+              }}
+              placeholder="Enter ground observation (max 280 chars)..."
+              className="w-full text-xs bg-paper text-ink border border-control-border rounded px-2 py-1.5 focus:ring-2 focus:ring-ink focus:outline-none resize-none"
+            />
+            {formError && (
+              <p className="text-[11px] text-risk-high mt-0.5" role="alert">
+                {formError}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor={`survey-author-${zone.zoneId}`}
+              className="block text-[11px] font-medium text-text mb-0.5"
+            >
+              Author
+            </label>
+            <input
+              id={`survey-author-${zone.zoneId}`}
+              name="author"
+              type="text"
+              value={surveyAuthor}
+              onChange={(e) => setSurveyAuthor(e.target.value)}
+              placeholder="Field user"
+              className="w-full text-xs bg-paper text-ink border border-control-border rounded px-2 py-1.5 focus:ring-2 focus:ring-ink focus:outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full text-xs font-medium py-1.5 px-3 rounded border border-control-border bg-paper hover:bg-hairline/40 text-ink transition focus:ring-2 focus:ring-ink focus:outline-none cursor-pointer"
+          >
+            Submit Field Survey
+          </button>
+        </form>
+      </div>
+
+      {/* Footer metadata */}
+      <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] text-text-muted">
+        <span>Last assessment update:</span>
+        <span className="font-mono">{updatedDisplay}</span>
       </div>
     </div>
   );

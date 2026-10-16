@@ -2256,7 +2256,8 @@ class TestConfigurableRiskScoringWeights:
             "--weights",
             w_arg,
         ]
-        ret = subprocess.run(cmd, capture_output=True, text=True, cwd=str(MODULE_ROOT.parent))
+        sub_env = {**os.environ, "PYTHONPATH": str(MODULE_ROOT / "src")}
+        ret = subprocess.run(cmd, capture_output=True, text=True, cwd=str(MODULE_ROOT.parent), env=sub_env)
         assert ret.returncode == 0, f"CLI stderr: {ret.stderr}"
         res = json.loads((out_dir / "risk_scores.json").read_text(encoding="utf-8"))
         assert res["scoring_config"]["weights"]["flood_percent"] == 0.5
@@ -2275,7 +2276,7 @@ class TestConfigurableRiskScoringWeights:
             "--weights",
             w_kv,
         ]
-        ret_kv = subprocess.run(cmd_kv, capture_output=True, text=True, cwd=str(MODULE_ROOT.parent))
+        ret_kv = subprocess.run(cmd_kv, capture_output=True, text=True, cwd=str(MODULE_ROOT.parent), env=sub_env)
         assert ret_kv.returncode == 0, f"CLI stderr: {ret_kv.stderr}"
         res_kv = json.loads((out_dir_kv / "risk_scores.json").read_text(encoding="utf-8"))
         assert res_kv["scoring_config"]["weights"]["flood_percent"] == 0.5
@@ -2293,7 +2294,7 @@ class TestConfigurableRiskScoringWeights:
             "--weights",
             bad_w,
         ]
-        ret_bad = subprocess.run(cmd_bad, capture_output=True, text=True, cwd=str(MODULE_ROOT.parent))
+        ret_bad = subprocess.run(cmd_bad, capture_output=True, text=True, cwd=str(MODULE_ROOT.parent), env=sub_env)
         assert ret_bad.returncode == 2
         assert "sum to 1.0" in ret_bad.stderr
 

@@ -7,6 +7,8 @@ import {
   isClosedRing,
   adaptZones,
   adaptDashboardData,
+  adaptFloodWatchFeature,
+  adaptFloodWatchCollection,
 } from '../data/dataAdapter.js';
 
 describe('dataAdapter', () => {
@@ -255,6 +257,226 @@ describe('dataAdapter', () => {
       expect(zones[3].provenance).toBeNull();
       expect(zones[3].rank_p10).toBeNull();
       expect(zones[3].rank_p90).toBeNull();
+    });
+  });
+
+  describe('FloodWatch Adapters', () => {
+    it('validates polygon coordinates and ring closure', () => {
+      const validPolygon = {
+        type: 'Feature',
+        id: 'poly-1',
+        properties: {
+          tile_id: '0_41_58',
+          mode: 'accurate',
+          provenance: 'derived',
+          mask_pixels: 450,
+          in_training_pool: true,
+        },
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[[7.0, 50.5], [7.1, 50.5], [7.1, 50.6], [7.0, 50.6], [7.0, 50.5]]],
+        },
+      };
+
+      const dropped = [];
+      const adapted = adaptFloodWatchFeature(validPolygon, (msg) => dropped.push(msg));
+      expect(adapted).not.toBeNull();
+      expect(adapted.id).toBe('poly-1');
+      expect(adapted.properties.tile_id).toBe('0_41_58');
+      expect(adapted.properties.mode).toBe('accurate');
+      expect(adapted.properties.provenance).toBe('derived');
+      expect(adapted.properties.mask_pixels).toBe(450);
+      expect(adapted.properties.in_training_pool).toBe(true);
+      expect(adapted.properties.feature_type).toBeNull(); // missing stays null
+      expect(dropped).toHaveLength(0);
+    });
+
+    it('validates LineString coordinates and passes observed provenance', () => {
+      const validLine = {
+        type: 'Feature',
+        id: 'line-1',
+        properties: {
+          tile_id: '0_41_58',
+          feature_type: 'road',
+          provenance: 'observed',
+          flooded: 'yes',
+          in_training_pool: true,
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: [[7.0, 50.5], [7.05, 50.55]],
+        },
+      };
+
+      const dropped = [];
+      const adapted = adaptFloodWatchFeature(validLine, (msg) => dropped.push(msg));
+      expect(adapted).not.toBeNull();
+      expect(adapted.id).toBe('line-1');
+      expect(adapted.properties.feature_type).toBe('road');
+      expect(adapted.properties.provenance).toBe('observed');
+      expect(adapted.properties.mode).toBeNull(); // missing stays null
+      expect(adapted.properties.mask_pixels).toBeNull(); // missing stays null
+      expect(dropped).toHaveLength(0);
+    });
+
+    it('drops invalid geometries and records reasons', () => {
+      const dropped = [];
+      const onDrop = (reason) => dropped.push(reason);
+
+      // Unclosed ring
+      const unclosed = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[[7.0, 50.5], [7.1, 50.5], [7.1, 50.6]]],
+        },
+      };
+      expect(adaptFloodWatchFeature(unclosed, onDrop)).toBeNull();
+
+      // Invalid coordinates
+      const badCoords = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[[200.0, 50.5], [7.1, 50.5], [7.1, 50.6], [7.0, 50.6], [200.0, 50.5]]],
+        },
+      };
+      expect(adaptFloodWatchFeature(badCoords, onDrop)).toBeNull();
+
+      // Unsupported geometry type
+      const point = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [7.0, 50.5],
+        },
+      };
+      expect(adaptFloodWatchFeature(point, onDrop)).toBeNull();
+
+      expect(dropped).toHaveLength(3);
+    });
+
+    it('adapts valid MultiPolygon and MultiLineString geometries without dropping', () => {
+      const dropped = [];
+      const onDrop = (reason) => dropped.push(reason);
+
+      const multiPolygon = {
+        type: 'Feature',
+        id: 'mp1',
+        properties: { tile_id: '0_41_58', feature_type: 'building' },
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [[[7.0, 50.5], [7.1, 50.5], [7.1, 50.6], [7.0, 50.6], [7.0, 50.5]]],
+            [[[7.2, 50.5], [7.3, 50.5], [7.3, 50.6], [7.2, 50.6], [7.2, 50.5]]],
+          ],
+        },
+      };
+
+      const multiLineString = {
+        type: 'Feature',
+        id: 'mls1',
+        properties: { tile_id: '0_41_58', feature_type: 'road' },
+        geometry: {
+          type: 'MultiLineString',
+          coordinates: [
+            [[7.0, 50.5], [7.1, 50.5]],
+            [[7.2, 50.6], [7.3, 50.6], [7.4, 50.7]],
+          ],
+        },
+      };
+
+      const adaptedMP = adaptFloodWatchFeature(multiPolygon, onDrop, 'observed');
+      expect(adaptedMP).not.toBeNull();
+      expect(adaptedMP.geometry.type).toBe('MultiPolygon');
+      expect(adaptedMP.properties.feature_type).toBe('building');
+
+      const adaptedMLS = adaptFloodWatchFeature(multiLineString, onDrop, 'observed');
+      expect(adaptedMLS).not.toBeNull();
+      expect(adaptedMLS.geometry.type).toBe('MultiLineString');
+      expect(adaptedMLS.properties.feature_type).toBe('road');
+
+      expect(dropped).toHaveLength(0);
+    });
+
+    it('drops invalid MultiPolygon and MultiLineString geometries', () => {
+      const dropped = [];
+      const onDrop = (reason) => dropped.push(reason);
+
+      const badMPUnclosed = {
+        type: 'Feature',
+        id: 'bad-mp',
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [[[7.0, 50.5], [7.1, 50.5], [7.1, 50.6]]],
+          ],
+        },
+      };
+      expect(adaptFloodWatchFeature(badMPUnclosed, onDrop)).toBeNull();
+
+      const badMLSShort = {
+        type: 'Feature',
+        id: 'bad-mls',
+        geometry: {
+          type: 'MultiLineString',
+          coordinates: [
+            [[7.0, 50.5]], // only 1 point
+          ],
+        },
+      };
+      expect(adaptFloodWatchFeature(badMLSShort, onDrop)).toBeNull();
+
+      expect(dropped).toHaveLength(2);
+    });
+
+    it('uses defaultProvenance fallback only when provenance is undefined', () => {
+      const featureWithoutProvenance = {
+        type: 'Feature',
+        properties: { tile_id: '0_15_63' },
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[[7.0, 50.5], [7.1, 50.5], [7.1, 50.6], [7.0, 50.6], [7.0, 50.5]]],
+        },
+      };
+
+      const adaptedObserved = adaptFloodWatchFeature(featureWithoutProvenance, () => {}, 'observed');
+      expect(adaptedObserved.properties.provenance).toBe('observed');
+
+      const adaptedDerived = adaptFloodWatchFeature(featureWithoutProvenance, () => {}, 'derived');
+      expect(adaptedDerived.properties.provenance).toBe('derived');
+    });
+
+    it('adaptFloodWatchCollection adapts collection, ignores invalid features and counts dropped', () => {
+      const rawCollection = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 'f1',
+            properties: { tile_id: '0_41_58' },
+            geometry: {
+              type: 'Polygon',
+              coordinates: [[[7.0, 50.5], [7.1, 50.5], [7.1, 50.6], [7.0, 50.6], [7.0, 50.5]]],
+            },
+          },
+          {
+            type: 'Feature',
+            id: 'bad',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [[[7.0, 50.5], [7.1, 50.5]]], // unclosed / invalid
+            },
+          },
+        ],
+      };
+
+      let dropCount = 0;
+      const res = adaptFloodWatchCollection(rawCollection, () => { dropCount += 1; }, 'derived');
+      expect(res.type).toBe('FeatureCollection');
+      expect(res.features).toHaveLength(1);
+      expect(res.features[0].id).toBe('f1');
+      expect(dropCount).toBe(1);
     });
   });
 });

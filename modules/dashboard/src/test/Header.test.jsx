@@ -48,7 +48,7 @@ describe('Header component', () => {
       />
     );
 
-    expect(screen.getByText('Data generated:')).toBeInTheDocument();
+    expect(screen.getByText('Data package generated:')).toBeInTheDocument();
     expect(screen.getByText('Last refreshed:')).toBeInTheDocument();
 
     const d = new Date('2026-10-14T15:45:00Z');

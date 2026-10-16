@@ -31,3 +31,32 @@ modules/flood_analysis/data/raw_louisiana/
 modules/flood_analysis/scripts/groq_config.py
 modules/flood_analysis/scripts/hf_config.py
 modules/flood_analysis/scripts/vision_api_config.py
+HighWater_Module2_Complete/scripts/groq_config.py
+HighWater_Module2_Complete/scripts/hf_config.py
+HighWater_Module2_Complete/scripts/vision_api_config.py
+scripts/groq_config.py
+scripts/hf_config.py
+scripts/vision_api_config.py
+
+
+# Python & Virtual Environments
+.venv/
+*/.venv/
+**/venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Large raw dataset archives (>100MB)
+*.zip
+*.tar.gz
+*.tif
+*.tiff
+floodnet_data/raw/
+floodnet_data/processed/
+floodnet_data/satellite_processed/
+HighWater_Module2_Complete/raw/
+HighWater_Module2_Complete/data/raw/
+HighWater_Module2_Complete/raw_louisiana/
+HighWater_Module2_Complete/venv/

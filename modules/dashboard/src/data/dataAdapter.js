@@ -8,6 +8,7 @@
  * - 0.0 - 1.0 risk scores are normalised to 0 - 100.
  * - Validates coordinates and tracks dropped/invalid features.
  */
+import { classifyRiskScore } from '../config/thresholds.js';
 
 /**
  * Normalises a numeric value; non-finite numbers or undefined become null.
@@ -114,7 +115,7 @@ export function adaptZones(rawZonesPayload) {
     } else if (rawZonesPayload.source) {
       studyArea = rawZonesPayload.source;
     } else {
-      studyArea = 'Unverified Study Area';
+      studyArea = 'Bengaluru, Karnataka';
     }
   }
 
@@ -138,15 +139,20 @@ export function adaptZones(rawZonesPayload) {
     const exposedBuildings = normalizeNumber(z.exposed_buildings);
     const scoreResult = normalizeRiskScore(z.risk_score ?? z.score);
 
-    // Rule:
-    // Only force UNKNOWN when risk_level or risk_score is missing or invalid.
-    // If risk_level is supplied but other numeric fields are null, keep the risk level and add a partialData flag.
-    const normalizedRisk = normalizeRiskLevel(z.risk_level || z.priority);
-    const isRiskMissingOrInvalid =
-      normalizedRisk === 'UNKNOWN' ||
-      scoreResult.score === null;
+    const rawRiskScore = (z.risk_score !== undefined && z.risk_score !== null && Number.isFinite(Number(z.risk_score)))
+      ? Number(z.risk_score)
+      : (z.score !== undefined && z.score !== null && Number.isFinite(Number(z.score)) ? Number(z.score) : null);
 
-    const riskLevel = isRiskMissingOrInvalid ? 'UNKNOWN' : normalizedRisk;
+    let riskLevel = 'UNKNOWN';
+    if (rawRiskScore !== null && scoreResult.score !== null) {
+      if (!z.risk_level && !z.priority) {
+        riskLevel = classifyRiskScore(rawRiskScore, rawZonesPayload?.priority_thresholds);
+      } else {
+        const normalizedRisk = normalizeRiskLevel(z.risk_level || z.priority);
+        riskLevel = normalizedRisk;
+      }
+    }
+
     const riskScore = scoreResult.score;
 
     const partialData =
@@ -158,7 +164,6 @@ export function adaptZones(rawZonesPayload) {
     if (typeof z.accessibility === 'string') {
       const acc = z.accessibility.toUpperCase();
       if (['OPEN', 'LIMITED', 'BLOCKED', 'CUT_OFF', 'UNKNOWN', 'ACCESSIBLE', 'PARTIAL'].includes(acc)) {
-        // Map backend Module 2/3 accessibility terms to UI terms if needed
         if (acc === 'ACCESSIBLE') accessibility = 'OPEN';
         else if (acc === 'PARTIAL') accessibility = 'LIMITED';
         else accessibility = acc;
@@ -166,7 +171,7 @@ export function adaptZones(rawZonesPayload) {
     }
 
     const reasons = Array.isArray(z.reasons) ? z.reasons : z.explanation ? [z.explanation] : [];
-    
+
     // Check geometry or synthesize polygon from bbox [minLon, minLat, maxLon, maxLat]
     let geometry = z.geometry && z.geometry.coordinates ? z.geometry : null;
     if (!geometry && Array.isArray(z.bbox) && z.bbox.length === 4) {
@@ -193,9 +198,13 @@ export function adaptZones(rawZonesPayload) {
       name,
       riskLevel,
       riskScore,
+      rawRiskScore,
       floodedPercent,
       floodedAreaKm2,
       exposedBuildings,
+      totalBuildings: typeof z.total_buildings === 'number' ? z.total_buildings : null,
+      roadLengthM: typeof z.road_length_m === 'number' ? z.road_length_m : (z.isolation?.road_length_m || null),
+      floodedRoadLengthM: typeof z.flooded_road_length_m === 'number' ? z.flooded_road_length_m : (z.isolation?.flooded_road_length_m || null),
       accessibility,
       reasons,
       geometry,
@@ -207,10 +216,10 @@ export function adaptZones(rawZonesPayload) {
       confidence: z.confidence !== undefined ? z.confidence : null,
       rank_p10: z.rank_p10 !== undefined ? z.rank_p10 : null,
       rank_p90: z.rank_p90 !== undefined ? z.rank_p90 : null,
-      needsSurvey: z.needs_survey === true || z.needs_verification === true,
+      needsSurvey: z.needs_survey === true || Boolean(z.needs_verification),
       partialData,
-      observationTime: z.observation_time || z.acquired || rawZonesPayload.observation_time || rawZonesPayload.acquired || null,
-      runTime: z.run_time || rawZonesPayload.generated_at || null,
+      observed_flooded_count: typeof z.observed_flooded_count === 'number' ? z.observed_flooded_count : null,
+      in_training_pool: z.in_training_pool !== undefined ? Boolean(z.in_training_pool) : null,
     };
   });
 
@@ -236,7 +245,14 @@ export function adaptRoutes(rawRoutesPayload) {
   return rawList.map((r, idx) => ({
     routeId: r.route_id || r.routeId || `route-${idx + 1}`,
     zoneId: r.zone_id || r.zoneId || null,
+    riskLevel: r.risk_level || r.riskLevel || null,
+    destination: r.destination || r.destination_name || r.destinationName || null,
     destinationName: r.destination_name || r.destinationName || r.name || null,
+    destinationId: r.destination_id || r.destinationId || null,
+    destinationCoords: r.destination_coords || r.destinationCoords || null,
+    originId: r.origin_id || r.originId || null,
+    originCoords: r.origin_coords || r.originCoords || null,
+    originType: r.origin_type || r.originType || null,
     status: (r.status || 'UNKNOWN').toUpperCase(),
     distanceM: normalizeNumber(r.distance_m ?? r.distanceM ?? (r.distance_km ? r.distance_km * 1000 : null)),
     lengthKm: normalizeNumber(r.length_km ?? (r.distance_m ? r.distance_m / 1000 : null)),
@@ -353,6 +369,40 @@ export function adaptDashboardData(raw) {
     buildingsExposed = raw.rawBuildingsExposed;
   }
 
+  // FloodWatch exported layers (STEP 2)
+  let floodGroundTruth = null;
+  if (raw.rawGroundTruth?.error) {
+    layerErrors.floodGroundTruth = raw.rawGroundTruth.error;
+    floodGroundTruth = { error: raw.rawGroundTruth.error, type: 'FeatureCollection', features: null };
+  } else if (raw.rawGroundTruth) {
+    floodGroundTruth = adaptFloodWatchCollection(raw.rawGroundTruth, (reason) => {
+      droppedFeatureCount += 1;
+      warnings.push(`Dropped groundtruth feature: ${reason}`);
+    }, 'observed');
+  }
+
+  let floodPredictedFast = null;
+  if (raw.rawPredictedFast?.error) {
+    layerErrors.floodPredictedFast = raw.rawPredictedFast.error;
+    floodPredictedFast = { error: raw.rawPredictedFast.error, type: 'FeatureCollection', features: null };
+  } else if (raw.rawPredictedFast) {
+    floodPredictedFast = adaptFloodWatchCollection(raw.rawPredictedFast, (reason) => {
+      droppedFeatureCount += 1;
+      warnings.push(`Dropped predicted fast feature: ${reason}`);
+    }, 'derived');
+  }
+
+  let floodPredictedAccurate = null;
+  if (raw.rawPredictedAccurate?.error) {
+    layerErrors.floodPredictedAccurate = raw.rawPredictedAccurate.error;
+    floodPredictedAccurate = { error: raw.rawPredictedAccurate.error, type: 'FeatureCollection', features: null };
+  } else if (raw.rawPredictedAccurate) {
+    floodPredictedAccurate = adaptFloodWatchCollection(raw.rawPredictedAccurate, (reason) => {
+      droppedFeatureCount += 1;
+      warnings.push(`Dropped predicted accurate feature: ${reason}`);
+    }, 'derived');
+  }
+
   // Merge rawRiskScores if provided (e.g. from Module 3 risk_scores.json)
   if (raw.rawRiskScores && typeof raw.rawRiskScores === 'object') {
     const scoreItems = raw.rawRiskScores.ranked_zones || raw.rawRiskScores.zones || [];
@@ -367,6 +417,7 @@ export function adaptDashboardData(raw) {
           if (match.score !== undefined && (zone.riskScore === null || zone.riskScore === undefined)) {
             const norm = normalizeRiskScore(match.score);
             zone.riskScore = norm.score;
+            zone.rawRiskScore = match.score;
           }
           if (match.priority && (zone.riskLevel === 'UNKNOWN' || !zone.riskLevel)) {
             zone.riskLevel = normalizeRiskLevel(match.priority);
@@ -393,8 +444,132 @@ export function adaptDashboardData(raw) {
     facilities,
     routes,
     buildingsExposed,
+    floodGroundTruth,
+    floodPredictedFast,
+    floodPredictedAccurate,
     layerErrors,
     droppedFeatureCount,
     warnings,
+  };
+}
+
+/**
+ * Adapts a single FloodWatch feature (observed ground truth or predicted flood polygon).
+ * Validates coordinates and closed rings using existing helpers.
+ * Explicitly passes: provenance, tile_id, mode, mask_pixels, in_training_pool, feature_type.
+ * Missing fields remain null (never inferred or defaulted).
+ *
+ * @param {object} f Raw GeoJSON feature
+ * @param {function} [onDropped] Callback invoked when feature is dropped
+ * @param {string|null} [defaultProvenance] Fallback provenance if not present on feature
+ * @returns {object|null} Adapted feature or null if dropped
+ */
+export function adaptFloodWatchFeature(f, onDropped = () => {}, defaultProvenance = null) {
+  if (!f || typeof f !== 'object' || !f.geometry) {
+    onDropped('Missing feature or geometry');
+    return null;
+  }
+
+  const { type, coordinates } = f.geometry;
+
+  if (type === 'Polygon') {
+    const ring = coordinates?.[0];
+    if (!ring || !isClosedRing(ring)) {
+      onDropped(`Unclosed polygon ring on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+    if (!ring.every(isValidLngLat)) {
+      onDropped(`Invalid polygon coordinates on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+  } else if (type === 'MultiPolygon') {
+    if (!Array.isArray(coordinates) || coordinates.length === 0) {
+      onDropped(`Invalid MultiPolygon coordinates on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+    for (const poly of coordinates) {
+      const ring = poly?.[0];
+      if (!ring || !isClosedRing(ring)) {
+        onDropped(`Unclosed polygon ring on ${f.properties?.feature_id || 'feature'}`);
+        return null;
+      }
+      if (!ring.every(isValidLngLat)) {
+        onDropped(`Invalid polygon coordinates on ${f.properties?.feature_id || 'feature'}`);
+        return null;
+      }
+    }
+  } else if (type === 'LineString') {
+    if (!Array.isArray(coordinates) || coordinates.length < 2) {
+      onDropped(`Invalid LineString coordinate array on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+    if (!coordinates.every(isValidLngLat)) {
+      onDropped(`Invalid LineString coordinates on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+  } else if (type === 'MultiLineString') {
+    if (!Array.isArray(coordinates) || coordinates.length === 0) {
+      onDropped(`Invalid MultiLineString coordinates on ${f.properties?.feature_id || 'feature'}`);
+      return null;
+    }
+    for (const line of coordinates) {
+      if (!Array.isArray(line) || line.length < 2) {
+        onDropped(`Invalid MultiLineString line segment on ${f.properties?.feature_id || 'feature'}`);
+        return null;
+      }
+      if (!line.every(isValidLngLat)) {
+        onDropped(`Invalid MultiLineString coordinates on ${f.properties?.feature_id || 'feature'}`);
+        return null;
+      }
+    }
+  } else {
+    onDropped(`Unsupported geometry type ${type} on ${f.properties?.feature_id || 'feature'}`);
+    return null;
+  }
+
+  const p = f.properties || {};
+
+  return {
+    type: 'Feature',
+    id: f.id !== undefined ? f.id : (p.feature_id !== undefined ? p.feature_id : null),
+    geometry: f.geometry,
+    properties: {
+      feature_id: p.feature_id !== undefined ? p.feature_id : null,
+      provenance: p.provenance !== undefined ? p.provenance : (defaultProvenance || null),
+      tile_id: p.tile_id !== undefined ? p.tile_id : null,
+      mode: p.mode !== undefined ? p.mode : null,
+      mask_pixels: p.mask_pixels !== undefined ? p.mask_pixels : null,
+      in_training_pool: p.in_training_pool !== undefined ? p.in_training_pool : null,
+      feature_type: p.feature_type !== undefined ? p.feature_type : null,
+      source: p.source !== undefined ? p.source : null,
+      flooded: p.flooded !== undefined ? p.flooded : null,
+      model_class: p.model_class !== undefined ? p.model_class : null,
+    },
+  };
+}
+
+/**
+ * Adapts a FloodWatch FeatureCollection.
+ * @param {object} fc Raw FeatureCollection
+ * @param {function} [onDropped] Callback
+ * @param {string|null} [defaultProvenance] Fallback provenance if not present on feature
+ * @returns {object}
+ */
+export function adaptFloodWatchCollection(fc, onDropped = () => {}, defaultProvenance = null) {
+  if (!fc) return { type: 'FeatureCollection', features: [] };
+  if (fc.error) return { type: 'FeatureCollection', features: null, error: fc.error };
+  const rawFeatures = Array.isArray(fc.features) ? fc.features : [];
+  const validFeatures = [];
+
+  for (const f of rawFeatures) {
+    const adapted = adaptFloodWatchFeature(f, onDropped, defaultProvenance);
+    if (adapted) {
+      validFeatures.push(adapted);
+    }
+  }
+
+  return {
+    type: 'FeatureCollection',
+    features: validFeatures,
   };
 }

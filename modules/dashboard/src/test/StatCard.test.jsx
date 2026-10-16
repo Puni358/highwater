@@ -8,7 +8,7 @@ describe('StatCard component', () => {
     expect(screen.getByText('Inundated Area')).toBeInTheDocument();
     expect(screen.getByText('12.4')).toBeInTheDocument();
     expect(screen.getByText('km²')).toBeInTheDocument();
-    expect(screen.getByText('Illustrative')).toBeInTheDocument();
+    expect(screen.getByText('Simulated')).toBeInTheDocument();
   });
 
   it('renders "Not available" when value is null (never 0)', () => {
@@ -22,8 +22,8 @@ describe('StatCard component', () => {
     expect(screen.getByText('Not available')).toBeInTheDocument();
   });
 
-  it('omits "Illustrative" badge when isDemo is false', () => {
+  it('omits "Simulated" badge when isDemo is false', () => {
     render(<StatCard title="Sensor Health" value={98} isDemo={false} />);
-    expect(screen.queryByText('Illustrative')).not.toBeInTheDocument();
+    expect(screen.queryByText('Simulated')).not.toBeInTheDocument();
   });
 });

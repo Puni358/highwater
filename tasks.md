@@ -110,6 +110,8 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
   AC: zones with `needs_survey` appear in a separate section.
 - [ ] **T7.4 (P2)** What-if control with before/after rank diff (FR-63)
   AC: calls the agreed endpoint; loading and error states handled; no frontend-side simulation.
+- [x] **T7.5 (P2)** Local network Mesh Sync for field survey updates
+  AC: WebSocket relay on port 8787; `useMeshSync` hook with backoff and offline queue; Header badge with peer count; ZoneDetails survey section and keyboard-accessible form; zero impact on risk scores; unit tests passing.
 
 ---
 
@@ -137,6 +139,7 @@ Priority: **P0** must ship, **P1** if P0 is stable, **P2** extension.
 | 18 | Refresh clicked repeatedly | One in-flight request only | Unit | [x] |
 | 19 | Tiles unreachable | Fallback notice; overlays still render | Manual | [headless verified, manual pending] |
 | 20 | Stale `generated_at` | Stale banner shown | Unit | [x] |
+| 21 | Mesh survey sync | Cross-tab / cross-device updates sync via local relay; offline queue flushes on connect | Component + unit | [x] |
 
 ## Final submission checklist
 

@@ -42,8 +42,7 @@ export function isValidCoordinate(lng, lat) {
 
 /**
  * Checks whether coordinates appear swapped (e.g. latitude looks like a longitude).
- * Supports both southern India / Bengaluru context (lng ~77, lat ~12) and
- * Western Europe / Germany context (lng ~7, lat ~50).
+ * In southern India / Bengaluru context, lng is ~77 and lat is ~12.
  * @param {number} lng 
  * @param {number} lat 
  * @returns {boolean}
@@ -108,14 +107,6 @@ export function validateFeatureCollection(featureCollection) {
         warnings.push(`Feature ${id} skipped: unclosed or invalid polygon ring`);
         continue;
       }
-    } else if (geom.type === 'MultiPolygon') {
-      const poly = geom.coordinates[0];
-      const ring = Array.isArray(poly) ? poly[0] : null;
-      if (!isValidPolygonRing(ring)) {
-        droppedCount += 1;
-        warnings.push(`Feature ${id} skipped: unclosed or invalid polygon ring`);
-        continue;
-      }
     } else if (geom.type === 'LineString') {
       const coords = geom.coordinates;
       if (!Array.isArray(coords) || coords.length < 2 || !coords.every(([lng, lat]) => isValidCoordinate(lng, lat))) {
@@ -138,10 +129,6 @@ export function validateFeatureCollection(featureCollection) {
   return { validFeatures, droppedCount, warnings };
 }
 
-/**
- * Verified study area extents [[South, West], [North, East]]
- * and corresponding center coordinates [Lat, Lng].
- */
 export const VERIFIED_STUDY_AREAS = {
   dernau: {
     id: 'dernau',
@@ -192,10 +179,14 @@ export const DEFAULT_MAP_ZOOM = 14;
  *
  * @param {Array<object>} [zones]
  * @param {object} [floodGeoJSON]
- * @param {string} [studyArea]
+ * @param {string|Array<object>} [extraOrStudyArea]
+ * @param {string} [studyAreaArg]
  * @returns {[[number, number], [number, number]]}
  */
-export function computeDataBounds(zones = [], floodGeoJSON = null, studyArea = null) {
+export function computeDataBounds(zones = [], floodGeoJSON = null, extraOrStudyArea = null, studyAreaArg = null) {
+  const studyArea = typeof extraOrStudyArea === 'string' ? extraOrStudyArea : (typeof studyAreaArg === 'string' ? studyAreaArg : null);
+  const extraGeoJSONs = Array.isArray(extraOrStudyArea) ? extraOrStudyArea : [];
+
   let minLat = Infinity;
   let maxLat = -Infinity;
   let minLng = Infinity;
@@ -209,6 +200,28 @@ export function computeDataBounds(zones = [], floodGeoJSON = null, studyArea = n
       minLng = Math.min(minLng, lng);
       maxLng = Math.max(maxLng, lng);
       count++;
+    }
+  };
+
+  const processCollection = (fc) => {
+    if (!fc || !Array.isArray(fc.features)) return;
+    for (const f of fc.features) {
+      const geom = f?.geometry;
+      if (!geom?.coordinates) continue;
+      if (geom.type === 'LineString') {
+        for (const pt of geom.coordinates) {
+          if (Array.isArray(pt) && pt.length >= 2) update(pt[0], pt[1]);
+        }
+      } else if (geom.type === 'Polygon' || geom.type === 'MultiPolygon') {
+        const rings = geom.type === 'Polygon' ? geom.coordinates : geom.coordinates.flat(1);
+        for (const ring of rings) {
+          if (Array.isArray(ring)) {
+            for (const pt of ring) {
+              if (Array.isArray(pt) && pt.length >= 2) update(pt[0], pt[1]);
+            }
+          }
+        }
+      }
     }
   };
 
@@ -226,7 +239,6 @@ export function computeDataBounds(zones = [], floodGeoJSON = null, studyArea = n
           }
         }
       } else if (Array.isArray(z.bbox) && z.bbox.length === 4) {
-        // [minLon, minLat, maxLon, maxLat] from Module 2 output
         update(z.bbox[0], z.bbox[1]);
         update(z.bbox[2], z.bbox[3]);
       } else if (Array.isArray(z.centroid) && z.centroid.length === 2) {
@@ -235,20 +247,13 @@ export function computeDataBounds(zones = [], floodGeoJSON = null, studyArea = n
     }
   }
 
-  if (floodGeoJSON && Array.isArray(floodGeoJSON.features)) {
-    for (const f of floodGeoJSON.features) {
-      if (f.geometry?.coordinates) {
-        const rings = f.geometry.type === 'Polygon' ? f.geometry.coordinates : f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates.flat(1) : [];
-        for (const ring of rings) {
-          if (Array.isArray(ring)) {
-            for (const pt of ring) {
-              if (Array.isArray(pt) && pt.length >= 2) {
-                update(pt[0], pt[1]);
-              }
-            }
-          }
-        }
-      }
+  if (floodGeoJSON) {
+    processCollection(floodGeoJSON);
+  }
+
+  if (Array.isArray(extraGeoJSONs)) {
+    for (const extra of extraGeoJSONs) {
+      if (extra) processCollection(extra);
     }
   }
 

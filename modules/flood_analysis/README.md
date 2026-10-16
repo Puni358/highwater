@@ -196,27 +196,3 @@ flood-extent derivation (including the "nothing flooded" case), and
   the top level of `flood_extent.geojson`-style outputs across modules, so
   consumers can distinguish real sensor-derived extents from
   labelled/inferred ones like this one.
-
-## Earthquake mode
-
-An optional `--hazard earthquake` mode reuses the downstream hazard-agnostic pipeline (zone grid, UTM transform, accessibility rating, and GeoJSON outputs) with earthquake ground shaking data.
-
-```bash
-PYTHONPATH=src python -m flood_analysis.cli --hazard earthquake --input data/raw_eq --out output_eq
-```
-
-### Data sources & licenses
-- **USGS ShakeMap**: XML intensity grid (`grid.xml`) and MMI contours (`cont_mmi.json`) for event `us6000jllz` (2023 Pazarcik / Kahramanmaraş earthquake). Public domain.
-- **OpenStreetMap**: Building polygons (`buildings.geojson`) and highway networks (`roads.geojson`) via Overpass Turbo. Open Database License (ODbL).
-
-### Thresholds & semantics
-- `flooded` boolean represents an **exposed to damaging shaking** hazard proxy (not confirmed structural damage).
-- **Building threshold** (`--mmi-building`, default 7.0): sampled at the building centroid via bilinear interpolation.
-- **Road threshold** (`--mmi-road`, default 8.0): max MMI sampled along road vertices.
-
-### Limitations
-- MMI is a modelled ground shaking intensity from ShakeMap, not measured damage.
-- The `flooded` flag is a hazard proxy; features flagged as exposed are not confirmed destroyed.
-- Roads flagged by shaking are not confirmed physically blocked.
-- Single earthquake event (`us6000jllz`).
-

@@ -1,104 +1,74 @@
 {
-  "2_13_45": {
-    "flood_damage_detected": true,
-    "confidence": "medium",
-    "reasoning": "The bright green lawns and clear roads in the pre-event image are replaced by dark, flooded surfaces around the houses in the cloudy post-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_13_46": {
-    "flood_damage_detected": true,
-    "confidence": "high",
-    "reasoning": "The POST-event image shows extensive dark floodwaters inundating the land, roads, and properties, which were clearly dry and green in the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_13_47": {
-    "flood_damage_detected": true,
-    "confidence": "medium",
-    "reasoning": "The POST-event image shows a significant expansion of water over the shoreline and land areas, with bright, sediment-rich or turbulent water covering regions that were dry land in the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_13_48": {
-    "flood_damage_detected": true,
-    "confidence": "medium",
-    "reasoning": "The POST-event image shows muddy, turbid water extending further inland over the shoreline and vegetation compared to the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_14_45": {
-    "flood_damage_detected": true,
-    "confidence": "high",
-    "reasoning": "The POST-event image shows a massively swollen, muddy river and dark flooding over surrounding lands and properties, which were dry and clearly visible in the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_14_46": {
-    "flood_damage_detected": true,
-    "confidence": "high",
-    "reasoning": "The POST-event image shows extensive dark floodwaters covering streets and residential properties, which were dry and green in the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_14_47": {
-    "flood_damage_detected": true,
-    "confidence": "high",
-    "reasoning": "The POST-event image shows extensive muddy water with visible ripple patterns covering the land and fields, which were dry green areas in the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_14_48": {
-    "flood_damage_detected": true,
-    "confidence": "high",
-    "reasoning": "The POST-event image shows extensive brown floodwaters overflowing the riverbank and submerging the road, residential properties, and surrounding vegetation.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_15_45": {
-    "flood_damage_detected": false,
-    "confidence": "low",
-    "reasoning": "The POST-event image is heavily obscured by thick cloud cover, making it impossible to clearly observe any specific flood damage or water intrusion on the ground.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_15_46": {
-    "flood_damage_detected": true,
-    "confidence": "high",
-    "reasoning": "A large, highly reflective flooded field and waterlogged muddy areas are visible in the POST-event image, replacing the dry green fields and vegetation seen in the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_15_47": {
-    "flood_damage_detected": true,
-    "confidence": "high",
-    "reasoning": "The POST-event image shows dark standing water covering the large field and residential yards, which were dry in the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_15_48": {
-    "flood_damage_detected": true,
-    "confidence": "high",
-    "reasoning": "The POST-event image shows widespread brown floodwater covering streets, yards, and the football field, which were dry and clearly visible in the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
-  },
-  "2_16_45": {
+  "2_20_43": {
     "flood_damage_detected": false,
     "confidence": "high",
-    "reasoning": "The POST-event image is completely obscured by thick clouds, making it impossible to observe any ground-level flood damage or water intrusion.",
-    "model": "dots-studio/dots-3-note-preview:free"
+    "reasoning": "Dry landscape with no significant flood inundation (0.0% water detected).",
+    "water_coverage_percent": 0.0,
+    "net_change_percent": 0.0,
+    "model": "segformer-b0-local-offline"
   },
-  "2_16_48": {
-    "flood_damage_detected": true,
-    "confidence": "medium",
-    "reasoning": "The POST-event image shows greyish, reflective standing water covering the parking lot, baseball field, and low-lying grassy areas, which were dry in the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
+  "2_20_44": {
+    "flood_damage_detected": false,
+    "confidence": "high",
+    "reasoning": "Dry landscape with no significant flood inundation (0.0% water detected).",
+    "water_coverage_percent": 0.0,
+    "net_change_percent": 0.0,
+    "model": "segformer-b0-local-offline"
   },
-  "2_17_45": {
-    "flood_damage_detected": true,
-    "confidence": "low",
-    "reasoning": "The POST-event image is heavily obscured by clouds, but the visible upper section shows dark, smooth patches where bright green lawns and clear ground were previously present, indicating possible water intrusion.",
-    "model": "dots-studio/dots-3-note-preview:free"
+  "2_20_45": {
+    "flood_damage_detected": false,
+    "confidence": "high",
+    "reasoning": "Dry landscape with no significant flood inundation (0.0% water detected).",
+    "water_coverage_percent": 0.0,
+    "net_change_percent": 0.0,
+    "model": "segformer-b0-local-offline"
   },
-  "2_17_48": {
+  "2_19_43": {
     "flood_damage_detected": true,
     "confidence": "high",
-    "reasoning": "The POST-event image shows swollen, muddy rivers overflowing their banks and inundating nearby fields, roads, and residential properties that were clearly dry in the PRE-event image.",
-    "model": "dots-studio/dots-3-note-preview:free"
+    "reasoning": "SegFormer detected 34.4% water coverage in POST-event satellite tile (net surge: +34.4% vs PRE baseline).",
+    "water_coverage_percent": 34.36,
+    "net_change_percent": 34.36,
+    "model": "segformer-b0-local-offline"
   },
-  "2_18_45": {
-    "flood_damage_detected": true,
-    "confidence": "medium",
-    "reasoning": "The lower grassy field visible in the pre-event image is replaced by dark standing water in the post-event image, indicating clear water intrusion.",
-    "model": "dots-studio/dots-3-note-preview:free"
+  "2_21_43": {
+    "flood_damage_detected": false,
+    "confidence": "high",
+    "reasoning": "Dry landscape with no significant flood inundation (0.0% water detected).",
+    "water_coverage_percent": 0.0,
+    "net_change_percent": 0.0,
+    "model": "segformer-b0-local-offline"
+  },
+  "2_21_44": {
+    "flood_damage_detected": false,
+    "confidence": "high",
+    "reasoning": "Dry landscape with no significant flood inundation (0.0% water detected).",
+    "water_coverage_percent": 0.0,
+    "net_change_percent": 0.0,
+    "model": "segformer-b0-local-offline"
+  },
+  "2_18_44": {
+    "flood_damage_detected": false,
+    "confidence": "high",
+    "reasoning": "Dry landscape with no significant flood inundation (0.0% water detected).",
+    "water_coverage_percent": 0.0,
+    "net_change_percent": 0.0,
+    "model": "segformer-b0-local-offline"
+  },
+  "2_19_45": {
+    "flood_damage_detected": false,
+    "confidence": "high",
+    "reasoning": "Dry landscape with no significant flood inundation (0.0% water detected).",
+    "water_coverage_percent": 0.0,
+    "net_change_percent": 0.0,
+    "model": "segformer-b0-local-offline"
+  },
+  "2_19_44": {
+    "flood_damage_detected": false,
+    "confidence": "high",
+    "reasoning": "Dry landscape with no significant flood inundation (0.0% water detected).",
+    "water_coverage_percent": 0.0,
+    "net_change_percent": 0.0,
+    "model": "segformer-b0-local-offline"
   }
 }

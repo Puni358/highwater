@@ -7,13 +7,27 @@ import ProvenanceBadge from './ProvenanceBadge.jsx';
  * Dynamic legend reflecting ONLY active/enabled overlays and provenance badges.
  */
 export default function MapLegend({
-  visibleLayers = { flood: true, risk: true, roads: true, facilities: true, routes: false, buildings: false },
+  visibleLayers,
+  activeLayers,
+  modelMode = 'fast',
 }) {
-  const hasActiveLayers = Object.values(visibleLayers).some(Boolean);
+  const rawLayers = activeLayers || visibleLayers || { flood: true, risk: true, roads: true, facilities: true, routes: false, buildings: false };
+  const effectiveLayers = {
+    flood: Boolean(rawLayers.flood),
+    risk: Boolean(rawLayers.risk ?? rawLayers.zones),
+    roads: Boolean(rawLayers.roads ?? rawLayers.blockedRoads),
+    facilities: Boolean(rawLayers.facilities),
+    routes: Boolean(rawLayers.routes),
+    buildings: Boolean(rawLayers.buildings),
+    floodGroundTruth: Boolean(rawLayers.floodGroundTruth),
+    floodPredicted: Boolean(rawLayers.floodPredicted),
+  };
+
+  const hasActiveLayers = Object.values(effectiveLayers).some(Boolean);
 
   if (!hasActiveLayers) {
     return (
-      <div className="bg-card/95 backdrop-blur-sm border border-border rounded-card p-2.5 shadow-md text-xs text-text-muted">
+      <div className="bg-plate border border-hairline rounded p-2.5 shadow-xs text-xs text-ink-muted">
         <span>No map overlays active</span>
       </div>
     );
@@ -23,14 +37,14 @@ export default function MapLegend({
     <div
       role="region"
       aria-label="Map Legend"
-      className="bg-card/95 backdrop-blur-sm border border-border rounded-card p-3 shadow-md text-xs space-y-2.5 max-w-[240px] font-sans"
+      className="bg-plate border border-hairline rounded p-3 shadow-xs text-xs space-y-2.5 max-w-[240px] font-sans text-ink"
     >
       <div className="font-bold text-navy-900 border-b border-border pb-1">
         Active Map Overlays
       </div>
 
       {/* 1. Flood Extent Swatch */}
-      {visibleLayers.flood && (
+      {effectiveLayers.flood && (
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div
@@ -48,13 +62,17 @@ export default function MapLegend({
       )}
 
       {/* 2. Priority Risk Classification Swatches */}
-      {visibleLayers.risk && (
+      {effectiveLayers.risk && (
         <div className="space-y-1 pt-1 border-t border-border/50">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-text-muted text-[11px]">Priority Risk:</span>
             <ProvenanceBadge value="derived" />
           </div>
           <div className="grid grid-cols-2 gap-1 text-[11px]">
+            <div className="flex items-center space-x-1.5">
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: THEME.riskColors.CRITICAL }} />
+              <span>CRITICAL</span>
+            </div>
             <div className="flex items-center space-x-1.5">
               <div className="w-3 h-3 rounded" style={{ backgroundColor: THEME.riskColors.HIGH }} />
               <span>HIGH</span>
@@ -79,7 +97,7 @@ export default function MapLegend({
       )}
 
       {/* 3. Blocked Road Swatch */}
-      {visibleLayers.roads && (
+      {effectiveLayers.roads && (
         <div className="flex items-center justify-between pt-1 border-t border-border/50">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-1 border-t-2 border-dashed border-risk-high" />
@@ -90,7 +108,7 @@ export default function MapLegend({
       )}
 
       {/* 4. Facilities Swatches */}
-      {visibleLayers.facilities && (
+      {effectiveLayers.facilities && (
         <div className="space-y-1 pt-1 border-t border-border/50">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-text-muted text-[11px]">Facilities:</span>
@@ -114,7 +132,7 @@ export default function MapLegend({
       )}
 
       {/* 5. Route Swatch */}
-      {visibleLayers.routes && (
+      {effectiveLayers.routes && (
         <div className="flex items-center justify-between pt-1 border-t border-border/50">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-1 bg-route rounded" />
@@ -125,7 +143,7 @@ export default function MapLegend({
       )}
 
       {/* 6. Exposed Buildings Swatch */}
-      {visibleLayers.buildings && (
+      {effectiveLayers.buildings && (
         <div className="flex items-center justify-between pt-1 border-t border-border/50">
           <div className="flex items-center space-x-2">
             <div
@@ -139,6 +157,54 @@ export default function MapLegend({
             <span className="text-text">Flooded Buildings</span>
           </div>
           <ProvenanceBadge value="observed" />
+        </div>
+      )}
+
+      {/* 7. FloodWatch Observed Labels Swatch */}
+      {effectiveLayers.floodGroundTruth && (
+        <div className="space-y-1 pt-1 border-t border-border/50">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-text-muted text-[11px]">Observed Labels:</span>
+            <ProvenanceBadge value="observed" />
+          </div>
+          <div className="space-y-1 text-[11px]">
+            <div className="flex items-center space-x-1.5">
+              <div
+                className="w-3.5 h-3.5 rounded border"
+                style={{
+                  backgroundColor: THEME.colors.floodwatchObservedBuilding,
+                  borderColor: THEME.colors.floodwatchObservedBuildingBorder,
+                  opacity: 0.75,
+                }}
+              />
+              <span className="text-text">Observed Buildings</span>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <div
+                className="w-4 h-1 rounded"
+                style={{ backgroundColor: THEME.colors.floodwatchObservedRoad }}
+              />
+              <span className="text-text">Observed Flooded Roads</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. FloodWatch Model Output Swatch (derived) */}
+      {effectiveLayers.floodPredicted && (
+        <div className="flex items-center justify-between pt-1 border-t border-border/50">
+          <div className="flex items-center space-x-2">
+            <div
+              className="w-3.5 h-3.5 rounded"
+              style={{
+                backgroundColor: THEME.colors.floodwatchPredicted,
+                opacity: 0.65,
+                border: `1.5px dashed ${THEME.colors.floodwatchPredictedBorder}`,
+              }}
+            />
+            <span className="text-text">Model Output ({modelMode === 'accurate' ? 'Accurate' : 'Fast'})</span>
+          </div>
+          <ProvenanceBadge value="derived" />
         </div>
       )}
 

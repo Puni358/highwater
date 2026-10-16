@@ -21,10 +21,8 @@ def main():
     if not os.path.exists(PREDICTIONS_PATH):
         raise SystemExit(f"No predictions found at {PREDICTIONS_PATH}. Run ai_flood_detect_floodnet.py first.")
 
-    with open(GROUND_TRUTH_PATH, "r", encoding="utf-8") as f:
-        ground_truth = json.load(f)["images"]
-    with open(PREDICTIONS_PATH, "r", encoding="utf-8") as f:
-        predictions = json.load(f)
+    ground_truth = json.load(open(GROUND_TRUTH_PATH))["images"]
+    predictions = json.load(open(PREDICTIONS_PATH))
 
     flat_tp = flat_tn = flat_fp = flat_fn = 0
     conf_tp = conf_tn = conf_fp = conf_fn = 0

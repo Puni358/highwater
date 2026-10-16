@@ -26,7 +26,7 @@ cp .env.example .env
 Configured environment variables:
 | Variable | Default | Purpose |
 |---|---|---|
-| `VITE_DATA_SOURCE` | `mock` | Data source switcher (`mock`, `mock-dernau`, or `api`) |
+| `VITE_DATA_SOURCE` | `mock` | Data source switcher (`mock`, `mock-dernau`, `mock-floodwatch`, or `api`) |
 | `VITE_API_BASE_URL` | `http://localhost:8000/api` | Backend API base URL when in `api` mode |
 | `VITE_REFRESH_INTERVAL_MS` | `30000` | Auto-refresh poll interval in milliseconds |
 | `VITE_STALE_MINUTES` | `60` | Age threshold for displaying stale-data warning banner |
@@ -71,7 +71,7 @@ Service (dashboardApi) -> Adapter (dataAdapter) -> Hook (useDashboardData) -> Se
 
 ### Mock Fixtures & Demonstration Datasets
 
-The dashboard supports two independent fixture datasets configured via `VITE_DATA_SOURCE`:
+The dashboard supports three independent fixture datasets configured via `VITE_DATA_SOURCE`:
 
 #### 1. Synthetic Fixtures (`VITE_DATA_SOURCE=mock`, default)
 Located in `public/mock-data/`:
@@ -97,6 +97,21 @@ Located in `public/mock-data-dernau/`:
   - Stat cards visibly clarify: Flooded area as derived from labelled flooded buildings/roads (not a measured water boundary), Blocked roadways as roads labelled flooded in ground truth, and designated test cases explicitly disclosed.
   - Illustrative risk score disclaimer banner displayed.
   - Fitted coordinate bounds automatically computed to encompass Dernau AOI geometry.
+
+#### 3. FloodWatch SegFormer-B0 Demonstration Dataset (`VITE_DATA_SOURCE=mock-floodwatch`)
+Located in `public/mock-data-floodwatch/`:
+- **Source & Attribution**: SpaceNet 8 Germany AOI flood labels and local offline SegFormer-B0 inference predictions exported by FloodWatch.
+- **Contract-Perfect Resources**:
+  - `flood_extent_groundtruth.geojson`: 822 features (SpaceNet 8 human annotations: building polygons and road lines labelled flooded). Provenance: `"observed"`.
+  - `flood_extent_predicted_fast.geojson`: 146 flood polygons produced by SegFormer-B0 fast mode inference. Provenance: `"derived"`.
+  - `flood_extent_predicted_accurate.geojson`: 255 flood polygons produced by SegFormer-B0 sliding-window accurate mode inference. Provenance: `"derived"`.
+  - `zones.json`: 14 Germany AOI demonstration tile zones (`0_41_58`, `0_27_68`, `0_15_63`, etc.).
+- **Adapter Validation & Integrity**:
+  - Adapted via `adaptFloodWatchCollection` and `adaptFloodWatchFeature` in `src/data/dataAdapter.js`.
+  - Validates RFC 7946 EPSG:4326 `[lng, lat]` coordinates and closed exterior polygon rings; invalid geometries are safely skipped and logged in dropped feature alerts.
+  - Explicitly preserves `provenance`, `tile_id`, `mode`, `mask_pixels`, `in_training_pool`, and `feature_type`, leaving missing fields `null` (never defaulted).
+- **Training Pool Transparency**:
+  - Every tile with flood damage in this demonstration was in the SegFormer-B0 model's training pool. The dashboard explicitly discloses that agreement between observed and predicted layers is not a held-out test result. No machine learning evaluation metrics (IoU, recall) are calculated on the frontend.
 
 ---
 
@@ -182,6 +197,59 @@ All operational states captured from headless Chrome test runs:
 - **DEMO Badge Text Contrast**: Adjusted from `#B26A00` to `#965300` on `#FFF3D6` to satisfy WCAG 2.1 AA text contrast requirement (5.39:1 vs the original 3.84:1). The original token remains preserved in `theme.js` as `specText`.
 - **Tailwind Default Palette**: Selective semantic use of Tailwind utility classes (`slate-50/100/200` for table headers, panel dividers, and offline tile fallback; `amber-50/600/900`, `red-50/100`, `emerald-50/600`, and `gray-100/700` for accessible status pills and alert banners) extending base theme tokens.
 - **Marker Drop Shadow**: `rgba(0,0,0,0.3)` in `FacilityLayer.jsx` for DOM marker elevation box shadow.
+
+---
+
+## 7. Mesh Sync (Local Network)
+
+HighWater includes an isolated, zero-internet **Mesh Sync** capability designed for emergency deployment when municipal cellular networks or ISP infrastructure are severed. Multiple field devices (laptops, rugged tablets, and responder smartphones) connected to a common local hotspot can exchange ground-truth survey observations in real time without external connectivity.
+
+### Dependencies
+The lightweight WebSocket relay requires the `ws` package:
+```bash
+# ws is installed in modules/dashboard/package.json
+npm install ws
+```
+
+### 1. Running the Mesh Relay Server
+Start the in-memory WebSocket relay on port `8787` (bound to `0.0.0.0`):
+```bash
+node scripts/mesh-relay.mjs
+```
+The relay will output:
+```
+[Mesh Relay] HighWater local mesh relay listening on ws://0.0.0.0:8787
+[Mesh Relay] In-memory mode active. Zero external dependencies / no internet required.
+```
+
+### 2. Running the Dashboard for Local Devices
+Launch the dashboard Vite development server exposed to your local network:
+```bash
+npm run dev -- --host 0.0.0.0
+```
+Vite will output the Network URL (e.g., `http://192.168.1.50:5173/`).
+
+### 3. Opening on Field Phones & Tablets
+1. Connect field devices (e.g., responder phone or tablet) to the same Wi-Fi router or portable mobile hotspot as the host laptop.
+2. Locate the laptop's LAN IP address on Windows via `ipconfig` (e.g., `192.168.1.50`).
+3. Open mobile browser and navigate to:
+   ```
+   http://<LAPTOP_LAN_IP>:5173
+   ```
+   *(Example: `http://192.168.1.50:5173`)*
+4. The dashboard automatically discovers the mesh relay at `ws://<LAPTOP_LAN_IP>:8787` (or uses `VITE_MESH_RELAY_URL` if explicitly set).
+5. The Header badge will update to `Mesh active - N peers connected` with accessible `aria-live="polite"` announcements.
+
+### Windows Firewall Configuration Note
+If mobile devices cannot connect to the laptop:
+- Ensure incoming TCP connections on port **5173** (Vite HTTP) and port **8787** (WebSocket Relay) are allowed through Windows Defender Firewall.
+- When prompted upon launching Node, check "Allow access on Private networks".
+
+### Known Limitations
+- **In-memory storage**: The relay retains survey updates in RAM; there is no SQL or disk database.
+- **No authentication / encryption**: Designed strictly for trusted tactical LAN/hotspot operation during disconnected emergencies.
+- **Ephemeral session state**: Updates are cleared when the relay process terminates or restarts.
+- **Base map internet dependency**: Base map satellite or street raster tiles require internet access (or browser cache). All geospatial feature overlays (flooded sectors, critical facilities, blocked routes) and field survey records render completely offline.
 
 ---
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plane } from 'lucide-react';
+import DroneIcon from './DroneIcon.jsx';
 import RiskBadge from './RiskBadge.jsx';
 
 /**
@@ -27,7 +27,7 @@ export default function SurveyNeededList({
     >
       <div className="flex items-center justify-between pb-2 border-b border-border">
         <div className="flex items-center space-x-2 text-text font-semibold text-sm">
-          <Plane className="w-4 h-4 text-purple-700" aria-hidden="true" />
+          <DroneIcon className="w-5 h-4 text-purple-700 shrink-0" aria-hidden="true" />
           <span>Aerial Survey Needed</span>
         </div>
         <span className="text-caption text-text-muted bg-slate-100 px-2 py-0.5 rounded border border-border font-medium">
